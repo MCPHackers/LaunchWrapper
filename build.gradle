@@ -1,0 +1,30 @@
+apply plugin: 'java'
+apply plugin: 'eclipse'
+
+repositories {
+    maven {
+        url "https://libraries.minecraft.net/"
+    }
+    mavenCentral()
+}
+
+group = 'org.mcphackers'
+archivesBaseName = 'launchwrapper'
+version = '1.0'
+sourceCompatibility = 1.6
+
+dependencies {
+    implementation 'org.ow2.asm:asm:9.3'
+    implementation 'org.ow2.asm:asm-tree:9.3'
+    implementation 'org.lwjgl.lwjgl:lwjgl:2.9.3'
+}
+
+task sourcesJar(type: Jar) {
+    classifier = 'sources'
+    from sourceSets.main.allSource
+}
+
+artifacts {
+    archives jar
+    archives sourcesJar
+}
