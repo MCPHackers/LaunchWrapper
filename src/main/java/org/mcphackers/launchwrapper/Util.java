@@ -1,5 +1,9 @@
 package org.mcphackers.launchwrapper;
 
+import java.io.ByteArrayOutputStream;
+import java.io.Closeable;
+import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 
@@ -17,5 +21,27 @@ public final class Util {
 	public static boolean isStatic(Field field) {
 		return (field.getModifiers() & Modifier.STATIC) != 0;
 	}
+
+    public static void closeSilently(Closeable closeable) {
+        if (closeable != null) {
+            try {
+                closeable.close();
+            } catch (IOException ignored) {
+            }
+        }
+    }
+
+    public static byte[] readStream(InputStream stream) throws IOException {
+    	ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+
+    	int nRead;
+    	byte[] data = new byte[16384];
+
+    	while ((nRead = stream.read(data, 0, data.length)) != -1) {
+    		buffer.write(data, 0, nRead);
+    	}
+
+    	return buffer.toByteArray();
+    }
 
 }

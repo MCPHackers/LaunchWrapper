@@ -7,23 +7,8 @@ import java.net.URL;
 
 public class AppletWrapper extends Applet implements AppletStub {
     private static final long serialVersionUID = 1L;
-    
-    private Object instance;
-    private LaunchTarget launchTarget;
-    
-    public AppletWrapper(LaunchTarget launchTarget) {
-    	this.launchTarget = launchTarget;
-	}
-    
-    public void setInstance(Object instance) {
-    	this.instance = instance;
-    }
 
     public void appletResize(int width, int height) {
-    	if(instance != null) {
-	    	launchTarget.setWidth(instance, width);
-	    	launchTarget.setHeight(instance, height);
-    	}
     }
 
     @Override

@@ -6,13 +6,17 @@ import java.awt.Canvas;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Frame;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
 
+import javax.imageio.ImageIO;
+
 public class Launch {
 
-	public static final ClassLoader CLASS_LOADER = ClassLoader.getSystemClassLoader();
+	public static final LaunchClassLoader CLASS_LOADER = LaunchClassLoader.instantiate();
 	
 	public static final String[] MAIN_CLASSES = {
 			"net.minecraft.client.Minecraft",
@@ -47,8 +51,8 @@ public class Launch {
 		new Launch()
 			.setUser(username, sessionId)
 			.setGameDirectory(gameDir)
-			.setLWJGLFrame(true)
-			.setFullscreen(true)
+			//.setLWJGLFrame(true)
+			//.setFullscreen(true)
 			.launch();
 	}
 	
@@ -59,7 +63,7 @@ public class Launch {
 	private String serverIp;
 	private int serverPort;
 	private boolean lwjglFrame;
-	private boolean useMain = true;
+	private boolean forceWrapper = true;
 	
 	public Launch() {
 		setUser(null, null);
@@ -111,15 +115,15 @@ public class Launch {
 			System.err.println("Could not find launch target");
 			return;
 		}
-		if(launchTarget.main != null && useMain && Util.isStatic(launchTarget.mcDir)) {
-			try {
-				Util.setField(null, launchTarget.mcDir, gameDir);
-				launchTarget.main.invoke(null, (Object) new String[] {username, sessionId});
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-			return;
+		
+		if(!forceWrapper && launchTarget.main != null && Util.isStatic(launchTarget.mcDir)) {
+			launchMain(launchTarget);
+		} else {
+			launchWrapped(launchTarget);
 		}
+	}
+	
+	private void launchWrapped(final LaunchTarget launchTarget) {
 		Frame frame = null;
 		Canvas canvas = null;
 		Applet applet = launchTarget.getAppletInstance();
@@ -130,24 +134,40 @@ public class Launch {
 			applet.add(canvas, "Center");
 			frame = new Frame("Minecraft");
 			frame.setBackground(Color.BLACK);
+			try {
+				frame.setIconImage(ImageIO.read(getClass().getResource("/favicon.png")));
+			} catch (Exception exception10) { }
 			frame.setLayout(new BorderLayout());
 			frame.add(applet, "Center");
 			canvas.setPreferredSize(new Dimension(width, height));
 			frame.pack();
 			frame.setLocationRelativeTo(null);
 		}
-		AppletWrapper stubApplet = new AppletWrapper(launchTarget);
 		if(applet != null) {
-			applet.setStub(stubApplet);
+			applet.setStub(new AppletWrapper());
 		}
-		if(applet != null) {
-			applet.setStub(new AppletWrapper(launchTarget));
-		}
-		Runnable mc = launchTarget.getInstance(frame, canvas, applet, width, height, fullscreen, false);
-		stubApplet.setInstance(mc);
+		final Runnable mc = launchTarget.getInstance(frame, canvas, applet, width, height, fullscreen, false);
 		if(mc == null) {
-			System.err.println("Could not create Minecraft instance!");
+			System.err.println("Could not create Minecraft instance! Attempting to use main method...");
+			frame.dispose();
+			launchMain(launchTarget);
 			return;
+		}
+    	Util.setField(mc, launchTarget.width, width);
+    	Util.setField(mc, launchTarget.height, height);
+		
+    	//TODO Better way to resize?
+		if(canvas != null && launchTarget.minecraft.getName().equals("com.mojang.minecraft.Minecraft")) {
+			final Canvas canvas1 = canvas;
+			canvas.addComponentListener(new ComponentAdapter() {
+	            public void componentResized(ComponentEvent e) {
+	            	Dimension dim = canvas1.getSize();
+	            	int w = (int)dim.getWidth();
+	            	int h = (int)dim.getHeight();
+	            	if(w > 0) Util.setField(mc, launchTarget.width, w);
+	            	if(h > 0) Util.setField(mc, launchTarget.height, h);
+	            }
+	        });
 		}
 		Thread mcThread = new Thread(mc, "Minecraft main thread");
 		mcThread.setPriority(10);
@@ -168,6 +188,20 @@ public class Launch {
 		mcThread.start();
 	}
 	
+	private void launchMain(final LaunchTarget launchTarget) {
+		if(launchTarget.main == null) {
+			System.err.println("Couldn't start Minecraft!");
+			return;
+		}
+		try {
+			Util.setField(null, launchTarget.mcDir, gameDir);
+			launchTarget.main.invoke(null, (Object) new String[] {username, sessionId});
+		} catch (Exception e) {
+			System.err.println("Couldn't start Minecraft!");
+			e.printStackTrace();
+		}
+	}
+	
 	public static LaunchTarget getLaunchTarget() {
 		try {
 			Class<? extends Applet> applet = getApplet();
@@ -182,7 +216,7 @@ public class Launch {
 		Class<?> applet = null;
 		for(String main : MAIN_APPLETS) {
 			try {
-				applet = CLASS_LOADER.loadClass(main);
+				applet = CLASS_LOADER.findClass(main);
 			}
 			catch (ClassNotFoundException e) {};
 		}
@@ -194,7 +228,7 @@ public class Launch {
 		searchMain:
 		for(String main : MAIN_CLASSES) {
 			try {
-				Class<?> cls = CLASS_LOADER.loadClass(main);
+				Class<?> cls = CLASS_LOADER.findClass(main);
 				for(Class<?> cls2 : cls.getInterfaces()) {
 					if(cls2 == Runnable.class) {
 						launchTarget = cls;
