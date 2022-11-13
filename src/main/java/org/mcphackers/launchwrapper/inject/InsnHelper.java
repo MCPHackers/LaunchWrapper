@@ -1,4 +1,7 @@
-package org.mcphackers.launchwrapper;
+package org.mcphackers.launchwrapper.inject;
+
+import static org.mcphackers.launchwrapper.inject.InsnHelper.Opcodes.*;
+import static org.objectweb.asm.tree.AbstractInsnNode.*;
 
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.FieldInsnNode;
@@ -17,9 +20,6 @@ import org.objectweb.asm.tree.MultiANewArrayInsnNode;
 import org.objectweb.asm.tree.TableSwitchInsnNode;
 import org.objectweb.asm.tree.TypeInsnNode;
 import org.objectweb.asm.tree.VarInsnNode;
-
-import static org.mcphackers.launchwrapper.InsnHelper.Opcodes.*;
-import static org.objectweb.asm.tree.AbstractInsnNode.*;
 
 public class InsnHelper {
 	
@@ -44,6 +44,34 @@ public class InsnHelper {
 		return arr;
 	}
 	
+	public static AbstractInsnNode intInsn(int value) {
+		if(value >= Short.MIN_VALUE && value <= Short.MAX_VALUE) {
+			return new IntInsnNode(SIPUSH, value);
+		} else {
+			return new LdcInsnNode(value);
+		}
+	}
+	
+	public static AbstractInsnNode getLastReturn(AbstractInsnNode last) {
+		AbstractInsnNode insn = last;
+		while(insn != null) {
+			if(isReturn(insn.getOpcode())) {
+				break;
+			}
+			insn = insn.getPrevious();
+		}
+		return insn;
+	}
+	
+	public static boolean isReturn(int opcode) {
+		return
+		opcode == RETURN  ||
+		opcode == IRETURN ||
+		opcode == LRETURN ||
+		opcode == FRETURN ||
+		opcode == DRETURN ||
+		opcode == ARETURN;
+	}
 	@SuppressWarnings("unused")
 	public static boolean compareInsn(AbstractInsnNode insn, int opcode, Object... compare) {
 		if(insn == null) {
