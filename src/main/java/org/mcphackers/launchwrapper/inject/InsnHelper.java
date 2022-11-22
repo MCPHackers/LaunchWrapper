@@ -1,12 +1,14 @@
 package org.mcphackers.launchwrapper.inject;
 
-import static org.mcphackers.launchwrapper.inject.InsnHelper.Opcodes.*;
+import static org.mcphackers.launchwrapper.inject.InsnHelper.Opcodes.ANY;
+import static org.objectweb.asm.Opcodes.*;
 import static org.objectweb.asm.tree.AbstractInsnNode.*;
 
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.FieldInsnNode;
 import org.objectweb.asm.tree.FrameNode;
 import org.objectweb.asm.tree.IincInsnNode;
+import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.InsnNode;
 import org.objectweb.asm.tree.IntInsnNode;
 import org.objectweb.asm.tree.InvokeDynamicInsnNode;
@@ -44,12 +46,51 @@ public class InsnHelper {
 		return arr;
 	}
 	
+	public static void removeRange(InsnList insns, AbstractInsnNode first, AbstractInsnNode last) {
+		if(first == null || last == null) {
+			return;
+		}
+		AbstractInsnNode next = first;
+		while(next != null && next != last) {
+			AbstractInsnNode forRemoval = next;
+			next = next.getNext();
+			insns.remove(forRemoval);
+		}
+		insns.remove(last);
+	}
+	
+	public static void remove(InsnList insns, AbstractInsnNode... toRemove) {
+		for(AbstractInsnNode insn : toRemove) {
+			insns.remove(insn);
+		}
+	}
+	
 	public static AbstractInsnNode intInsn(int value) {
-		if(value >= Short.MIN_VALUE && value <= Short.MAX_VALUE) {
-			return new IntInsnNode(SIPUSH, value);
-		} else {
+		switch(value) {
+		case -1:
+			return new InsnNode(ICONST_M1);
+		case 0:
+			return new InsnNode(ICONST_0);
+		case 1:
+			return new InsnNode(ICONST_1);
+		case 2:
+			return new InsnNode(ICONST_2);
+		case 3:
+			return new InsnNode(ICONST_3);
+		case 4:
+			return new InsnNode(ICONST_4);
+		case 5:
+			return new InsnNode(ICONST_5);
+		default:
+			if(value >= Short.MIN_VALUE && value <= Short.MAX_VALUE) {
+				return new IntInsnNode(SIPUSH, value);
+			}
 			return new LdcInsnNode(value);
 		}
+	}
+	
+	public static AbstractInsnNode booleanInsn(boolean value) {
+		return new InsnNode(value ? ICONST_1 : ICONST_0);
 	}
 	
 	public static AbstractInsnNode getLastReturn(AbstractInsnNode last) {

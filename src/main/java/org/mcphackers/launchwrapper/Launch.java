@@ -1,29 +1,23 @@
 package org.mcphackers.launchwrapper;
 
 import java.applet.Applet;
-import java.awt.BorderLayout;
-import java.awt.Canvas;
-import java.awt.Color;
-import java.awt.Component;
-import java.awt.Dimension;
-import java.awt.Frame;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
+import java.awt.image.BufferedImage;
 import java.io.File;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.util.Arrays;
+import java.io.IOException;
+import java.nio.ByteBuffer;
 
 import javax.imageio.ImageIO;
 
+import org.mcphackers.launchwrapper.LaunchTarget.Type;
 import org.mcphackers.launchwrapper.inject.AppletWrapper;
-import org.mcphackers.launchwrapper.inject.DefaultTweak;
 import org.mcphackers.launchwrapper.loader.LaunchClassLoader;
+import org.mcphackers.launchwrapper.tweak.DefaultTweak;
+import org.mcphackers.launchwrapper.tweak.Tweak;
 
 public class Launch {
 
 	private static final LaunchClassLoader CLASS_LOADER = LaunchClassLoader.instantiate();
+	public static final BufferedImage ICON = getIcon();
 
 	public static void main(String[] args) {
 		File gameDir = null;
@@ -46,121 +40,54 @@ public class Launch {
 		Launch.create()
 			.setUser(username, sessionId)
 			.setGameDirectory(gameDir)
-			.setResolution(854, 480)
-			//.setIsom(true)
+			.setResolution(1280, 720)
+			.setLWJGLFrame(true)
 			.launch();
 	}
-	
+
 	public void launch() {
 		CLASS_LOADER.addException(Launch.class);
-		DefaultTweak tweak = new DefaultTweak(CLASS_LOADER, this);
-		tweak.transform();
-		
-		if(isom) {
-			try {
-				AppletWrapper.startApplet(CLASS_LOADER.findClass("net/minecraft/isom/IsomPreviewApplet").asSubclass(Applet.class), width, height, "Isometric Preview", ImageIO.read(getClass().getResourceAsStream("/favicon.png")));
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-			return;
+		Tweak mainTweak = DefaultTweak.get(CLASS_LOADER, this);
+		if(mainTweak.transform()) {
+			launch(mainTweak.getLaunchTarget());
 		}
-		
-		if(tweak.getLaunchTarget() == null) {
-			try {
-				launchWrapped(tweak);
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-			return;
-		}
-		CLASS_LOADER.invokeMain(tweak.getLaunchTarget(), username, sessionId);
 	}
 	
-	private void launchWrapped(final DefaultTweak launchTarget) throws InstantiationException, IllegalAccessException, SecurityException, ClassNotFoundException, NoSuchFieldException, NoSuchMethodException, IllegalArgumentException, InvocationTargetException {
-		Class<?> minecraft = CLASS_LOADER.findClass(launchTarget.minecraft.name);
-		final Field running = minecraft.getDeclaredField(launchTarget.running.name);
-		final Field userField = minecraft.getDeclaredField(launchTarget.userField.name);
-		Class<? extends Applet> minecraftApplet = CLASS_LOADER.findClass(launchTarget.minecraftApplet.name).asSubclass(Applet.class);
-		Constructor<?> minecraftImpl = CLASS_LOADER.findClass(launchTarget.minecraftImpl.name).getConstructors()[0];
-		Constructor<?> user = CLASS_LOADER.findClass(launchTarget.user.name).getConstructor(String.class, String.class);
-		Frame frame = null;
-		Canvas canvas = null;
-		Applet applet = minecraftApplet.newInstance();
-		if(applet != null) {
-			applet.setStub(new AppletWrapper());
-		}
-		boolean useLWJGLFrame = lwjglFrame || !launchTarget.supportsCanvas();
-		if(!useLWJGLFrame) {
-			canvas = new Canvas();
-			applet.setLayout(new BorderLayout());
-			applet.add(canvas, "Center");
-			frame = new Frame("Minecraft");
-			frame.setBackground(Color.BLACK);
+	public void launch(LaunchTarget target) {
+		if(target.type == Type.MAIN) {
+			CLASS_LOADER.invokeMain(target.targetClass, username, sessionId);
+		} else if(target.type == Type.APPLET) {
+			Class<? extends Applet> appletClass;
 			try {
-				frame.setIconImage(ImageIO.read(getClass().getResource("/favicon.png")));
-			} catch (Exception exception10) { }
-			frame.setLayout(new BorderLayout());
-			frame.add(applet, "Center");
-			canvas.setPreferredSize(new Dimension(width, height));
-			frame.pack();
-			frame.setLocationRelativeTo(null);
+				appletClass = CLASS_LOADER.findClass(target.targetClass).asSubclass(Applet.class);
+			} catch (Exception e) {
+				e.printStackTrace();
+				return;
+			}
+			AppletWrapper.startApplet(appletClass, width, height, isom ? "Isometric Preview" : "Minecraft");
 		}
-		final Runnable mc = newInstance(minecraftImpl, minecraftApplet, frame, canvas, applet, width, height, fullscreen);
-		if(mc == null) {
-			System.err.println("Could not create Minecraft instance!");
-			if(frame != null) frame.dispose();
-			return;
-		}
-		Util.setField(mc, userField, user.newInstance(username, sessionId));
-		final Thread mcThread = new Thread(mc, "Minecraft main thread");
-		mcThread.setPriority(10);
-		
-		if(!useLWJGLFrame) {
-			frame.setVisible(true);
-			frame.addWindowListener(new WindowAdapter() {
-
-				public void windowClosing(WindowEvent event) {
-					Util.setField(mc, running, false);
-					try {
-						mcThread.join();
-					} catch (InterruptedException e) {
-						e.printStackTrace();
-					}
-					System.exit(0);
-				}
-			});
-		}
-		mcThread.start();
 	}
-
-	public Runnable newInstance(Constructor<?> minecraftImpl, Class<?> minecraftApplet, Frame frame, Canvas canvas, Applet applet, int w, int h, boolean fullscreen) {
-		
-		Class<?>[] types = minecraftImpl.getParameterTypes();
+	
+	private static BufferedImage getIcon() {
 		try {
-			if(types.length == 0) {
-				return (Runnable)minecraftImpl.newInstance();
-			}
-			if(Arrays.equals(types, new Class[] { Canvas.class, int.class, int.class, boolean.class })) {
-				return (Runnable)minecraftImpl.newInstance(canvas, w, h, fullscreen);
-			}
-			if(Arrays.equals(types, new Class[] { Canvas.class, minecraftApplet, int.class, int.class, boolean.class })) {
-				return (Runnable)minecraftImpl.newInstance(canvas, applet, w, h, fullscreen);
-			}
-			if(Arrays.equals(types, new Class[] { Component.class, Canvas.class, minecraftApplet, int.class, int.class, boolean.class })) {
-				return (Runnable)minecraftImpl.newInstance(frame, canvas, applet, w, h, fullscreen);
-			}
-			if(Arrays.equals(types, new Class[] { minecraftApplet, Canvas.class, minecraftApplet, int.class, int.class, boolean.class })) {
-				return (Runnable)minecraftImpl.newInstance(applet, canvas, applet, w, h, fullscreen);
-			}
-			if(Arrays.equals(types, new Class[] { minecraftApplet, Component.class, Canvas.class, minecraftApplet, int.class, int.class, boolean.class })) {
-				return (Runnable)minecraftImpl.newInstance(applet, frame, canvas, applet, w, h, fullscreen);
-			}
-		}
-		catch (Exception e) {
+			return ImageIO.read(Launch.class.getResourceAsStream("/favicon.png"));
+		} catch (IOException e) {
 			e.printStackTrace();
 		}
 		return null;
 	}
+
+    public static ByteBuffer loadIcon() {
+    	final BufferedImage icon = ICON;
+        final int[] rgb = icon.getRGB(0, 0, icon.getWidth(), icon.getHeight(), null, 0, icon.getWidth());
+
+        final ByteBuffer buffer = ByteBuffer.allocate(4 * rgb.length);
+        for (int color : rgb) {
+            buffer.putInt(color << 8 | ((color >> 24) & 0xFF));
+        }
+        buffer.flip();
+        return buffer;
+    }
 	
 	public static LaunchBuilder create() {
 		return new LaunchBuilder();

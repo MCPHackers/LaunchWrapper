@@ -45,6 +45,7 @@ public class AppletWrapper extends Applet implements AppletStub {
 
     @Override
     public String getParameter(String paramName) {
+    	//TODO custom parameters
     	if(paramName.equals("stand-alone")) {
     		return "true";
     	}

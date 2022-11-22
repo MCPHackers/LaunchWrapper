@@ -6,6 +6,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.InvocationTargetException;
 import java.net.URL;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -63,6 +64,10 @@ public class LaunchClassLoader extends ClassLoader implements ClassNodeSource {
 		try {
 			Class<?> mainClass = findClass(launchTarget);
 			mainClass.getDeclaredMethod("main", String[].class).invoke(null, (Object) args);
+		} catch (InvocationTargetException e1) {
+			if(e1.getCause() != null) {
+				e1.getCause().printStackTrace();
+			}
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -77,6 +82,7 @@ public class LaunchClassLoader extends ClassLoader implements ClassNodeSource {
 	}
 
 	public void overrideClass(ClassNode node) {
+		if(node == null) return;
 		if(true) {
 			File saveFolder = new File("C:/Users/User/Desktop/debug");
 			ClassWriter writer = new ClassWriter(COMPUTE_MAXS | COMPUTE_FRAMES);
@@ -109,7 +115,7 @@ public class LaunchClassLoader extends ClassLoader implements ClassNodeSource {
 		if(classData == null) return null;
 		ClassNode classNode = new ClassNode();
 	    ClassReader classReader = new ClassReader(classData);
-	    classReader.accept(classNode, ClassReader.EXPAND_FRAMES);
+	    classReader.accept(classNode, 0);
 	    classNodeCache.put(classNode.name, classNode);
 	    return classNode;
 	}

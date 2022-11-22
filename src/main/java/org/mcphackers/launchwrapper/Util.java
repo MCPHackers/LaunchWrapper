@@ -11,9 +11,6 @@ public final class Util {
 	public static void setField(Object instance, Field field, Object value) {
 		if(field != null) {
 			try {
-//				if(!field.isAccessible()) {
-//					field.setAccessible(true);
-//				}
 				field.set(instance, value);
 			}
 			catch (Exception e) { }
