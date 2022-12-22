@@ -1,11 +1,14 @@
 package org.mcphackers.launchwrapper.tweak;
 
-import static org.mcphackers.launchwrapper.inject.InsnHelper.getLastReturn;
+import static org.mcphackers.launchwrapper.inject.InsnHelper.*;
 import static org.objectweb.asm.Opcodes.*;
 
-import org.mcphackers.launchwrapper.Launch;
+import org.mcphackers.launchwrapper.AppletLaunchTarget;
+import org.mcphackers.launchwrapper.LaunchConfig;
 import org.mcphackers.launchwrapper.LaunchTarget;
 import org.mcphackers.launchwrapper.inject.ClassNodeSource;
+import org.mcphackers.launchwrapper.inject.Inject;
+import org.mcphackers.launchwrapper.loader.LaunchClassLoader;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldInsnNode;
 import org.objectweb.asm.tree.FieldNode;
@@ -17,26 +20,27 @@ import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.TypeInsnNode;
 import org.objectweb.asm.tree.VarInsnNode;
 
-public class IsomTweak extends DefaultTweak {
+public class IsomTweak extends LegacyTweak {
 	public static final String MAIN_ISOM = "net/minecraft/isom/IsomPreviewApplet";
 
 	protected ClassNode isomApplet;
+	protected ClassNode isomCanvas;
 	protected FieldNode mcDirIsom;
 
-	public IsomTweak(ClassNodeSource source, Launch launch) {
+	public IsomTweak(ClassNodeSource source, LaunchConfig launch) {
 		super(source, launch);
 	}
 	
 	protected void init() {
 		super.init();
-		ClassNode isomEntryPoint = source.getClass(MAIN_ISOM);
-		if(isomEntryPoint != null) {
-			String desc = isomEntryPoint.fields.get(0).desc;
+		isomApplet = source.getClass(MAIN_ISOM);
+		if(isomApplet != null) {
+			String desc = isomApplet.fields.get(0).desc;
 			if(desc.startsWith("L") && desc.endsWith(";")) {
-				isomApplet = source.getClass(desc.substring(1, desc.length() - 1));
+				isomCanvas = source.getClass(desc.substring(1, desc.length() - 1));
 			}
 		}
-		if(isomApplet != null) {
+		if(isomCanvas != null) {
 			for(FieldNode field : isomApplet.fields) {
 				if(field.desc.equals("Ljava/io/File;")) {
 					mcDirIsom = field;
@@ -50,26 +54,30 @@ public class IsomTweak extends DefaultTweak {
 			return false;
 		}
 		if(mcDirIsom != null) {
-			for(MethodNode m : isomApplet.methods) {
+			for(MethodNode m : isomCanvas.methods) {
 				if(m.name.equals("<init>")) {
 					InsnList insns = new InsnList();
 					insns.add(new VarInsnNode(ALOAD, 0));
 					insns.add(new TypeInsnNode(NEW, "java/io/File"));
 					insns.add(new InsnNode(DUP));
-					insns.add(new LdcInsnNode(launch.gameDir.getAbsolutePath()));
+					insns.add(new LdcInsnNode(launch.gameDir.getString()));
 					insns.add(new MethodInsnNode(INVOKESPECIAL, "java/io/File", "<init>", "(Ljava/lang/String;)V"));
-					insns.add(new FieldInsnNode(PUTFIELD, isomApplet.name, mcDirIsom.name, mcDirIsom.desc));
+					insns.add(new FieldInsnNode(PUTFIELD, isomCanvas.name, mcDirIsom.name, mcDirIsom.desc));
 					m.instructions.insertBefore(getLastReturn(m.instructions.getLast()), insns);
 				}
 			}
 		}
-		source.overrideClass(isomApplet);
+		source.overrideClass(isomCanvas);
 		return true;
 	}
 	
-	public LaunchTarget getLaunchTarget() {
+	public LaunchTarget getLaunchTarget(LaunchClassLoader loader) {
 		if(isomApplet != null) {
-			return new LaunchTarget(isomApplet.name, LaunchTarget.Type.APPLET);
+			AppletLaunchTarget launchTarget = new AppletLaunchTarget(loader, isomApplet.name);
+			launchTarget.setTitle("Isometric Preview");
+			launchTarget.setIcon(Inject.getIcon());
+			launchTarget.setResolution(launch.width.get(), launch.height.get());
+			return launchTarget;
 		}
 		return null;
 	}

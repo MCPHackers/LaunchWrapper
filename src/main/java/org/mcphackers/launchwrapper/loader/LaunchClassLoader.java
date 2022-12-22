@@ -8,13 +8,14 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URL;
+import java.net.URLClassLoader;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.mcphackers.launchwrapper.Util;
 import org.mcphackers.launchwrapper.inject.ClassNodeSource;
 import org.mcphackers.launchwrapper.inject.InjectUtils;
+import org.mcphackers.launchwrapper.util.Util;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.tree.ClassNode;
@@ -39,6 +40,10 @@ public class LaunchClassLoader extends ClassLoader implements ClassNodeSource {
 		this.parent = parent;
 	}
 
+	public void setClassPath(URL[] urls) {
+		this.parent = new URLClassLoader(urls, parent);
+	}
+
 	public URL getResource(String name) {
 		return parent.getResource(name);
 	}
@@ -48,6 +53,9 @@ public class LaunchClassLoader extends ClassLoader implements ClassNodeSource {
 	}
 
 	public Class<?> findClass(String name) throws ClassNotFoundException {
+		if(!classNodeCache.isEmpty()) {
+			classNodeCache.clear();
+		}
 		name = className(name);
 		Class<?> cls = exceptions.get(name);
 		if(cls != null) {
@@ -83,21 +91,21 @@ public class LaunchClassLoader extends ClassLoader implements ClassNodeSource {
 
 	public void overrideClass(ClassNode node) {
 		if(node == null) return;
-		if(true) {
-			File saveFolder = new File("C:/Users/User/Desktop/debug");
-			ClassWriter writer = new ClassWriter(COMPUTE_MAXS | COMPUTE_FRAMES);
-			node.accept(writer);
-			byte[] classData = writer.toByteArray();
-			File cls = new File(saveFolder, node.name + ".class");
-			cls.getParentFile().mkdirs();
-			try {
-				FileOutputStream fos = new FileOutputStream(cls);
-				fos.write(classData);
-				fos.close();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-		}
+//		if(true) {
+//			File saveFolder = new File("C:/Users/User/Desktop/debug");
+//			ClassWriter writer = new SafeClassWriter(parent, COMPUTE_MAXS);
+//			node.accept(writer);
+//			byte[] classData = writer.toByteArray();
+//			File cls = new File(saveFolder, node.name + ".class");
+//			cls.getParentFile().mkdirs();
+//			try {
+//				FileOutputStream fos = new FileOutputStream(cls);
+//				fos.write(classData);
+//				fos.close();
+//			} catch (IOException e) {
+//				e.printStackTrace();
+//			}
+//		}
 		overridenClasses.put(className(node.name), node);
 		classNodeCache.put(node.name, node);
 	}
@@ -132,7 +140,7 @@ public class LaunchClassLoader extends ClassLoader implements ClassNodeSource {
 		if(node == null) {
 			return null;
 		}
-		ClassWriter writer = new ClassWriter(COMPUTE_MAXS | COMPUTE_FRAMES);
+		ClassWriter writer = new SafeClassWriter(parent, COMPUTE_MAXS | COMPUTE_FRAMES);
 		node.accept(writer);
 		byte[] classData = writer.toByteArray();
 		Class<?> definedClass = defineClass(className(node.name), classData, 0, classData.length);
@@ -148,8 +156,12 @@ public class LaunchClassLoader extends ClassLoader implements ClassNodeSource {
 		return nameWithDots.replace('.', '/');
 	}
 
+	private static String classResourceName(String name) {
+		return name.replace('.', '/') + ".class";
+	}
+
 	private byte[] getClassAsBytes(String name) {
-    	InputStream is = parent.getResourceAsStream(name.replace('.', '/') + ".class");
+    	InputStream is = parent.getResourceAsStream(classResourceName(name));
     	if(is == null) return null;
     	byte[] classData;
 		try {
@@ -175,7 +187,6 @@ public class LaunchClassLoader extends ClassLoader implements ClassNodeSource {
 	}
 	
 	public void addException(Class<?> cls) {
-		if(cls == null) return;
 		exceptions.put(cls.getName(), cls);
 	}
 
@@ -183,9 +194,7 @@ public class LaunchClassLoader extends ClassLoader implements ClassNodeSource {
 		if(INSTANCE != null) {
 			throw new IllegalStateException("Can only have one instance of LaunchClassLoader!");
 		}
-		INSTANCE = new LaunchClassLoader(getSystemClassLoader());
-		Thread.currentThread().setContextClassLoader(INSTANCE);
-		return INSTANCE;
+		return INSTANCE = new LaunchClassLoader(getSystemClassLoader());
 	}
 
 }

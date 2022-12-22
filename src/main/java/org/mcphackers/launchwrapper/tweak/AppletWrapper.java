@@ -1,4 +1,4 @@
-package org.mcphackers.launchwrapper.inject;
+package org.mcphackers.launchwrapper.tweak;
 
 import java.applet.Applet;
 import java.applet.AppletStub;
@@ -11,11 +11,19 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.Collections;
+import java.util.Map;
 
 public class AppletWrapper extends Applet implements AppletStub {
     private static final long serialVersionUID = 1L;
+    
+    private Map<String, String> args;
 
-    public void appletResize(int width, int height) {
+    public AppletWrapper(Map<String, String> argsAsMap) {
+    	args = argsAsMap;
+	}
+
+	public void appletResize(int width, int height) {
     }
 
     @Override
@@ -45,12 +53,7 @@ public class AppletWrapper extends Applet implements AppletStub {
 
     @Override
     public String getParameter(String paramName) {
-    	//TODO custom parameters
-    	if(paramName.equals("stand-alone")) {
-    		return "true";
-    	}
-        System.err.println("Client asked for parameter: " + paramName);
-        return null;
+        return args.get(paramName);
     }
     
     public static void startApplet(Class<? extends Applet> appletClass, int width, int height, String title) {
@@ -61,7 +64,7 @@ public class AppletWrapper extends Applet implements AppletStub {
     	try {
 			final Applet applet = appletClass.newInstance();
 			if(applet != null) {
-				applet.setStub(new AppletWrapper());
+				applet.setStub(new AppletWrapper(Collections.<String, String>emptyMap()));
 			}
 			final Frame frame = new Frame(title);
 			frame.setBackground(Color.BLACK);

@@ -1,9 +1,13 @@
 package org.mcphackers.launchwrapper.tweak;
 
+import org.mcphackers.launchwrapper.LaunchConfig;
 import org.mcphackers.launchwrapper.LaunchTarget;
 import org.mcphackers.launchwrapper.inject.ClassNodeSource;
+import org.mcphackers.launchwrapper.loader.LaunchClassLoader;
 
 public abstract class Tweak {
+
+	private static final boolean DEBUG = true;
 	
 	protected ClassNodeSource source;
 	
@@ -13,5 +17,31 @@ public abstract class Tweak {
 	
 	public abstract boolean transform();
 	
-	public abstract LaunchTarget getLaunchTarget();
+	public abstract LaunchTarget getLaunchTarget(LaunchClassLoader loader);
+
+	public static Tweak get(LaunchClassLoader classLoader, LaunchConfig launch) {
+		if(launch.isom.get()) {
+			return new IsomTweak(classLoader, launch);
+		}
+		if(classLoader.getClass(VanillaTweak.MAIN_CLASS) == null) {
+			for(String cls : LegacyTweak.MAIN_CLASSES) {
+				if(classLoader.getClass(cls) != null) {
+					return new LegacyTweak(classLoader, launch);
+				}
+			}
+			for(String cls : LegacyTweak.MAIN_APPLETS) {
+				if(classLoader.getClass(cls) != null) {
+					return new LegacyTweak(classLoader, launch);
+				}
+			}
+			return null; // Tweak not found
+		} else {
+			return new VanillaTweak(classLoader, launch);
+		}
+	}
+	
+	protected void debugInfo(String msg) {
+		if(DEBUG)
+			System.out.println("TWEAK: " + msg);
+	}
 }

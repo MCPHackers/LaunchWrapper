@@ -1,74 +1,119 @@
 package org.mcphackers.launchwrapper.inject;
 
-import java.applet.Applet;
-import java.awt.BorderLayout;
-import java.awt.Canvas;
-import java.awt.Color;
-import java.awt.Dimension;
-import java.awt.Frame;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
+import static org.mcphackers.launchwrapper.protocol.ListLevelsURLConnection.EMPTY_LEVEL;
+
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.nio.ByteBuffer;
 
 import javax.imageio.ImageIO;
 
 import org.mcphackers.launchwrapper.Launch;
+import org.mcphackers.launchwrapper.tweak.AppletWrapper;
+import org.mcphackers.launchwrapper.util.Util;
 
-// This class will be overriden in the new class loader context
 public class Inject {
 	
-	public static Runnable getMinecraftInstance(Frame frame, Canvas canvas, Applet applet, int width, int height, boolean fullscreen) {
-		return null;
-	}
+	private static final Launch LAUNCH = Launch.INSTANCE;
+	private static final BufferedImage DEFAULT_ICON = getIcon();
 
-	public static Applet getAppletInstance() {
-		return null;
-	}
-	
-	public static void shutdown(Runnable runnable) {
-		
-	}
-	
-	public static void launchFrame(int width, int height, boolean fullscreen) {
-		Canvas canvas = new Canvas();
-		Applet applet = getAppletInstance();
-		applet.setLayout(new BorderLayout());
-		applet.add(canvas, "Center");
-		Frame frame = new Frame("Minecraft");
-		frame.setBackground(Color.BLACK);
-		try {
-			frame.setIconImage(ImageIO.read(Launch.class.getResource("/favicon.png")));
-		} catch (Exception exception10) { }
-		frame.setLayout(new BorderLayout());
-		frame.add(applet, "Center");
-		canvas.setPreferredSize(new Dimension(width, height));
-		frame.pack();
-		frame.setLocationRelativeTo(null);
-		if(applet != null) {
-			applet.setStub(new AppletWrapper());
+    public static AppletWrapper getApplet() {
+        return new AppletWrapper(LAUNCH.config.getArgsAsMap());
+    }
+    
+    public static File getLevelFile(int index) {
+    	return new File(LAUNCH.config.gameDir.get(), "levels/level" + index + ".dat");
+    }
+    
+    public static File saveLevel(int index, String levelName) {
+    	final int maxLevels = 5;
+		File levels = new File(LAUNCH.config.gameDir.get(), "levels");
+		File level = new File(levels, "level" + index + ".dat");
+		File levelNames = new File(levels, "levels.txt");
+		String[] lvlNames = new String[maxLevels];
+		for(int i = 0; i < maxLevels; i++) {
+			lvlNames[i] = EMPTY_LEVEL;
 		}
-		final Runnable mc = getMinecraftInstance(frame, canvas, applet, width, height, fullscreen);
-		if(mc == null) {
-			System.err.println("Could not create Minecraft instance!");
-			if(frame != null) frame.dispose();
-			return;
-		}
-		final Thread mcThread = new Thread(mc, "Minecraft main thread");
-		mcThread.setPriority(10);
-
-		frame.setVisible(true);
-		frame.addWindowListener(new WindowAdapter() {
-
-			public void windowClosing(WindowEvent we) {
-				shutdown(mc);
-	
-				try {
-					mcThread.join();
-				} catch (InterruptedException e) {
-					e.printStackTrace();
-				}
-				System.exit(0);
+		if(levelNames.exists()) {
+			try {
+				FileInputStream levelNamesStream = new FileInputStream(levelNames);
+				lvlNames = new String(Util.readStream(levelNamesStream)).split(";");
+				levelNamesStream.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+				return null;
 			}
-		});
-		mcThread.start();
+		}
+		lvlNames[index] = levelName;
+		if(levelName.equals("---")) {
+			level.delete();
+			level = null;
+			lvlNames[index] = EMPTY_LEVEL;
+		}
+		if(!levels.exists()) {
+			levels.mkdirs();
+		}
+		try {
+			FileOutputStream outputNames = new FileOutputStream(levelNames);
+			String lvls = "";
+			for(int i = 0; i < maxLevels; i++) {
+				lvls += lvlNames[i] + ";";
+			}
+			outputNames.write(lvls.getBytes());
+			outputNames.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+			return null;
+		}
+		return level;
+    }
+
+    public static ByteBuffer loadIcon(BufferedImage icon) {
+        final int[] rgb = icon.getRGB(0, 0, icon.getWidth(), icon.getHeight(), null, 0, icon.getWidth());
+
+        final ByteBuffer buffer = ByteBuffer.allocate(4 * rgb.length);
+        for (int color : rgb) {
+            buffer.putInt(color << 8 | ((color >> 24) & 0xFF));
+        }
+        buffer.flip();
+        return buffer;
+    }
+
+    public static ByteBuffer loadIcon(File iconFile) throws IOException {
+    	return loadIcon(ImageIO.read(iconFile));
+    }
+
+    public static ByteBuffer[] loadIcons(boolean useDefault) {
+    	if(!useDefault) {
+	    	try {
+		    	File assetsDir = LAUNCH.config.assetsDir.get();
+		    	if(assetsDir != null) {
+			        final File smallIcon = new File(assetsDir, "icons/icon_16x16.png");
+			        final File bigIcon = new File(assetsDir, "icons/icon_32x32.png");
+		        	return new ByteBuffer[] {
+		                    loadIcon(smallIcon),
+		                    loadIcon(bigIcon)
+		            };
+		    	}
+		    } catch (IOException e) {
+		        //e.printStackTrace();
+		    }
+    	}
+    	return new ByteBuffer[] { loadIcon(DEFAULT_ICON) };
+    }
+	
+	public static BufferedImage getIcon() {
+		if(DEFAULT_ICON != null) {
+			return DEFAULT_ICON;
+		}
+		try {
+			return ImageIO.read(Inject.class.getResourceAsStream("/favicon.png"));
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return null;
 	}
 }

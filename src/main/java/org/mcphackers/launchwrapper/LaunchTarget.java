@@ -1,16 +1,14 @@
 package org.mcphackers.launchwrapper;
 
-public class LaunchTarget {
-	public enum Type {
-		MAIN,
-		APPLET;
-	}
+import org.mcphackers.launchwrapper.loader.LaunchClassLoader;
+
+public abstract class LaunchTarget {
 	
-	public Type type;
-	public String targetClass;
+	protected final LaunchClassLoader classLoader;
 	
-	public LaunchTarget(String classTarget, Type launchType) {
-		targetClass = classTarget;
-		type = launchType;
+	public LaunchTarget(LaunchClassLoader classLoader) {
+		this.classLoader = classLoader;
 	}
+
+	public abstract void launch();
 }

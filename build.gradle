@@ -6,6 +6,9 @@ repositories {
         url "https://libraries.minecraft.net/"
     }
     mavenCentral()
+    flatDir {
+        dirs "lib"
+    }
 }
 
 group = 'org.mcphackers'
@@ -14,9 +17,11 @@ version = '1.0'
 sourceCompatibility = 1.6
 
 dependencies {
+    implementation name: 'lwjgl-2.9.4'
+    implementation name: 'lwjgl_util-2.9.4'
     implementation 'org.ow2.asm:asm:9.3'
     implementation 'org.ow2.asm:asm-tree:9.3'
-    implementation 'org.lwjgl.lwjgl:lwjgl:2.9.3'
+    implementation 'org.json:json:20220924'
 }
 
 task sourcesJar(type: Jar) {

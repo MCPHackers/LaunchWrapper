@@ -1,6 +1,5 @@
 package org.mcphackers.launchwrapper.inject;
 
-import static org.mcphackers.launchwrapper.inject.InsnHelper.Opcodes.ANY;
 import static org.objectweb.asm.Opcodes.*;
 import static org.objectweb.asm.tree.AbstractInsnNode.*;
 
@@ -18,34 +17,43 @@ import org.objectweb.asm.tree.LdcInsnNode;
 import org.objectweb.asm.tree.LineNumberNode;
 import org.objectweb.asm.tree.LookupSwitchInsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
+import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.MultiANewArrayInsnNode;
 import org.objectweb.asm.tree.TableSwitchInsnNode;
+import org.objectweb.asm.tree.TryCatchBlockNode;
 import org.objectweb.asm.tree.TypeInsnNode;
 import org.objectweb.asm.tree.VarInsnNode;
 
 public class InsnHelper {
-	
+
 	public static AbstractInsnNode[] fill(AbstractInsnNode insn, int size) {
 		AbstractInsnNode[] arr = new AbstractInsnNode[size];
 		int i = 0;
 		while(insn != null && i < size) {
 			arr[i] = insn;
-			insn = insn.getNext();
+			insn = nextInsn(insn);
 			i++;
 		}
 		return arr;
 	}
+
 	public static AbstractInsnNode[] fillBackwards(AbstractInsnNode insn, int size) {
 		AbstractInsnNode[] arr = new AbstractInsnNode[size];
 		int i = size - 1;
 		while(insn != null && i >= 0) {
 			arr[i] = insn;
-			insn = insn.getPrevious();
+			insn = previousInsn(insn);
 			i--;
 		}
 		return arr;
 	}
-	
+
+	public static InsnList copyInsns(InsnList insnList) {
+	    MethodNode mv = new MethodNode();
+	    insnList.accept(mv);
+	    return mv.instructions;
+	}
+
 	public static void removeRange(InsnList insns, AbstractInsnNode first, AbstractInsnNode last) {
 		if(first == null || last == null) {
 			return;
@@ -58,13 +66,13 @@ public class InsnHelper {
 		}
 		insns.remove(last);
 	}
-	
+
 	public static void remove(InsnList insns, AbstractInsnNode... toRemove) {
 		for(AbstractInsnNode insn : toRemove) {
 			insns.remove(insn);
 		}
 	}
-	
+
 	public static AbstractInsnNode intInsn(int value) {
 		switch(value) {
 		case -1:
@@ -88,11 +96,74 @@ public class InsnHelper {
 			return new LdcInsnNode(value);
 		}
 	}
-	
+
 	public static AbstractInsnNode booleanInsn(boolean value) {
 		return new InsnNode(value ? ICONST_1 : ICONST_0);
 	}
-	
+
+	public static AbstractInsnNode floatInsn(float value) {
+		if(value == 0F) {
+			return new InsnNode(FCONST_0);
+		}
+		else if(value == 1F) {
+			return new InsnNode(FCONST_1);
+		}
+		else if(value == 2F) {
+			return new InsnNode(FCONST_2);
+		}
+		else {
+			return new LdcInsnNode(value);
+		}
+	}
+
+	public static AbstractInsnNode doubleInsn(double value) {
+		if(value == 0D) {
+			return new InsnNode(DCONST_0);
+		}
+		else if(value == 1D) {
+			return new InsnNode(DCONST_1);
+		}
+		else {
+			return new LdcInsnNode(value);
+		}
+	}
+
+	public static LabelNode labelBefore(AbstractInsnNode current) {
+		if(current != null) {
+			current = current.getPrevious();
+		}
+		while(current != null && current.getType() == LINE) {
+			current = current.getPrevious();
+		}
+		if(current.getType() == LABEL) {
+			return (LabelNode)current;
+		}
+		return null;
+	}
+
+	public static AbstractInsnNode nextInsn(AbstractInsnNode current) {
+		while((current = current.getNext()) != null && current.getOpcode() == -1);
+		return current;
+	}
+
+	public static AbstractInsnNode previousInsn(AbstractInsnNode current) {
+		while((current = current.getPrevious()) != null && current.getOpcode() == -1);
+		return current;
+	}
+
+	public static AbstractInsnNode getSuper(AbstractInsnNode first) {
+		AbstractInsnNode insn = first;
+		while(insn != null) {
+			AbstractInsnNode prev = insn.getPrevious();
+			if(prev != null && prev.getOpcode() == ALOAD && ((VarInsnNode)prev).var == 0
+					&& insn.getOpcode() == INVOKESPECIAL && ((MethodInsnNode)insn).name.equals("<init>")) {
+				break;
+			}
+			insn = insn.getNext();
+		}
+		return insn;
+	}
+
 	public static AbstractInsnNode getLastReturn(AbstractInsnNode last) {
 		AbstractInsnNode insn = last;
 		while(insn != null) {
@@ -103,7 +174,7 @@ public class InsnHelper {
 		}
 		return insn;
 	}
-	
+
 	public static boolean isReturn(int opcode) {
 		return
 		opcode == RETURN  ||
@@ -113,12 +184,67 @@ public class InsnHelper {
 		opcode == DRETURN ||
 		opcode == ARETURN;
 	}
+
+	public static boolean containsInvoke(InsnList insns, MethodInsnNode invoke) {
+		for(AbstractInsnNode insn : insns) {
+			if(insn.getType() == METHOD_INSN) {
+				MethodInsnNode invoke2 = (MethodInsnNode)insn;
+				if(invoke2.getOpcode() == invoke.getOpcode() && invoke2.owner.equals(invoke.owner) && invoke2.name.equals(invoke.name) && invoke2.desc.equals(invoke.desc)) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
+	public static void tryCatchAdd(MethodNode method, AbstractInsnNode startInsn, AbstractInsnNode endInsn, String exception) {
+		tryCatchAdd(method, startInsn, endInsn, null, exception);
+	}
+
+	public static void tryCatchAdd(MethodNode method, AbstractInsnNode startInsn, AbstractInsnNode endInsn, InsnList handle, String exception) {
+		InsnList instructions = method.instructions;
+		if(!instructions.contains(startInsn) || !instructions.contains(endInsn)) {
+			throw new IllegalArgumentException("Instruction does not belong to the list");
+		}
+		LabelNode start = new LabelNode();
+		LabelNode end = new LabelNode();
+		LabelNode handler = new LabelNode();
+		LabelNode after = new LabelNode();
+		instructions.insertBefore(startInsn, start);
+		InsnList insert = new InsnList();
+		insert.add(end);
+		insert.add(new JumpInsnNode(GOTO, after));
+		insert.add(handler);
+		if(handle == null) {
+			insert.add(new InsnNode(POP));
+		} else {
+			insert.add(handle);
+		}
+		insert.add(after);
+		instructions.insert(endInsn, insert);
+		int index = 0; // FIXME Shouldn't be 0 if there are try/catch blocks within the range
+		method.tryCatchBlocks.add(index, new TryCatchBlockNode(start, end, handler, exception));
+	}
+
+	public static int getFreeIndex(InsnList instructions) {
+		int lastFree = 1;
+		AbstractInsnNode insn = instructions.getFirst();
+		while(insn != null) {
+			if(insn.getType() == VAR_INSN) {
+				VarInsnNode var = (VarInsnNode)insn;
+				lastFree = Math.max(lastFree, var.var + 1);
+			}
+			insn = insn.getNext();
+		}
+		return lastFree;
+	}
+
 	@SuppressWarnings("unused")
 	public static boolean compareInsn(AbstractInsnNode insn, int opcode, Object... compare) {
 		if(insn == null) {
 			return false;
 		}
-		boolean opcodeEqual = opcode == insn.getOpcode() || opcode == ANY;
+		boolean opcodeEqual = opcode == insn.getOpcode() || opcode == -1;
 		if(!opcodeEqual) return false;
 		if(compare.length == 0 && opcodeEqual) {
 			return true;
@@ -242,12 +368,7 @@ public class InsnHelper {
 				return matches;
 				
 		}
-		
 		return false;
-	}
-	
-	public interface Opcodes extends org.objectweb.asm.Opcodes {
-		int ANY = -1;
 	}
 
 }
