@@ -24,10 +24,16 @@ public class Inject {
         return new AppletWrapper(LAUNCH.config.getArgsAsMap());
     }
     
+    /**
+     * Indev load level injection
+     */
     public static File getLevelFile(int index) {
     	return new File(LAUNCH.config.gameDir.get(), "levels/level" + index + ".dat");
     }
-    
+
+    /**
+     * Indev save level injection
+     */
     public static File saveLevel(int index, String levelName) {
     	final int maxLevels = 5;
 		File levels = new File(LAUNCH.config.gameDir.get(), "levels");

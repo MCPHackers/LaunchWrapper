@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Field;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.util.HashMap;
@@ -74,6 +75,15 @@ public final class Util {
 
     	return buffer.toByteArray();
     }
+
+	public static URL replaceHost(URL url, String hostName, int port) {
+		try {
+			return new URL(url.getProtocol(), hostName, port, url.getFile());
+		} catch (MalformedURLException e) {
+			e.printStackTrace();
+			return null;
+		}
+	}
 
 	public static Map<String, String> queryMap(URL url) throws UnsupportedEncodingException {
 		Map<String, String> queryMap = new HashMap<String, String>();

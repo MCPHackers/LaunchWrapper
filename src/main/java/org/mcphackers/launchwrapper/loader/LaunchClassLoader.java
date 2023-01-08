@@ -9,6 +9,10 @@ import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.net.URLConnection;
+import java.security.CodeSigner;
+import java.security.CodeSource;
+import java.security.ProtectionDomain;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
@@ -23,7 +27,7 @@ import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.MethodNode;
 
 public class LaunchClassLoader extends ClassLoader implements ClassNodeSource {
-	
+
 	private static LaunchClassLoader INSTANCE;
 
 	private ClassLoader parent;
@@ -84,28 +88,29 @@ public class LaunchClassLoader extends ClassLoader implements ClassNodeSource {
 	protected Class<?> redefineClass(String name) {
 		byte[] classData = getClassAsBytes(name);
 		if(classData == null) return null;
-		Class<?> definedClass = defineClass(name, classData, 0, classData.length);
+		Class<?> definedClass = defineClass(name, classData, 0, classData.length, getProtectionDomain(name));
 		classes.put(name, definedClass);
 		return definedClass;
 	}
 
+	private ProtectionDomain getProtectionDomain(String name) {
+        final URL resource = parent.getResource(classResourceName(name));
+        if (resource == null) {
+        	return null;
+        }
+        URLConnection urlConnection;
+		try {
+			urlConnection = resource.openConnection();
+		} catch (IOException e) {
+			e.printStackTrace();
+			return null;
+		}
+        CodeSource codeSource = urlConnection == null ? null : new CodeSource(urlConnection.getURL(), new CodeSigner[0]);
+		return new ProtectionDomain(codeSource, null);
+	}
+
 	public void overrideClass(ClassNode node) {
 		if(node == null) return;
-//		if(true) {
-//			File saveFolder = new File("C:/Users/User/Desktop/debug");
-//			ClassWriter writer = new SafeClassWriter(parent, COMPUTE_MAXS);
-//			node.accept(writer);
-//			byte[] classData = writer.toByteArray();
-//			File cls = new File(saveFolder, node.name + ".class");
-//			cls.getParentFile().mkdirs();
-//			try {
-//				FileOutputStream fos = new FileOutputStream(cls);
-//				fos.write(classData);
-//				fos.close();
-//			} catch (IOException e) {
-//				e.printStackTrace();
-//			}
-//		}
 		overridenClasses.put(className(node.name), node);
 		classNodeCache.put(node.name, node);
 	}

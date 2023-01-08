@@ -7,6 +7,7 @@ import java.net.URL;
 import java.util.HashMap;
 
 import org.json.JSONObject;
+import org.mcphackers.launchwrapper.protocol.LegacyURLStreamHandler.SkinType;
 import org.mcphackers.launchwrapper.util.Base64;
 import org.mcphackers.launchwrapper.util.ImageUtils;
 import org.mcphackers.launchwrapper.util.Util;
@@ -38,7 +39,7 @@ public class SkinRequests {
 			int attemptCount = 0;
 			while(attemptCount < 2) {
 				attemptCount++;
-				URL nametouuidURL	= new URL("https://api.mojang.com/users/profiles/minecraft/" + name);
+				URL nametouuidURL = new URL("https://api.mojang.com/users/profiles/minecraft/" + name);
 				HttpURLConnection connection = (HttpURLConnection)nametouuidURL.openConnection();
 				if(connection.getResponseCode() == 429) {
 					// wait for the block to pass
@@ -129,7 +130,7 @@ public class SkinRequests {
 	
 					cape = imgu.getInByteForm();
 					break;
-				default:
+				case DEFAULT:
 					return skindata.cape;
 				}
 			}
@@ -154,18 +155,18 @@ public class SkinRequests {
 
 				switch(skinType) {
 				case CLASSIC:
-					imgu = overlayHeadLayer(imgu);
+					overlayHeadLayer(imgu);
 				case PRE_B1_9:
 					rotateBottomTX(imgu);
 				case PRE_1_7:
 					useLeftArm(imgu);
 					useLeftLeg(imgu);
 				case PRE_1_8:
-					imgu = overlay64to32(imgu);
+					overlay64to32(imgu);
 					if(skindata.slim)
 						alexToSteve(imgu);
 					imgu = imgu.crop(0, 0, 64, 32);
-				default:
+				case DEFAULT:
 					break;
 				}
 
@@ -191,13 +192,13 @@ public class SkinRequests {
 		imgu.setArea(28, 16, imgu.crop(28, 16, 8, 4).flip(false, true).getImage());
 	}
 
-	public static ImageUtils overlay64to32(ImageUtils imgu) {
+	public static void overlay64to32(ImageUtils imgu) {
 		// 32-64 body
-		return imgu.setArea(0, 16, imgu.crop(0, 32, 56, 16).getImage(), false);
+		imgu.setArea(0, 16, imgu.crop(0, 32, 56, 16).getImage(), false);
 	}
 
-	public static ImageUtils overlayHeadLayer(ImageUtils imgu) {
-		return imgu.setArea(0, 0, imgu.crop(32, 0, 32, 16).getImage(), false);
+	public static void overlayHeadLayer(ImageUtils imgu) {
+		imgu.setArea(0, 0, imgu.crop(32, 0, 32, 16).getImage(), false);
 	}
 
 	public static void useLeftLeg(ImageUtils imgu) {
@@ -228,12 +229,5 @@ public class SkinRequests {
 		imgu.setArea(47, 16, imgu.crop(46, 16, 1, 4).getImage());
 		// fill the 1px space on the right
 		imgu.setArea(51, 16, imgu.crop(50, 16, 1, 4).getImage());
-	}
-	
-	public enum SkinType {
-		CLASSIC,
-		PRE_B1_9,
-		PRE_1_7,
-		PRE_1_8
 	}
 }

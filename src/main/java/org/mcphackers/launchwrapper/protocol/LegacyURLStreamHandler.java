@@ -6,11 +6,13 @@ import java.net.URLConnection;
 
 public class LegacyURLStreamHandler extends URLStreamHandlerProxy {
 	
-//	private LegacyProxyData data;
-//	
-//	public LegacyURLStreamHandler(LegacyProxyData proxyData) {
-//		data = proxyData;
-//	}
+	private SkinType skins;
+	private int port;
+	
+	public LegacyURLStreamHandler(SkinType skins, int port) {
+		this.skins = skins;
+		this.port = port;
+	}
 
 	@Override
 	protected URLConnection openConnection(URL url) throws IOException {
@@ -33,19 +35,42 @@ public class LegacyURLStreamHandler extends URLStreamHandlerProxy {
 				return new LoadLevelURLConnection(url);
 			else if (path.equals("/listmaps.jsp"))
 				return new ListLevelsURLConnection(url);
-			else if (path.startsWith("/MinecraftResources/"))
-				return new ResourceIndexURLConnection(url, true);
-			else if (path.startsWith("/resources/"))
-				return new ResourceIndexURLConnection(url, false);
-			else if (path.startsWith("/MinecraftSkins/") || path.startsWith("/skin/"))
-				return new SkinURLConnection(url);
-			else if (path.startsWith("/MinecraftCloaks/") ||  path.startsWith("/cloak/"))
-				return new SkinURLConnection(url);
+			else if (path.startsWith("/MinecraftResources/") || path.startsWith("/resources/"))
+				return new ResourceIndexURLConnection(url, port);
+			else if (path.startsWith("/MinecraftSkins/") ||  path.startsWith("/skin/")
+				  || path.startsWith("/MinecraftCloaks/") || path.startsWith("/cloak/"))
+				return new SkinURLConnection(url, skins);
 			else if(host.equals("assets.minecraft.net") && path.equals("/1_6_has_been_released.flag")) {
 				return new BasicResponseURLConnection(url, "");
 				//return new BasicResponseURLConnection(url, "https://web.archive.org/web/20130702232237if_/https://mojang.com/2013/07/minecraft-the-horse-update/");
 			}
 		}
 		return super.openConnection(url);
+	}
+	
+	public enum SkinType {
+		CLASSIC("classic"),
+		PRE_B1_9("pre-b1.9"),
+		PRE_1_7("pre-1.7"),
+		PRE_1_8("pre-1.8"),
+		DEFAULT("default");
+		
+		private String name;
+		
+		private SkinType(String name) {
+			this.name = name;
+		}
+		
+		public static SkinType get(String name) {
+			for(SkinType skinType : values()) {
+				if(skinType.name.equals(name)) {
+					return skinType;
+				}
+			}
+			return null;
+		}
+	}
+	
+	public enum ResourceIndex {
 	}
 }

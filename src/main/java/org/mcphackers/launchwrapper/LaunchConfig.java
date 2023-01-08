@@ -4,6 +4,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -36,16 +37,21 @@ public class LaunchConfig {
 	public LaunchParameter<String> versionType = new LaunchParameter<String>("versionType", String.class);
 	public LaunchParameter<Boolean> applet = new LaunchParameter<Boolean>("applet", Boolean.class, false);
 	public LaunchParameter<Boolean> haspaid = new LaunchParameter<Boolean>("haspaid", Boolean.class, true);
+	public LaunchParameter<String> loadmap_user = new LaunchParameter<String>("loadmap_user", String.class);
+	public LaunchParameter<Integer> loadmap_id = new LaunchParameter<Integer>("loadmap_id", Integer.class);
+	public LaunchParameter<String> mppass = new LaunchParameter<String>("mppass", String.class, "");
 	public LaunchParameter<Boolean> lwjglFrame = new LaunchParameter<Boolean>("lwjglFrame", Boolean.class, true, true);
 	public LaunchParameter<Boolean> isom = new LaunchParameter<Boolean>("isom", Boolean.class, false, true);
 	public LaunchParameter<Boolean> forceVsync = new LaunchParameter<Boolean>("forceVsync", Boolean.class, false, true);
+	public LaunchParameter<String> skinProxy = new LaunchParameter<String>("skinProxy", String.class, null, true);
+	public LaunchParameter<Integer> resourcesProxyPort = new LaunchParameter<Integer>("resourcesProxyPort", Integer.class, null, true);
 
 	public LaunchConfig(String[] args) {
 		int i = 0;
 		while(i < args.length) {
 			if(args[i].startsWith("--")) {
 				String paramName = args[i].substring(2);
-				LaunchParameter<Object> param = parameters.get(paramName);
+				LaunchParameter<Object> param = parameters.get(paramName.toLowerCase(Locale.ROOT));
 				if(param != null && param.type == Boolean.class) {
 					param.set(true);
 				}
@@ -54,16 +60,15 @@ public class LaunchConfig {
 				}
 				else if(i + 1 < args.length) {
 					try {
-						LaunchParameter<Object> param2 = parameters.get(paramName);
-						if(param2 != null) {
+						if(param != null) {
 							if(param.type == String.class) {
-								param2.set(args[i + 1]);
+								param.set(args[i + 1]);
 							}
 							else if(param.type == File.class) {
-								param2.set(new File(args[i + 1]));
+								param.set(new File(args[i + 1]));
 							}
 							else if(param.type == Integer.class) {
-								param2.set(Integer.valueOf(args[i + 1]));
+								param.set(Integer.valueOf(args[i + 1]));
 							}
 							i++;
 						}
@@ -119,7 +124,7 @@ public class LaunchConfig {
 		public LaunchParameter(String name, Class<?> type, T defaultValue) {
 			this.type = type;
 			this.value = defaultValue;
-			parameters.put(name, (LaunchParameter<Object>) this);
+			parameters.put(name.toLowerCase(Locale.ROOT), (LaunchParameter<Object>) this);
 		}
 		
 		public String getString() {

@@ -13,9 +13,10 @@ import org.mcphackers.launchwrapper.inject.InjectUtils;
 import org.mcphackers.launchwrapper.inject.InjectUtils.Access;
 import org.mcphackers.launchwrapper.loader.LaunchClassLoader;
 import org.mcphackers.launchwrapper.protocol.LegacyURLStreamHandler;
-import org.mcphackers.launchwrapper.protocol.SkinRequests.SkinType;
+import org.mcphackers.launchwrapper.protocol.LegacyURLStreamHandler.SkinType;
 import org.mcphackers.launchwrapper.protocol.URLStreamHandlerProxy;
 import org.mcphackers.launchwrapper.util.Util;
+import org.mcphackers.rdi.util.IdentifyCall;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AbstractInsnNode;
@@ -24,7 +25,6 @@ import org.objectweb.asm.tree.FieldInsnNode;
 import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.InsnNode;
-import org.objectweb.asm.tree.IntInsnNode;
 import org.objectweb.asm.tree.JumpInsnNode;
 import org.objectweb.asm.tree.LabelNode;
 import org.objectweb.asm.tree.LdcInsnNode;
@@ -48,13 +48,11 @@ public class LegacyTweak extends Tweak {
 			"net/minecraft/client/MinecraftApplet",
 			"com/mojang/minecraft/MinecraftApplet"
 	};
+	
+	public static final boolean experimentalIndevSaving = true;
 
 	protected ClassNode minecraft;
 	protected ClassNode minecraftApplet;
-	/** Class containing username and sessionId */
-	protected ClassNode user;
-	/** Field of user class */
-	protected FieldNode userField;
 	/** Field that determines if Minecraft should exit */
 	protected FieldNode running;
 	/** Frame width */
@@ -64,11 +62,7 @@ public class LegacyTweak extends Tweak {
 	/** Working game directory */
 	protected FieldNode mcDir;
 	/** Whenever the game runs in an applet */
-	protected FieldNode appletMode;
-	private FieldInsnNode hasPaid;
-	protected FieldNode minecraftUri;
-	protected MethodNode setDemo;
-	protected MethodNode setServer;
+	private FieldNode appletMode;
 	private FieldInsnNode defaultWidth;
 	private FieldInsnNode defaultHeight;
 	private FieldInsnNode fullscreenField;
@@ -76,9 +70,8 @@ public class LegacyTweak extends Tweak {
 	private boolean supportsResizing;
 	/** public static main(String[]) */
 	protected MethodNode main;
-	/** Class used to instantiate a Minecraft instance */
-	protected ClassNode minecraftImpl;
-	protected SkinType skinFormat = null; //TODO analyze and choose which format the skin should be in
+	protected SkinType skinType = SkinType.DEFAULT;
+	protected int port = -1;
 	
 	public LegacyTweak(ClassNodeSource source, LaunchConfig launch) {
 		super(source);
@@ -87,6 +80,12 @@ public class LegacyTweak extends Tweak {
 
 	public boolean transform() {
 		init();
+		if(launch.skinProxy.get() != null) {
+			skinType = SkinType.get(launch.skinProxy.get());
+		}
+		if(launch.resourcesProxyPort.get() != null) {
+			port = launch.resourcesProxyPort.get();
+		}
 		if(minecraft == null) {
 			return false;
 		}
@@ -95,19 +94,16 @@ public class LegacyTweak extends Tweak {
     		return false;
     	}
     	MethodNode runTick = getTickMethod(run);
-		replaceGameDirectory(mcDir);
-		//fixSkinURL();
 		fixSplash();
     	fixPaulscode();
     	fixIndevLaunch();
     	addIndevSaving();
     	fixA111GrayScreen();
     	fixShutdown(run);
-    	//setOnePointSixReleased(runTick, false);
     	removeCanvas(runTick);
 		MethodNode init = getInit(run);
+		replaceGameDirectory(init, mcDir);
 		optionsLoadFix(init);
-		//assetsURLFix(init);
 		displayPatch(init, supportsResizing);
 		fixMouseHelper(mouseHelperName);
     	patchMinecraftInit();
@@ -126,7 +122,7 @@ public class LegacyTweak extends Tweak {
 	public LaunchTarget getLaunchTarget(LaunchClassLoader loader) {
 		if(main != null) {
 			enableLegacyMergeSort();
-			URLStreamHandlerProxy.setURLStreamHandler("http", new LegacyURLStreamHandler());
+			URLStreamHandlerProxy.setURLStreamHandler("http", new LegacyURLStreamHandler(skinType, port));
 			MainLaunchTarget target = new MainLaunchTarget(loader, minecraft.name);
 			target.args = new String[] {launch.username.get(), launch.sessionid.get()};
 			return target;
@@ -135,7 +131,6 @@ public class LegacyTweak extends Tweak {
 	}
 
 	private void addIndevSaving() {
-		final boolean experimentalIndevSaving = true;
 		if(!experimentalIndevSaving) {
 			return;
 		}
@@ -170,7 +165,7 @@ public class LegacyTweak extends Tweak {
 							if(compareInsn(insns2[0], ALOAD, 1)
 						    && compareInsn(insns2[1], GETFIELD, idField.owner, idField.name, idField.desc)
 						    && compareInsn(insns2[3], IF_ICMPNE)) {
-								AbstractInsnNode[] insns3 = fill(insns2[3].getNext(), 3);
+								AbstractInsnNode[] insns3 = fill(nextInsn(insns2[3]), 3);
 								if(compareInsn(insns3[2], NEW)) {
 									if(compareInsn(insns2[2], ICONST_2)) {
 										saveLevelMenu = source.getClass(((TypeInsnNode)insns3[2]).desc);
@@ -239,7 +234,7 @@ public class LegacyTweak extends Tweak {
 							insn = getField;
 						}
 					}
-					insn = insn.getNext();
+					insn = nextInsn(insn);
 				}
 				break;
 			}
@@ -375,14 +370,6 @@ public class LegacyTweak extends Tweak {
 		AbstractInsnNode insn = insnList.getFirst();
 		while(insn != null) {
 			AbstractInsnNode[] insns = fill(insn, 6);
-
-			if(mcDir != null && launch.gameDir.get() != null
-			&& compareInsn(insns[1], PUTFIELD, minecraft.name, mcDir.name, mcDir.desc)
-			&& compareInsn(insns[0], ALOAD)) {
-				insnList.remove(insns[0]);
-				insnList.insertBefore(insns[1], getGameDirectory());
-				insn = insns[1];
-			}
 			if(iLabel == null
 			&& compareInsn(insns[0], ALOAD)
 			&& compareInsn(insns[1], GETFIELD, minecraft.name, null, "Ljava/awt/Canvas;")
@@ -505,7 +492,7 @@ public class LegacyTweak extends Tweak {
     				mouseHelperName = found ? ((MethodInsnNode)insns[2]).owner : ((MethodInsnNode)insns[4]).owner;
     			}
 			}
-			insn = insn.getNext();
+			insn = nextInsn(insn);
 		}
 		
 		if(afterLabel != null
@@ -637,70 +624,39 @@ public class LegacyTweak extends Tweak {
 	        				debugInfo("Replaced height");
 		    			}
 		    		}
-	    			insn = insn.getNext();
+	    			insn = nextInsn(insn);
 	    		}
+	    		int thisIndex = 0;
 	    		if(width != null && height != null) {
 					if(!widthReplaced) {
-						insert.add(new VarInsnNode(ALOAD, 0));
+						insert.add(new VarInsnNode(ALOAD, thisIndex));
 						insert.add(intInsn(launch.width.get()));
 						insert.add(new FieldInsnNode(PUTFIELD, minecraft.name, width.name, width.desc));
 	    				debugInfo("Set initial width");
 					}
 					if(!heightReplaced) {
-						insert.add(new VarInsnNode(ALOAD, 0));
+						insert.add(new VarInsnNode(ALOAD, thisIndex));
 						insert.add(intInsn(launch.height.get()));
 						insert.add(new FieldInsnNode(PUTFIELD, minecraft.name, height.name, height.desc));
 	    				debugInfo("Set initial height");
 					}
 	    		}
-	    		if(!fullscreenReplaced) {
-					insert.add(new VarInsnNode(ALOAD, 0));
+	    		if(!fullscreenReplaced && fullscreenField != null) {
+					insert.add(new VarInsnNode(ALOAD, thisIndex));
 					insert.add(booleanInsn(launch.fullscreen.get()));
 					insert.add(new FieldInsnNode(PUTFIELD, minecraft.name, fullscreenField.name, fullscreenField.desc));
 					debugInfo("Set fullscreen");
 	    		}
 	    		if(defaultWidth != null && defaultHeight != null) {
 					debugInfo("Set default width and height");
-					insert.add(new VarInsnNode(ALOAD, 0));
+					insert.add(new VarInsnNode(ALOAD, thisIndex));
 					insert.add(intInsn(launch.width.get()));
 					insert.add(new FieldInsnNode(PUTFIELD, minecraft.name, defaultWidth.name, defaultWidth.desc));
-					insert.add(new VarInsnNode(ALOAD, 0));
+					insert.add(new VarInsnNode(ALOAD, thisIndex));
 					insert.add(intInsn(launch.height.get()));
 					insert.add(new FieldInsnNode(PUTFIELD, minecraft.name, defaultHeight.name, defaultHeight.desc));
 	    		}
-	    		if(appletMode != null) {
-		    		insert.add(new VarInsnNode(ALOAD, 0));
-					insert.add(booleanInsn(launch.applet.get()));
-		    		insert.add(new FieldInsnNode(PUTFIELD, minecraft.name, appletMode.name, appletMode.desc));
-	    		}
-	    		if(minecraftUri != null) {
-		    		insert.add(new VarInsnNode(ALOAD, 0));
-					insert.add(new LdcInsnNode("www.minecraft.net"));
-		    		insert.add(new FieldInsnNode(PUTFIELD, minecraft.name, minecraftUri.name, minecraftUri.desc));
-	    		}
-	    		if(user != null) {
-	    			insert.add(new VarInsnNode(ALOAD, 0));
-	    			insert.add(new TypeInsnNode(NEW, user.name));
-	    			insert.add(new InsnNode(DUP));
-	    			insert.add(new LdcInsnNode(launch.username.get()));
-	    			insert.add(new LdcInsnNode(launch.sessionid.get()));
-	    			insert.add(new MethodInsnNode(INVOKESPECIAL, user.name, "<init>", "(Ljava/lang/String;Ljava/lang/String;)V"));
-	    			insert.add(new FieldInsnNode(PUTFIELD, minecraft.name, userField.name, userField.desc));
-	    		}
-	    		if(hasPaid != null) {
-		    		insert.add(new VarInsnNode(ALOAD, 0));
-		    		insert.add(new FieldInsnNode(GETFIELD, minecraft.name, userField.name, userField.desc));
-					insert.add(booleanInsn(launch.haspaid.get()));
-		    		insert.add(new FieldInsnNode(PUTFIELD, hasPaid.owner, hasPaid.name, hasPaid.desc));
-	    		}
-	    		if(setDemo != null) {
-		    		insert.add(new VarInsnNode(ALOAD, 0));
-					insert.add(booleanInsn(launch.demo.get()));
-		    		insert.add(new MethodInsnNode(INVOKEVIRTUAL, minecraft.name, setDemo.name, setDemo.desc));
-	    		}
-	    		insert.add(new InsnNode(ICONST_0));
-	    		insert.add(new MethodInsnNode(INVOKESTATIC, "javax/imageio/ImageIO", "setUseCache", "(Z)V"));
-				m.instructions.insertBefore(getLastReturn(m.instructions.getLast()), insert);
+				m.instructions.insert(getSuper(m.instructions.getFirst()), insert);
 			}
 		}
 	}
@@ -755,7 +711,7 @@ public class LegacyTweak extends Tweak {
     	    					dy = putfield.name;
     	    				}
     	    			}
-    					insn = insn.getNext();
+    					insn = nextInsn(insn);
     				}
     				continue method;
     			}
@@ -764,7 +720,7 @@ public class LegacyTweak extends Tweak {
     				setGrabbed = m;
     				continue method;
     			}
-				insn = insn.getNext();
+				insn = nextInsn(insn);
 			}
 		}
 		if(setDelta != null && setGrabbed != null && dx != null && dy != null) {
@@ -855,7 +811,7 @@ public class LegacyTweak extends Tweak {
 				    				break method;
 		    	    			}
 							}
-							insn = insn.getNext();
+							insn = nextInsn(insn);
 						}
 					}
 					if(success) {
@@ -915,7 +871,7 @@ public class LegacyTweak extends Tweak {
 	    				m.instructions.remove(insns[1]);
 	    				m.instructions.remove(insns[2]);
 	    			}
-					insn = insn.getNext();
+					insn = nextInsn(insn);
 				}
 			}
 		}
@@ -942,7 +898,7 @@ public class LegacyTweak extends Tweak {
 	    			if(insn.getOpcode() == INVOKESTATIC) {
 	    				return;
 	    			}
-	    			insn = insn.getNext();
+	    			insn = nextInsn(insn);
 	    		}
 			}
 		}
@@ -1118,11 +1074,11 @@ public class LegacyTweak extends Tweak {
 	    					}
 	    				}
 	    			}
-	    			insn = insn.getNext();
+	    			insn = nextInsn(insn);
 	    		}
 				break;
 			}
-			insn = insn.getNext();
+			insn = nextInsn(insn);
 		}
 		return run;
 	}
@@ -1149,7 +1105,14 @@ public class LegacyTweak extends Tweak {
 		
 		final String listenerClass = "org/mcphackers/launchwrapper/inject/WindowListener";
 
+		String mcField = null;
+	    String mcDesc = "L" + minecraft.name + ";";
 		if(minecraftApplet != null) {
+		    for(FieldNode field : minecraftApplet.fields) {
+		    	if(mcDesc.equals(field.desc)) {
+		    		mcField = field.name;
+		    	}
+		    }
 			insns.add(new TypeInsnNode(NEW, minecraftApplet.name));
 			insns.add(new InsnNode(DUP));
 			insns.add(new MethodInsnNode(INVOKESPECIAL, minecraftApplet.name, "<init>", "()V"));
@@ -1157,6 +1120,9 @@ public class LegacyTweak extends Tweak {
 			insns.add(new VarInsnNode(ALOAD, appletIndex));
 			insns.add(new MethodInsnNode(INVOKESTATIC, "org/mcphackers/launchwrapper/inject/Inject", "getApplet", "()Lorg/mcphackers/launchwrapper/tweak/AppletWrapper;"));
 			insns.add(new MethodInsnNode(INVOKEVIRTUAL, "java/applet/Applet", "setStub", "(Ljava/applet/AppletStub;)V"));
+			insns.add(new VarInsnNode(ALOAD, appletIndex));
+			insns.add(new MethodInsnNode(INVOKEVIRTUAL, minecraftApplet.name, "init", "()V"));
+			patchAppletInit();
 		}
 		if(!launch.lwjglFrame.get()) {
 			insns.add(new TypeInsnNode(NEW, "java/awt/Frame"));
@@ -1193,17 +1159,79 @@ public class LegacyTweak extends Tweak {
 			insns.add(new InsnNode(ACONST_NULL));
 			insns.add(new MethodInsnNode(INVOKEVIRTUAL, "java/awt/Frame", "setLocationRelativeTo", "(Ljava/awt/Component;)V"));
 		}
-		insns.add(getMinecraftImpl());
+		if(minecraftApplet != null) {
+			insns.add(new VarInsnNode(ALOAD, appletIndex));
+			insns.add(new FieldInsnNode(GETFIELD, minecraftApplet.name, mcField, mcDesc));
+		} else {
+			insns.add(getNewMinecraftImpl(minecraft, null));
+		}
 		insns.add(new VarInsnNode(ASTORE, mcIndex));
+		if(width != null && height != null) {
+			insns.add(new VarInsnNode(ALOAD, mcIndex));
+			insns.add(intInsn(launch.width.get()));
+			insns.add(new FieldInsnNode(PUTFIELD, minecraft.name, width.name, width.desc));
+			insns.add(new VarInsnNode(ALOAD, mcIndex));
+			insns.add(intInsn(launch.height.get()));
+			insns.add(new FieldInsnNode(PUTFIELD, minecraft.name, height.name, height.desc));
+		}
+		if(fullscreenField != null) {
+			insns.add(new VarInsnNode(ALOAD, mcIndex));
+			insns.add(booleanInsn(launch.fullscreen.get()));
+			insns.add(new FieldInsnNode(PUTFIELD, minecraft.name, fullscreenField.name, fullscreenField.desc));
+		}
+		if(defaultWidth != null && defaultHeight != null) {
+			insns.add(new VarInsnNode(ALOAD, mcIndex));
+			insns.add(intInsn(launch.width.get()));
+			insns.add(new FieldInsnNode(PUTFIELD, minecraft.name, defaultWidth.name, defaultWidth.desc));
+			insns.add(new VarInsnNode(ALOAD, mcIndex));
+			insns.add(intInsn(launch.height.get()));
+			insns.add(new FieldInsnNode(PUTFIELD, minecraft.name, defaultHeight.name, defaultHeight.desc));
+		}
+		if(appletMode != null) {
+    		insns.add(new VarInsnNode(ALOAD, mcIndex));
+			insns.add(booleanInsn(launch.applet.get()));
+    		insns.add(new FieldInsnNode(PUTFIELD, minecraft.name, appletMode.name, appletMode.desc));
+		}
+//		if(minecraftUri != null) {
+//    		insns.add(new VarInsnNode(ALOAD, mcIndex));
+//			insns.add(new LdcInsnNode("www.minecraft.net"));
+//    		insns.add(new FieldInsnNode(PUTFIELD, minecraft.name, minecraftUri.name, minecraftUri.desc));
+//		}
+//		if(user != null) {
+//			insns.add(new VarInsnNode(ALOAD, mcIndex));
+//			insns.add(new TypeInsnNode(NEW, user.name));
+//			insns.add(new InsnNode(DUP));
+//			insns.add(new LdcInsnNode(launch.username.get()));
+//			insns.add(new LdcInsnNode(launch.sessionid.get()));
+//			insns.add(new MethodInsnNode(INVOKESPECIAL, user.name, "<init>", "(Ljava/lang/String;Ljava/lang/String;)V"));
+//			insns.add(new FieldInsnNode(PUTFIELD, minecraft.name, userField.name, userField.desc));
+//		}
+//		if(hasPaid != null) {
+//    		insns.add(new VarInsnNode(ALOAD, mcIndex));
+//    		insns.add(new FieldInsnNode(GETFIELD, minecraft.name, userField.name, userField.desc));
+//			insns.add(booleanInsn(launch.haspaid.get()));
+//    		insns.add(new FieldInsnNode(PUTFIELD, hasPaid.owner, hasPaid.name, hasPaid.desc));
+//		}
+//		if(setDemo != null) {
+//    		insns.add(new VarInsnNode(ALOAD, mcIndex));
+//			insns.add(booleanInsn(launch.demo.get()));
+//    		insns.add(new MethodInsnNode(INVOKEVIRTUAL, minecraft.name, setDemo.name, setDemo.desc));
+//		}
+//		if(setServer != null && launch.server.get() != null) {
+//			insns.add(new VarInsnNode(ALOAD, mcIndex));
+//    		insns.add(new LdcInsnNode(launch.server.get()));
+//			insns.add(intInsn(launch.port.get()));
+//			insns.add(new MethodInsnNode(INVOKEVIRTUAL, minecraft.name, setServer.name, setServer.desc));
+//		}
 		insns.add(new TypeInsnNode(NEW, "java/lang/Thread"));
 		insns.add(new InsnNode(DUP));
 		insns.add(new VarInsnNode(ALOAD, mcIndex));
 		insns.add(new LdcInsnNode("Minecraft main thread"));
 		insns.add(new MethodInsnNode(INVOKESPECIAL, "java/lang/Thread", "<init>", "(Ljava/lang/Runnable;Ljava/lang/String;)V"));
 		insns.add(new VarInsnNode(ASTORE, threadIndex));
-		insns.add(new VarInsnNode(ALOAD, threadIndex));
-		insns.add(new IntInsnNode(BIPUSH, 10));
-		insns.add(new MethodInsnNode(INVOKEVIRTUAL, "java/lang/Thread", "setPriority", "(I)V"));
+//		insns.add(new VarInsnNode(ALOAD, threadIndex));
+//		insns.add(new IntInsnNode(BIPUSH, 10));
+//		insns.add(new MethodInsnNode(INVOKEVIRTUAL, "java/lang/Thread", "setPriority", "(I)V"));
 		if(!launch.lwjglFrame.get()) {
 			insns.add(new VarInsnNode(ALOAD, frameIndex));
 			insns.add(new InsnNode(ICONST_1));
@@ -1224,6 +1252,75 @@ public class LegacyTweak extends Tweak {
 		return node;
 	}
 	
+	private void patchAppletInit() {
+		String mcField = null;
+		String canvasField = null;
+	    String mcDesc = "L" + minecraft.name + ";";
+		MethodNode init = InjectUtils.getMethod(minecraftApplet, "init", "()V");
+		if(init == null) {
+			throw new IllegalStateException("Missing applet init");
+		}
+	    for(FieldNode field : minecraftApplet.fields) {
+	    	if(mcDesc.equals(field.desc)) {
+	    		field.access = Access.PUBLIC.setAccess(field.access);
+	    		mcField = field.name;
+	    	}
+	    	if("Ljava/awt/Canvas;".equals(field.desc)) {
+	    		canvasField = field.name;
+	    	}
+	    }
+		AbstractInsnNode insn = init.instructions.getFirst();
+		while(insn != null) {
+			AbstractInsnNode[] insns2 = fill(insn, 5);
+			if(compareInsn(insns2[1], PUTFIELD, minecraftApplet.name, mcField, mcDesc)
+			&& compareInsn(insns2[0], INVOKESPECIAL, null, "<init>")) {
+				MethodInsnNode invoke = (MethodInsnNode)insns2[0];
+				init.instructions.insertBefore(insns2[1], getNewMinecraftImpl(source.getClass(invoke.owner), canvasField));
+				IdentifyCall call = new IdentifyCall(invoke);
+				AbstractInsnNode newInsn = call.getArgument(0)[0].getPrevious();
+				if(newInsn.getOpcode() == NEW) {
+					init.instructions.remove(newInsn);
+				}
+				for(AbstractInsnNode[] arg : call.getArguments()) {
+					remove(init.instructions, arg);
+				}
+				init.instructions.remove(invoke);
+				insn = insns2[1];
+			}
+			if(compareInsn(insns2[0], ALOAD, 0)
+			&& compareInsn(insns2[1], GETFIELD, minecraftApplet.name, mcField, mcDesc)
+			&& compareInsn(insns2[2], LDC, "79.136.77.240")
+			&& compareInsn(insns2[3], SIPUSH)
+			&& compareInsn(insns2[4], INVOKEVIRTUAL, minecraft.name, null, "(Ljava/lang/String;I)V")) {
+				LabelNode label = new LabelNode();
+				init.instructions.remove(insns2[2]);
+				init.instructions.remove(insns2[3]);
+				InsnList insert = new InsnList();
+				insert.add(new VarInsnNode(ALOAD, 0));
+				insert.add(new LdcInsnNode("server"));
+				insert.add(new MethodInsnNode(INVOKEVIRTUAL, minecraftApplet.name, "getParameter", "(Ljava/lang/String;)Ljava/lang/String;"));
+				insert.add(new VarInsnNode(ALOAD, 0));
+				insert.add(new LdcInsnNode("port"));
+				insert.add(new MethodInsnNode(INVOKEVIRTUAL, minecraftApplet.name, "getParameter", "(Ljava/lang/String;)Ljava/lang/String;"));
+				insert.add(new MethodInsnNode(INVOKESTATIC, "java/lang/Integer", "parseInt", "(Ljava/lang/String;)I"));
+				init.instructions.insertBefore(insns2[4], insert);
+				insert = new InsnList();
+				insert.add(new VarInsnNode(ALOAD, 0));
+				insert.add(new LdcInsnNode("server"));
+				insert.add(new MethodInsnNode(INVOKEVIRTUAL, minecraftApplet.name, "getParameter", "(Ljava/lang/String;)Ljava/lang/String;"));
+				insert.add(new JumpInsnNode(IFNULL, label));
+				insert.add(new VarInsnNode(ALOAD, 0));
+				insert.add(new LdcInsnNode("port"));
+				insert.add(new MethodInsnNode(INVOKEVIRTUAL, minecraftApplet.name, "getParameter", "(Ljava/lang/String;)Ljava/lang/String;"));
+				insert.add(new JumpInsnNode(IFNULL, label));
+				init.instructions.insertBefore(insns2[0], insert);
+				init.instructions.insert(insns2[4], label);
+			}
+			insn = nextInsn(insn);
+		}
+		source.overrideClass(minecraftApplet);
+	}
+
 	private void createWindowListener(String listenerClass) {
 		running.access = Access.PUBLIC.setAccess(running.access);
 		
@@ -1275,7 +1372,7 @@ public class LegacyTweak extends Tweak {
 		source.overrideClass(node);
 	}
 
-	private InsnList getMinecraftImpl() {
+	private InsnList getNewMinecraftImpl(ClassNode minecraftImpl, String canvasField) {
 		MethodNode init = null;
 		for(MethodNode m : minecraftImpl.methods) {
 			if(m.name.equals("<init>")) {
@@ -1286,9 +1383,9 @@ public class LegacyTweak extends Tweak {
 			throw new NullPointerException();
 		}
 
-		final int appletIndex = 1;
-		final int frameIndex = 2;
-		final int canvasIndex = 3;
+//		final int appletIndex = 1;
+//		final int frameIndex = 2;
+//		final int canvasIndex = 3;
 
 		InsnList insns = new InsnList();
 		insns.add(new TypeInsnNode(NEW, minecraftImpl.name));
@@ -1303,16 +1400,19 @@ public class LegacyTweak extends Tweak {
 				if(launch.lwjglFrame.get()) {
 					insns.add(new InsnNode(ACONST_NULL));
 				} else {
-					insns.add(new VarInsnNode(ALOAD, canvasIndex));
+					//insns.add(new VarInsnNode(ALOAD, canvasIndex));
+					insns.add(new VarInsnNode(ALOAD, 0));
+					insns.add(new FieldInsnNode(GETFIELD, minecraftApplet.name, canvasField, "Ljava/awt/Canvas;"));
 				}
 			} else if(desc.equals("Ljava/awt/Component;")) {
 				if(launch.lwjglFrame.get()) {
 					insns.add(new InsnNode(ACONST_NULL));
 				} else {
-					insns.add(new VarInsnNode(ALOAD, frameIndex));
+					//insns.add(new VarInsnNode(ALOAD, frameIndex));
 				}
 			} else if(minecraftApplet != null && desc.equals("L" + minecraftApplet.name + ";")) {
-				insns.add(new VarInsnNode(ALOAD, appletIndex));
+				//insns.add(new VarInsnNode(ALOAD, appletIndex));
+				insns.add(new VarInsnNode(ALOAD, 0));
 			}
 			else if(desc.equals("I")) {
 				if(i == 0) {
@@ -1333,16 +1433,25 @@ public class LegacyTweak extends Tweak {
 		return insns;
 	}
 	
-	public void fixSplash() {
+	private void fixSplash() {
 		for(MethodNode m : minecraft.methods) {
 			for(AbstractInsnNode insn : m.instructions) {
 				if(insn.getOpcode() == LDC) {
 					LdcInsnNode ldc = (LdcInsnNode)insn;
 					if(ldc.cst.equals("/title/mojang.png")) {
 						AbstractInsnNode insn3 = ldc.getNext();
+						boolean store2 = false;
+						boolean store3 = false;
 						while(insn3 != null) {
 							AbstractInsnNode[] insns2 = fill(insn3, 15);
-							if(compareInsn(insns2[0], ALOAD)
+							if(compareInsn(insns2[0], ISTORE, 2)) {
+								store2 = true;
+							}
+							if(compareInsn(insns2[0], ISTORE, 3)) {
+								store3 = true;
+							}
+							if(store2 && store3
+							&& compareInsn(insns2[0], ALOAD)
 							&& compareInsn(insns2[1], GETFIELD, null, null, "I")
 							&& compareInsn(insns2[2], ICONST_2)
 							&& compareInsn(insns2[3], IDIV)
@@ -1477,10 +1586,11 @@ public class LegacyTweak extends Tweak {
 				}
 				break;
 			}
-			insn = insn.getNext();
+			insn = nextInsn(insn);
 		}
 	}
 	
+	@Deprecated
 	private void fixPaulscode() {
 		ClassNode libraryOpenAL = source.getClass("paulscode/sound/libraries/LibraryLWJGLOpenAL");
 		ClassNode libraryChannel = source.getClass("paulscode/sound/libraries/ChannelLWJGLOpenAL");
@@ -1543,7 +1653,7 @@ public class LegacyTweak extends Tweak {
 				success |= true;
 				break;
 			}
-			insn = insn.getNext();
+			insn = nextInsn(insn);
 		}
 		boolean bufferBufferField = false;
 		insn = queueBuffer.instructions.getFirst();
@@ -1580,7 +1690,7 @@ public class LegacyTweak extends Tweak {
 				success |= true;
 				break;
 			}
-			insn = insn.getNext();
+			insn = nextInsn(insn);
 		}
 		insn = preLoadBuffers.instructions.getFirst();
 		while(insn != null) {
@@ -1622,7 +1732,7 @@ public class LegacyTweak extends Tweak {
 				success |= true;
 				break;
 			}
-			insn = insn.getNext();
+			insn = nextInsn(insn);
 		}
 		if(bufferBufferField) {
 			if(InjectUtils.getField(libraryChannel, "bufferBuffer", "Ljava/nio/ByteBuffer;") == null) {
@@ -1639,7 +1749,7 @@ public class LegacyTweak extends Tweak {
 						success |= true;
 						break;
 					}
-					insn = insn.getNext();
+					insn = nextInsn(insn);
 				}
 			}
 		}
@@ -1670,7 +1780,7 @@ public class LegacyTweak extends Tweak {
 	    				}
 						break;
 	    			}
-	    			insn = insn.getNext();
+	    			insn = nextInsn(insn);
 	    		}
 	    	}
 	    }
@@ -1699,120 +1809,38 @@ public class LegacyTweak extends Tweak {
 		    	}
 		    }
 	
-		    for(MethodNode method : minecraftApplet.methods) {
-		    	if("init".equals(method.name) && "()V".equals(method.desc)) {
-		    		AbstractInsnNode insn = method.instructions.getFirst();
-		    		while(insn != null) {
-		    			AbstractInsnNode[] insns = fillBackwards(insn, 9);
-		    			if(compareInsn(insns[0], ALOAD)
-		    			&& compareInsn(insns[1], GETFIELD, minecraftApplet.name, mcField, mcDesc)
-		    			&& compareInsn(insns[2], ALOAD)
-		    			&& compareInsn(insns[3], INVOKEVIRTUAL, minecraftApplet.name, "getDocumentBase", "()Ljava/net/URL;")
-		    			&& compareInsn(insns[4], INVOKEVIRTUAL, "java/net/URL", "getHost", "()Ljava/lang/String;")
-		    			&& compareInsn(insns[5], PUTFIELD, minecraft.name, null, "Ljava/lang/String;")) {
-	    					FieldInsnNode field = (FieldInsnNode)insns[5];
-	    					minecraftUri = InjectUtils.getField(minecraft, field.name, field.desc);
-		    			}
-		    			if(compareInsn(insns[1], PUTFIELD, minecraftApplet.name, mcField, mcDesc)
-	    				&& compareInsn(insns[0], INVOKESPECIAL, null, "<init>")) {
-		    				MethodInsnNode invoke = (MethodInsnNode)insns[0];
-							minecraftImpl = source.getClass(invoke.owner);
-		    			}
-		    			if(compareInsn(insns[0], ALOAD)
-		    			&& compareInsn(insns[1], GETFIELD, minecraftApplet.name, mcField, mcDesc)
-		    			&& compareInsn(insns[2], ICONST_1)
-		    			&& compareInsn(insns[3], PUTFIELD, minecraft.name, null, "Z")) {
-	    					FieldInsnNode field = (FieldInsnNode)insns[3];
+		    MethodNode init = InjectUtils.getMethod(minecraftApplet, "init", "()V");
+	    	if(init != null) {
+	    		AbstractInsnNode insn = init.instructions.getFirst();
+	    		while(insn != null) {
+	    			AbstractInsnNode[] insns = fillBackwards(insn, 8);
+	    			if(compareInsn(insns[0], ALOAD)
+	    			&& compareInsn(insns[1], GETFIELD, minecraftApplet.name, mcField, mcDesc)
+	    			&& compareInsn(insns[2], ICONST_1)
+	    			&& compareInsn(insns[3], PUTFIELD, minecraft.name, null, "Z")) {
+    					FieldInsnNode field = (FieldInsnNode)insns[3];
+    					appletMode = InjectUtils.getField(minecraft, field.name, field.desc);
+	    			}
+	    			if(compareInsn(insns[0], ALOAD)
+	    			&& compareInsn(insns[1], GETFIELD, minecraftApplet.name, mcField, mcDesc)
+	    			&& compareInsn(insns[2], LDC, "true")
+	    			&& compareInsn(insns[3], ALOAD)
+	    			&& compareInsn(insns[4], LDC, "stand-alone")
+	    			&& compareInsn(insns[5], INVOKEVIRTUAL, minecraftApplet.name, "getParameter", "(Ljava/lang/String;)Ljava/lang/String;")
+	    			&& compareInsn(insns[6], INVOKEVIRTUAL, "java/lang/String", "equals", "(Ljava/lang/Object;)Z")) {
+	    				AbstractInsnNode[] insns2 = fill(insns[7], 7);
+		    			if(compareInsn(insns2[0], IFNE)
+				    	&& compareInsn(insns2[1], ICONST_1)
+				    	&& compareInsn(insns2[2], GOTO)
+				    	&& compareInsn(insns2[3], ICONST_0)
+		    			&& compareInsn(insns2[4], PUTFIELD, minecraft.name, null, "Z")) {
+	    					FieldInsnNode field = (FieldInsnNode)insns2[4];
 	    					appletMode = InjectUtils.getField(minecraft, field.name, field.desc);
 		    			}
-		    			if(compareInsn(insns[0], ALOAD)
-		    			&& compareInsn(insns[1], GETFIELD, minecraftApplet.name, mcField, mcDesc)
-		    			&& compareInsn(insns[2], LDC, "true")
-		    			&& compareInsn(insns[3], ALOAD)
-		    			&& compareInsn(insns[4], LDC, "stand-alone")
-		    			&& compareInsn(insns[5], INVOKEVIRTUAL, minecraftApplet.name, "getParameter", "(Ljava/lang/String;)Ljava/lang/String;")
-		    			&& compareInsn(insns[6], INVOKEVIRTUAL, "java/lang/String", "equals", "(Ljava/lang/Object;)Z")) {
-		    				AbstractInsnNode[] insns2 = fill(insns[7], 7);
-			    			if(compareInsn(insns2[0], IFNE)
-					    	&& compareInsn(insns2[1], ICONST_1)
-					    	&& compareInsn(insns2[2], GOTO)
-					    	&& compareInsn(insns2[3], ICONST_0)
-			    			&& compareInsn(insns2[4], PUTFIELD, minecraft.name, null, "Z")) {
-		    					FieldInsnNode field = (FieldInsnNode)insns2[4];
-		    					appletMode = InjectUtils.getField(minecraft, field.name, field.desc);
-			    			}
-		    			}
-		    			if(compareInsn(insns[0], ALOAD)
-		    			&& compareInsn(insns[1], GETFIELD, minecraftApplet.name, mcField, mcDesc)
-		    			&& compareInsn(insns[2], GETFIELD, minecraft.name)
-		    			&& compareInsn(insns[3], LDC, "true")
-		    			&& compareInsn(insns[4], ALOAD)
-		    			&& compareInsn(insns[5], LDC, "haspaid")
-		    			&& compareInsn(insns[6], INVOKEVIRTUAL, minecraftApplet.name, "getParameter", "(Ljava/lang/String;)Ljava/lang/String;")
-		    			&& compareInsn(insns[7], INVOKEVIRTUAL, "java/lang/String", "equals", "(Ljava/lang/Object;)Z")
-		    			&& compareInsn(insns[8], PUTFIELD, null, null, "Z")) {
-		    				hasPaid = (FieldInsnNode)insns[8];
-		    			}
-		    			if(compareInsn(insns[0], ALOAD)
-		    			&& compareInsn(insns[1], GETFIELD, minecraftApplet.name, mcField, mcDesc)
-				    	&& compareInsn(insns[2], LDC, "true")
-		    			&& compareInsn(insns[3], ALOAD)
-				    	&& compareInsn(insns[4], LDC, "demo")
-		    			&& compareInsn(insns[5], INVOKEVIRTUAL, minecraftApplet.name, "getParameter", "(Ljava/lang/String;)Ljava/lang/String;")
-		    			&& compareInsn(insns[6], INVOKEVIRTUAL, "java/lang/String", "equals", "(Ljava/lang/Object;)Z")
-		    			&& compareInsn(insns[7], INVOKEVIRTUAL, minecraft.name, null, "(Z)V")) {
-	    					MethodInsnNode call = (MethodInsnNode)insns[7];
-	    					setDemo = InjectUtils.getMethod(minecraft, call.name, call.desc);
-		    			}
-	    				
-		    			if(compareInsn(insns[0], ALOAD)
-	    				&& compareInsn(insns[1], LDC, "username")
-	    				&& compareInsn(insns[2], INVOKEVIRTUAL, minecraftApplet.name, "getParameter", "(Ljava/lang/String;)Ljava/lang/String;")
-	    				&& compareInsn(insns[3], ALOAD)
-	    				&& compareInsn(insns[4], LDC, "sessionid")
-	    				&& compareInsn(insns[5], INVOKEVIRTUAL, minecraftApplet.name, "getParameter", "(Ljava/lang/String;)Ljava/lang/String;")
-	    				&& compareInsn(insns[6], INVOKESPECIAL, null, "<init>", "(Ljava/lang/String;Ljava/lang/String;)V")
-	    				&& compareInsn(insns[7], PUTFIELD, minecraft.name)) {
-	    					debugInfo("Found user field");
-		    				MethodInsnNode invokespecial = (MethodInsnNode)insns[6];
-	    					user = source.getClass(invokespecial.owner);
-	    					FieldInsnNode field = (FieldInsnNode)insns[7];
-	    					userField = InjectUtils.getField(minecraft, field.name, field.desc);
-		    			}
-		    			else
-		    			if(compareInsn(insns[0], ALOAD)
-	    				&& compareInsn(insns[1], LDC, "username")
-	    				&& compareInsn(insns[2], INVOKEVIRTUAL, minecraftApplet.name, "getParameter", "(Ljava/lang/String;)Ljava/lang/String;")
-	    				&& compareInsn(insns[3], LDC)
-	    				&& compareInsn(insns[4], INVOKESPECIAL, null, "<init>", "(Ljava/lang/String;Ljava/lang/String;)V")
-		    			&& compareInsn(insns[5], PUTFIELD, minecraft.name)) {
-	    					debugInfo("Found user field");
-		    				MethodInsnNode invokespecial = (MethodInsnNode)insns[6];
-	    					user = source.getClass(invokespecial.owner);
-	    					FieldInsnNode field = (FieldInsnNode)insns[7];
-	    					userField = InjectUtils.getField(minecraft, field.name, field.desc);
-		    			}
-		    			else
-		    			if(compareInsn(insns[0], GETFIELD, minecraftApplet.name, mcField, mcDesc)
-	    				&& compareInsn(insns[1], NEW)
-						&& compareInsn(insns[2], DUP)
-						&& compareInsn(insns[3], INVOKESPECIAL, null, "<init>")) {
-		    				if(compareInsn(insns[4], PUTFIELD, minecraft.name)) {
-		    					FieldInsnNode field = (FieldInsnNode)insns[4];
-		    					if(field.desc.startsWith("L") && field.desc.endsWith(";")) {
-			    					debugInfo("Found user field");
-			    					user = source.getClass(field.desc.substring(1, field.desc.length() - 1));
-	    	    					userField = InjectUtils.getField(minecraft, field.name, field.desc);
-		    					}
-		    				}
-		    			}
-		    			insn = insn.getNext();
-		    		}
-		    	}
-		    }
-		}
-		if(minecraftImpl == null) {
-			minecraftImpl = minecraft;
+	    			}
+	    			insn = nextInsn(insn);
+	    		}
+	    	}
 		}
 	}
 
@@ -1879,7 +1907,46 @@ public class LegacyTweak extends Tweak {
 		return insns;
 	}
 	
-	public void replaceGameDirectory(FieldNode mcDir) {
+	public void replaceGameDirectory(MethodNode init, FieldNode mcDir) {
+		InsnList insnList = init.instructions;
+		AbstractInsnNode insn = insnList.getFirst();
+		while(insn != null) {
+			AbstractInsnNode[] insns = fill(insn, 6);
+			// Indev game dir patch
+			if(mcDir != null && launch.gameDir.get() != null
+			&& compareInsn(insns[1], PUTFIELD, minecraft.name, mcDir.name, mcDir.desc)
+			&& compareInsn(insns[0], ALOAD)) {
+				insnList.remove(insns[0]);
+				insnList.insertBefore(insns[1], getGameDirectory());
+				insn = insns[1];
+				debugInfo("Replaced gameDir");
+			}
+			// Classic game dir patch
+			if(mcDir == null
+			&& compareInsn(insns[0], ALOAD)
+		    && compareInsn(insns[1], INVOKEVIRTUAL, "java/io/File", "exists", "()Z")
+		    && compareInsn(insns[2], IFNE)
+		    && compareInsn(insns[3], ALOAD)
+		    && compareInsn(insns[4], INVOKEVIRTUAL, "java/io/File", "mkdirs", "()Z")
+		    && compareInsn(insns[5], IFNE)) {
+				LabelNode lbl = ((JumpInsnNode)insns[2]).label;
+				int index = ((VarInsnNode)insns[0]).var;
+
+				if(lbl == ((JumpInsnNode)insns[5]).label
+				&& index == ((VarInsnNode)insns[3]).var) {
+					AbstractInsnNode[] insns2 = fill(nextInsn(lbl), 2);
+					if(compareInsn(insns2[0], ALOAD)
+				    && compareInsn(insns2[1], ASTORE)) {
+						if(index == ((VarInsnNode)insns2[0]).var) {
+							insnList.remove(insns2[0]);
+							insnList.insertBefore(insns2[1], getGameDirectory());
+							debugInfo("Replaced gameDir");
+						}
+					}
+				}
+			}
+			insn = nextInsn(insn);
+		}
 		if(mcDir != null && launch.gameDir.get() != null) {
 			if(InjectUtils.isStatic(mcDir)) {
 				MethodNode clinit = InjectUtils.getMethod(minecraft, "<clinit>", "()V");

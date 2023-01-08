@@ -6,11 +6,15 @@ import java.net.Proxy;
 import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLStreamHandler;
+import java.util.HashMap;
 import java.util.Hashtable;
+import java.util.Map;
 
 import org.mcphackers.launchwrapper.util.Util;
 
 public abstract class URLStreamHandlerProxy extends URLStreamHandler {
+	private static final Map<String, URLStreamHandler> DEFAULT_HANDLERS = new HashMap<String, URLStreamHandler>();
+	
 	protected URLStreamHandler parent;
 	
 	@Override
@@ -22,7 +26,7 @@ public abstract class URLStreamHandlerProxy extends URLStreamHandler {
 		if(parent == null) {
 			return null;
 		}
-		return new URL(null, url.toString(), parent).openConnection();
+		return new URL(null, url.toExternalForm(), parent).openConnection();
 	}
 
 	@SuppressWarnings({ "rawtypes", "unchecked" })
@@ -38,10 +42,16 @@ public abstract class URLStreamHandlerProxy extends URLStreamHandler {
 	}
 	
 	public static URLStreamHandler getURLStreamHandler(String protocol) {
+		URLStreamHandler handler = DEFAULT_HANDLERS.get(protocol);
+		if(handler != null) {
+			return handler;
+		}
 	    try {
 	        URL url = new URL(protocol + ":");
 	        Field handlerField = URL.class.getDeclaredField("handler");
-	        return (URLStreamHandler)Util.getObjectUnsafe(url, handlerField);       
+	        handler = (URLStreamHandler)Util.getObjectUnsafe(url, handlerField);
+	        DEFAULT_HANDLERS.put(protocol, handler);
+	        return handler;       
 	    } catch (Exception e) {
 	    	e.printStackTrace();
 	        return null;

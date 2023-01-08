@@ -42,7 +42,4 @@ public class AppletLaunchTarget extends LaunchTarget {
 		}
 		AppletWrapper.startApplet(appletClass, width, height, title, icon);
 	}
-	
-	
-
 }
