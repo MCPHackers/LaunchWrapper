@@ -24,6 +24,8 @@ public class ListLevelsURLConnection extends URLConnection {
 
 	public InputStream getInputStream() throws IOException {
 		File levels = new File(Launch.INSTANCE.config.gameDir.get(), "levels");
+		if(!levels.exists())
+			levels.mkdirs();
 		File levelNames = new File(levels, "levels.txt");
 		int maxLevels = 5;
 		String[] lvlNames = new String[maxLevels];

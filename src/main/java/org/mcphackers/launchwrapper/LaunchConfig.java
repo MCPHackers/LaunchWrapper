@@ -45,6 +45,7 @@ public class LaunchConfig {
 	public LaunchParameter<Boolean> forceVsync = new LaunchParameter<Boolean>("forceVsync", Boolean.class, false, true);
 	public LaunchParameter<String> skinProxy = new LaunchParameter<String>("skinProxy", String.class, null, true);
 	public LaunchParameter<Integer> resourcesProxyPort = new LaunchParameter<Integer>("resourcesProxyPort", Integer.class, null, true);
+	public LaunchParameter<String> serverURL = new LaunchParameter<String>("serverURL", String.class, null, true);
 
 	public LaunchConfig(String[] args) {
 		int i = 0;

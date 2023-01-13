@@ -3,7 +3,12 @@ package org.mcphackers.launchwrapper.tweak;
 import static org.mcphackers.launchwrapper.inject.InsnHelper.*;
 import static org.objectweb.asm.Opcodes.*;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.lang.reflect.Field;
+import java.net.MalformedURLException;
+import java.net.URL;
 
 import org.mcphackers.launchwrapper.LaunchConfig;
 import org.mcphackers.launchwrapper.LaunchTarget;
@@ -79,6 +84,7 @@ public class LegacyTweak extends Tweak {
 	}
 
 	public boolean transform() {
+		downloadServer();
 		init();
 		if(launch.skinProxy.get() != null) {
 			skinType = SkinType.get(launch.skinProxy.get());
@@ -117,6 +123,23 @@ public class LegacyTweak extends Tweak {
 		
 		source.overrideClass(minecraft);
 		return true;
+	}
+
+	private void downloadServer() {
+		if(launch.serverURL.get() == null || launch.gameDir.get() == null) {
+			return;
+		}
+		try {
+			URL url = new URL(launch.serverURL.get());
+			FileOutputStream fos = new FileOutputStream(new File(launch.gameDir.get(), "server/minecraft_server.jar"));
+			byte[] data = Util.readStream(url.openStream());
+			fos.write(data);
+			fos.close();
+		} catch (MalformedURLException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 
 	public LaunchTarget getLaunchTarget(LaunchClassLoader loader) {
