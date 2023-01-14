@@ -88,28 +88,23 @@ public class Inject {
         return buffer;
     }
 
-    public static ByteBuffer loadIcon(File iconFile) throws IOException {
-    	return loadIcon(ImageIO.read(iconFile));
-    }
-
     public static ByteBuffer[] loadIcons(boolean useDefault) {
     	if(!useDefault) {
 	    	try {
-		    	File assetsDir = LAUNCH.config.assetsDir.get();
-		    	if(assetsDir != null) {
-			        final File smallIcon = new File(assetsDir, "icons/icon_16x16.png");
-			        final File bigIcon = new File(assetsDir, "icons/icon_32x32.png");
-		        	return new ByteBuffer[] {
-		                    loadIcon(smallIcon),
-		                    loadIcon(bigIcon)
-		            };
-		    	}
+	        	return new ByteBuffer[] {
+                    loadIcon("/icon_16x16.png"),
+                    loadIcon("/icon_32x32.png")
+	            };
 		    } catch (IOException e) {
-		        //e.printStackTrace();
+		        e.printStackTrace();
 		    }
     	}
     	return new ByteBuffer[] { loadIcon(DEFAULT_ICON) };
     }
+	
+	public static ByteBuffer loadIcon(String icon) throws IOException {
+		return loadIcon(ImageIO.read(Inject.class.getResourceAsStream(icon)));
+	}
 	
 	public static BufferedImage getIcon() {
 		if(DEFAULT_ICON != null) {

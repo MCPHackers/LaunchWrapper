@@ -1,5 +1,6 @@
 package org.mcphackers.launchwrapper.util;
 
+import java.io.BufferedInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
 import java.io.IOException;
@@ -9,6 +10,8 @@ import java.lang.reflect.Field;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLDecoder;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -83,6 +86,30 @@ public final class Util {
 			e.printStackTrace();
 			return null;
 		}
+	}
+
+	public static String getSHA1(InputStream is) throws IOException {
+		MessageDigest md;
+		try {
+			md = MessageDigest.getInstance("SHA-1");
+		} catch (NoSuchAlgorithmException e) {
+			throw new IOException(e);
+		}
+		BufferedInputStream bs = new BufferedInputStream(is);
+		byte[] buffer = new byte[1024];
+		int bytesRead;
+
+		while ((bytesRead = bs.read(buffer, 0, buffer.length)) != -1) {
+			md.update(buffer, 0, bytesRead);
+		}
+		byte[] digest = md.digest();
+
+		StringBuilder sb = new StringBuilder();
+		for (byte bite : digest) {
+			sb.append(Integer.toString((bite & 255) + 256, 16).substring(1).toLowerCase());
+		}
+		bs.close();
+		return sb.toString();
 	}
 
 	public static Map<String, String> queryMap(URL url) throws UnsupportedEncodingException {

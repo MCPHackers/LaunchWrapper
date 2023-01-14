@@ -4,6 +4,7 @@ import static org.mcphackers.launchwrapper.inject.InsnHelper.*;
 import static org.objectweb.asm.Opcodes.*;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -54,7 +55,7 @@ public class LegacyTweak extends Tweak {
 			"com/mojang/minecraft/MinecraftApplet"
 	};
 	
-	public static final boolean experimentalIndevSaving = true;
+	public static final boolean EXPERIMENTAL_INDEV_SAVING = true;
 
 	protected ClassNode minecraft;
 	protected ClassNode minecraftApplet;
@@ -84,7 +85,6 @@ public class LegacyTweak extends Tweak {
 	}
 
 	public boolean transform() {
-		downloadServer();
 		init();
 		if(launch.skinProxy.get() != null) {
 			skinType = SkinType.get(launch.skinProxy.get());
@@ -130,11 +130,20 @@ public class LegacyTweak extends Tweak {
 			return;
 		}
 		try {
-			URL url = new URL(launch.serverURL.get());
-			FileOutputStream fos = new FileOutputStream(new File(launch.gameDir.get(), "server/minecraft_server.jar"));
-			byte[] data = Util.readStream(url.openStream());
-			fos.write(data);
-			fos.close();
+			File serverFolder = new File(launch.gameDir.get(), "server");
+			File serverJar = new File(serverFolder, "minecraft_server.jar");
+			String sha1 = null;
+			if(serverJar.exists()) {
+				sha1 = Util.getSHA1(new FileInputStream(serverJar));
+			}
+			if(launch.serverSHA1.get() == null || !launch.serverSHA1.get().equals(sha1)) {
+				URL url = new URL(launch.serverURL.get());
+				serverFolder.mkdirs();
+				FileOutputStream fos = new FileOutputStream(serverJar);
+				byte[] data = Util.readStream(url.openStream());
+				fos.write(data);
+				fos.close();
+			}
 		} catch (MalformedURLException e) {
 			e.printStackTrace();
 		} catch (IOException e) {
@@ -144,6 +153,7 @@ public class LegacyTweak extends Tweak {
 
 	public LaunchTarget getLaunchTarget(LaunchClassLoader loader) {
 		if(main != null) {
+			downloadServer();
 			enableLegacyMergeSort();
 			URLStreamHandlerProxy.setURLStreamHandler("http", new LegacyURLStreamHandler(skinType, port));
 			MainLaunchTarget target = new MainLaunchTarget(loader, minecraft.name);
@@ -154,7 +164,7 @@ public class LegacyTweak extends Tweak {
 	}
 
 	private void addIndevSaving() {
-		if(!experimentalIndevSaving) {
+		if(!EXPERIMENTAL_INDEV_SAVING) {
 			return;
 		}
 		ClassNode saveLevelMenu = null;
@@ -1215,46 +1225,12 @@ public class LegacyTweak extends Tweak {
 			insns.add(booleanInsn(launch.applet.get()));
     		insns.add(new FieldInsnNode(PUTFIELD, minecraft.name, appletMode.name, appletMode.desc));
 		}
-//		if(minecraftUri != null) {
-//    		insns.add(new VarInsnNode(ALOAD, mcIndex));
-//			insns.add(new LdcInsnNode("www.minecraft.net"));
-//    		insns.add(new FieldInsnNode(PUTFIELD, minecraft.name, minecraftUri.name, minecraftUri.desc));
-//		}
-//		if(user != null) {
-//			insns.add(new VarInsnNode(ALOAD, mcIndex));
-//			insns.add(new TypeInsnNode(NEW, user.name));
-//			insns.add(new InsnNode(DUP));
-//			insns.add(new LdcInsnNode(launch.username.get()));
-//			insns.add(new LdcInsnNode(launch.sessionid.get()));
-//			insns.add(new MethodInsnNode(INVOKESPECIAL, user.name, "<init>", "(Ljava/lang/String;Ljava/lang/String;)V"));
-//			insns.add(new FieldInsnNode(PUTFIELD, minecraft.name, userField.name, userField.desc));
-//		}
-//		if(hasPaid != null) {
-//    		insns.add(new VarInsnNode(ALOAD, mcIndex));
-//    		insns.add(new FieldInsnNode(GETFIELD, minecraft.name, userField.name, userField.desc));
-//			insns.add(booleanInsn(launch.haspaid.get()));
-//    		insns.add(new FieldInsnNode(PUTFIELD, hasPaid.owner, hasPaid.name, hasPaid.desc));
-//		}
-//		if(setDemo != null) {
-//    		insns.add(new VarInsnNode(ALOAD, mcIndex));
-//			insns.add(booleanInsn(launch.demo.get()));
-//    		insns.add(new MethodInsnNode(INVOKEVIRTUAL, minecraft.name, setDemo.name, setDemo.desc));
-//		}
-//		if(setServer != null && launch.server.get() != null) {
-//			insns.add(new VarInsnNode(ALOAD, mcIndex));
-//    		insns.add(new LdcInsnNode(launch.server.get()));
-//			insns.add(intInsn(launch.port.get()));
-//			insns.add(new MethodInsnNode(INVOKEVIRTUAL, minecraft.name, setServer.name, setServer.desc));
-//		}
 		insns.add(new TypeInsnNode(NEW, "java/lang/Thread"));
 		insns.add(new InsnNode(DUP));
 		insns.add(new VarInsnNode(ALOAD, mcIndex));
 		insns.add(new LdcInsnNode("Minecraft main thread"));
 		insns.add(new MethodInsnNode(INVOKESPECIAL, "java/lang/Thread", "<init>", "(Ljava/lang/Runnable;Ljava/lang/String;)V"));
 		insns.add(new VarInsnNode(ASTORE, threadIndex));
-//		insns.add(new VarInsnNode(ALOAD, threadIndex));
-//		insns.add(new IntInsnNode(BIPUSH, 10));
-//		insns.add(new MethodInsnNode(INVOKEVIRTUAL, "java/lang/Thread", "setPriority", "(I)V"));
 		if(!launch.lwjglFrame.get()) {
 			insns.add(new VarInsnNode(ALOAD, frameIndex));
 			insns.add(new InsnNode(ICONST_1));
@@ -1809,8 +1785,9 @@ public class LegacyTweak extends Tweak {
 	    }
 	    int i = 0;
 	    for(FieldNode field : minecraft.fields) {
-	    	if("I".equals(field.desc) && i <= 1) {
+	    	if("I".equals(field.desc) && i <= 1 && (field.access & ACC_STATIC) == 0) {
 	    		// Width and height are always the first two ints in Minecraft class
+	    		// Apparently they're the first two NON-STATIC fields
 				if(i == 0) width = field;
 				if(i == 1) height = field;
 	    		i++;

@@ -46,6 +46,7 @@ public class LaunchConfig {
 	public LaunchParameter<String> skinProxy = new LaunchParameter<String>("skinProxy", String.class, null, true);
 	public LaunchParameter<Integer> resourcesProxyPort = new LaunchParameter<Integer>("resourcesProxyPort", Integer.class, null, true);
 	public LaunchParameter<String> serverURL = new LaunchParameter<String>("serverURL", String.class, null, true);
+	public LaunchParameter<String> serverSHA1 = new LaunchParameter<String>("serverSHA1", String.class, null, true);
 
 	public LaunchConfig(String[] args) {
 		int i = 0;
@@ -83,7 +84,7 @@ public class LaunchConfig {
 	public Map<String, String> getArgsAsMap() {
 		Map<String, String> map = new HashMap<String, String>();
 		for(Entry<String, LaunchParameter<Object>> param : parameters.entrySet()) {
-			if(!param.getValue().wrapperOnly && param.getValue().value != null) {
+			if(!param.getValue().wrapperOnly && param.getValue().value != null && param.getValue().value != Boolean.FALSE) {
 				map.put(param.getKey(), param.getValue().getString());
 			}
 		}
