@@ -76,7 +76,7 @@ public class LegacyTweak extends Tweak {
 	private boolean supportsResizing;
 	/** public static main(String[]) */
 	protected MethodNode main;
-	protected SkinType skinType = SkinType.DEFAULT;
+	protected SkinType skinType = null;
 	protected int port = -1;
 	
 	public LegacyTweak(ClassNodeSource source, LaunchConfig launch) {
@@ -86,12 +86,6 @@ public class LegacyTweak extends Tweak {
 
 	public boolean transform() {
 		init();
-		if(launch.skinProxy.get() != null) {
-			skinType = SkinType.get(launch.skinProxy.get());
-		}
-		if(launch.resourcesProxyPort.get() != null) {
-			port = launch.resourcesProxyPort.get();
-		}
 		if(minecraft == null) {
 			return false;
 		}
@@ -101,7 +95,6 @@ public class LegacyTweak extends Tweak {
     	}
     	MethodNode runTick = getTickMethod(run);
 		fixSplash();
-    	fixPaulscode();
     	fixIndevLaunch();
     	addIndevSaving();
     	fixA111GrayScreen();
@@ -331,7 +324,8 @@ public class LegacyTweak extends Tweak {
 		AbstractInsnNode insn1 = method.instructions.getFirst();
 		while(insn1 != null) {
 			AbstractInsnNode[] insns = fill(insn1, 6);
-			if(compareInsn(insns[0], ALOAD)
+			if(width != null && height != null
+			&& compareInsn(insns[0], ALOAD)
 			&& compareInsn(insns[1], ALOAD)
 			&& compareInsn(insns[2], GETFIELD, minecraft.name, width.name, width.desc)
 			&& compareInsn(insns[3], ALOAD)
@@ -1419,13 +1413,13 @@ public class LegacyTweak extends Tweak {
 				} else if(i == 1) {
 					insns.add(intInsn(launch.height.get()));
 				} else {
-					throw new IllegalStateException("Unexpected constructor");
+					throw new IllegalStateException("Unexpected constructor: " + init.desc);
 				}
 				i++;
 			} else if(desc.equals("Z")) {
 				insns.add(booleanInsn(launch.fullscreen.get()));
 			} else {
-				throw new IllegalStateException("Unexpected constructor");
+				throw new IllegalStateException("Unexpected constructor: " + init.desc);
 			}
 		}
 		insns.add(new MethodInsnNode(INVOKESPECIAL, minecraftImpl.name, "<init>", init.desc));
@@ -1434,21 +1428,21 @@ public class LegacyTweak extends Tweak {
 	
 	private void fixSplash() {
 		for(MethodNode m : minecraft.methods) {
+			boolean store2 = false;
+			boolean store3 = false;
 			for(AbstractInsnNode insn : m.instructions) {
+				if(compareInsn(insn, ISTORE, 2)) {
+					store2 = true;
+				}
+				if(compareInsn(insn, ISTORE, 3)) {
+					store3 = true;
+				}
 				if(insn.getOpcode() == LDC) {
 					LdcInsnNode ldc = (LdcInsnNode)insn;
 					if(ldc.cst.equals("/title/mojang.png")) {
 						AbstractInsnNode insn3 = ldc.getNext();
-						boolean store2 = false;
-						boolean store3 = false;
 						while(insn3 != null) {
 							AbstractInsnNode[] insns2 = fill(insn3, 15);
-							if(compareInsn(insns2[0], ISTORE, 2)) {
-								store2 = true;
-							}
-							if(compareInsn(insns2[0], ISTORE, 3)) {
-								store3 = true;
-							}
 							if(store2 && store3
 							&& compareInsn(insns2[0], ALOAD)
 							&& compareInsn(insns2[1], GETFIELD, null, null, "I")
@@ -1588,176 +1582,6 @@ public class LegacyTweak extends Tweak {
 			insn = nextInsn(insn);
 		}
 	}
-	
-	@Deprecated
-	private void fixPaulscode() {
-		ClassNode libraryOpenAL = source.getClass("paulscode/sound/libraries/LibraryLWJGLOpenAL");
-		ClassNode libraryChannel = source.getClass("paulscode/sound/libraries/ChannelLWJGLOpenAL");
-		if(libraryOpenAL == null || libraryChannel == null) {
-			return;
-		}
-		MethodNode loadSound = InjectUtils.getMethod(libraryOpenAL, "loadSound", "(Lpaulscode/sound/FilenameURL;)Z");
-		if(loadSound == null) {
-			return;
-		}
-		MethodNode queueBuffer = InjectUtils.getMethod(libraryChannel, "queueBuffer", "([B)Z");
-		if(queueBuffer == null) {
-			return;
-		}
-		MethodNode preLoadBuffers = InjectUtils.getMethod(libraryChannel, "preLoadBuffers", "(Ljava/util/LinkedList;)Z");
-		if(preLoadBuffers == null) {
-			return;
-		}
-		MethodNode init = InjectUtils.getMethod(libraryChannel, "<init>", "(ILjava/nio/IntBuffer;)V");
-		if(init == null) {
-			return;
-		}
-		AbstractInsnNode insn = loadSound.instructions.getFirst();
-		boolean success = false;
-		while(insn != null) {
-			AbstractInsnNode[] insns = fill(insn, 11);
-			if(compareInsn(insns[0], ALOAD, 5)
-			&& compareInsn(insns[1], ICONST_0)
-			&& compareInsn(insns[2], INVOKEVIRTUAL, "java/nio/IntBuffer", "get", "(I)I")
-			&& compareInsn(insns[3], ILOAD, 4)
-			&& compareInsn(insns[4], ALOAD, 3)
-			&& compareInsn(insns[5], GETFIELD, "paulscode/sound/SoundBuffer", "audioData", "[B")
-			&& compareInsn(insns[6], INVOKESTATIC, "java/nio/ByteBuffer", "wrap", "([B)Ljava/nio/ByteBuffer;")
-			&& compareInsn(insns[7], ALOAD, 2)
-			&& compareInsn(insns[8], INVOKEVIRTUAL, "javax/sound/sampled/AudioFormat", "getSampleRate", "()F")
-			&& compareInsn(insns[9], F2I)
-			&& compareInsn(insns[10], INVOKESTATIC, "org/lwjgl/openal/AL10", "alBufferData", "(IILjava/nio/ByteBuffer;I)V")) {
-				loadSound.instructions.remove(insns[5]);
-				loadSound.instructions.remove(insns[6]);
-				int freeIndex = getFreeIndex(loadSound.instructions);
-				((VarInsnNode)insns[4]).var = freeIndex;
-				InsnList insert = new InsnList();
-				insert.add(new VarInsnNode(ALOAD, 3));
-				insert.add(new FieldInsnNode(GETFIELD, "paulscode/sound/SoundBuffer", "audioData", "[B"));
-				insert.add(new InsnNode(ARRAYLENGTH));
-				insert.add(new MethodInsnNode(INVOKESTATIC, "org/lwjgl/BufferUtils", "createByteBuffer", "(I)Ljava/nio/ByteBuffer;"));
-				insert.add(new InsnNode(DUP));
-				insert.add(new VarInsnNode(ASTORE, freeIndex));
-				insert.add(new MethodInsnNode(INVOKEVIRTUAL, "java/nio/ByteBuffer", "clear", "()Ljava/nio/Buffer;"));
-				insert.add(new InsnNode(POP));
-				insert.add(new VarInsnNode(ALOAD, freeIndex));
-				insert.add(new VarInsnNode(ALOAD, 3));
-				insert.add(new FieldInsnNode(GETFIELD, "paulscode/sound/SoundBuffer", "audioData", "[B"));
-				insert.add(new MethodInsnNode(INVOKEVIRTUAL, "java/nio/ByteBuffer", "put", "([B)Ljava/nio/ByteBuffer;"));
-				insert.add(new InsnNode(POP));
-				insert.add(new VarInsnNode(ALOAD, freeIndex));
-				insert.add(new MethodInsnNode(INVOKEVIRTUAL, "java/nio/ByteBuffer", "flip", "()Ljava/nio/Buffer;"));
-				insert.add(new InsnNode(POP));
-				loadSound.instructions.insertBefore(insn, insert);
-				success |= true;
-				break;
-			}
-			insn = nextInsn(insn);
-		}
-		boolean bufferBufferField = false;
-		insn = queueBuffer.instructions.getFirst();
-		while(insn != null) {
-			AbstractInsnNode[] insns = fill(insn, 6);
-			if(compareInsn(insns[0], ALOAD, 1)
-			&& compareInsn(insns[1], ICONST_0)
-			&& compareInsn(insns[2], ALOAD, 1)
-			&& compareInsn(insns[3], ARRAYLENGTH)
-			&& compareInsn(insns[4], INVOKESTATIC, "java/nio/ByteBuffer", "wrap", "([BII)Ljava/nio/ByteBuffer;")
-			&& compareInsn(insns[5], ASTORE, 1)) {
-				queueBuffer.instructions.remove(insns[4]);
-				queueBuffer.instructions.remove(insns[5]);
-				InsnList insert = new InsnList();
-				insert.add(new VarInsnNode(ALOAD, 0));
-				insert.add(new FieldInsnNode(GETFIELD, "paulscode/sound/libraries/ChannelLWJGLOpenAL", "bufferBuffer", "Ljava/nio/ByteBuffer;"));
-				insert.add(new MethodInsnNode(INVOKEVIRTUAL, "java/nio/ByteBuffer", "clear", "()Ljava/nio/Buffer;"));
-				insert.add(new InsnNode(POP));
-				insert.add(new VarInsnNode(ALOAD, 0));
-				insert.add(new FieldInsnNode(GETFIELD, "paulscode/sound/libraries/ChannelLWJGLOpenAL", "bufferBuffer", "Ljava/nio/ByteBuffer;"));
-				queueBuffer.instructions.insertBefore(insn, insert);
-				insert = new InsnList();
-				insert.add(new MethodInsnNode(INVOKEVIRTUAL, "java/nio/ByteBuffer", "put", "([BII)Ljava/nio/ByteBuffer;"));
-				insert.add(new InsnNode(POP));
-				insert.add(new VarInsnNode(ALOAD, 0));
-				insert.add(new FieldInsnNode(GETFIELD, "paulscode/sound/libraries/ChannelLWJGLOpenAL", "bufferBuffer", "Ljava/nio/ByteBuffer;"));
-				insert.add(new MethodInsnNode(INVOKEVIRTUAL, "java/nio/ByteBuffer", "flip", "()Ljava/nio/Buffer;"));
-				insert.add(new InsnNode(POP));
-				insert.add(new VarInsnNode(ALOAD, 0));
-				insert.add(new FieldInsnNode(GETFIELD, "paulscode/sound/libraries/ChannelLWJGLOpenAL", "bufferBuffer", "Ljava/nio/ByteBuffer;"));
-				insert.add(new VarInsnNode(ASTORE, 1));
-				queueBuffer.instructions.insert(insns[3], insert);
-				bufferBufferField |= true;
-				success |= true;
-				break;
-			}
-			insn = nextInsn(insn);
-		}
-		insn = preLoadBuffers.instructions.getFirst();
-		while(insn != null) {
-			AbstractInsnNode[] insns = fill(insn, 12);
-			if(compareInsn(insns[0], ALOAD, 1)
-			&& compareInsn(insns[1], ILOAD, 4)
-			&& compareInsn(insns[2], INVOKEVIRTUAL, "java/util/LinkedList", "get", "(I)Ljava/lang/Object;")
-			&& compareInsn(insns[3], CHECKCAST, "[B")
-			&& compareInsn(insns[4], ICONST_0)
-			&& compareInsn(insns[5], ALOAD, 1)
-			&& compareInsn(insns[6], ILOAD, 4)
-			&& compareInsn(insns[7], INVOKEVIRTUAL, "java/util/LinkedList", "get", "(I)Ljava/lang/Object;")
-			&& compareInsn(insns[8], CHECKCAST, "[B")
-			&& compareInsn(insns[9], ARRAYLENGTH)
-			&& compareInsn(insns[10], INVOKESTATIC, "java/nio/ByteBuffer", "wrap", "([BII)Ljava/nio/ByteBuffer;")
-			&& compareInsn(insns[11], ASTORE, 3)) {
-				preLoadBuffers.instructions.remove(insns[10]);
-				preLoadBuffers.instructions.remove(insns[11]);
-				InsnList insert = new InsnList();
-				insert.add(new VarInsnNode(ALOAD, 0));
-				insert.add(new FieldInsnNode(GETFIELD, "paulscode/sound/libraries/ChannelLWJGLOpenAL", "bufferBuffer", "Ljava/nio/ByteBuffer;"));
-				insert.add(new MethodInsnNode(INVOKEVIRTUAL, "java/nio/ByteBuffer", "clear", "()Ljava/nio/Buffer;"));
-				insert.add(new InsnNode(POP));
-				insert.add(new VarInsnNode(ALOAD, 0));
-				insert.add(new FieldInsnNode(GETFIELD, "paulscode/sound/libraries/ChannelLWJGLOpenAL", "bufferBuffer", "Ljava/nio/ByteBuffer;"));
-				preLoadBuffers.instructions.insertBefore(insn, insert);
-				insert = new InsnList();
-				insert.add(new MethodInsnNode(INVOKEVIRTUAL, "java/nio/ByteBuffer", "put", "([BII)Ljava/nio/ByteBuffer;"));
-				insert.add(new InsnNode(POP));
-				insert.add(new VarInsnNode(ALOAD, 0));
-				insert.add(new FieldInsnNode(GETFIELD, "paulscode/sound/libraries/ChannelLWJGLOpenAL", "bufferBuffer", "Ljava/nio/ByteBuffer;"));
-				insert.add(new MethodInsnNode(INVOKEVIRTUAL, "java/nio/ByteBuffer", "flip", "()Ljava/nio/Buffer;"));
-				insert.add(new InsnNode(POP));
-				insert.add(new VarInsnNode(ALOAD, 0));
-				insert.add(new FieldInsnNode(GETFIELD, "paulscode/sound/libraries/ChannelLWJGLOpenAL", "bufferBuffer", "Ljava/nio/ByteBuffer;"));
-				insert.add(new VarInsnNode(ASTORE, 3));
-				preLoadBuffers.instructions.insert(insns[9], insert);
-				bufferBufferField |= true;
-				success |= true;
-				break;
-			}
-			insn = nextInsn(insn);
-		}
-		if(bufferBufferField) {
-			if(InjectUtils.getField(libraryChannel, "bufferBuffer", "Ljava/nio/ByteBuffer;") == null) {
-				libraryChannel.fields.add(new FieldNode(0, "bufferBuffer", "Ljava/nio/ByteBuffer;", null, null));
-				insn = init.instructions.getFirst();
-				while(insn != null) {
-					if(compareInsn(insn, INVOKESPECIAL, "paulscode/sound/Channel", "<init>", "(I)V")) {
-						InsnList insert = new InsnList();
-						insert.add(new VarInsnNode(ALOAD, 0));
-						insert.add(intInsn(0x500000));
-						insert.add(new MethodInsnNode(INVOKESTATIC, "org/lwjgl/BufferUtils", "createByteBuffer", "(I)Ljava/nio/ByteBuffer;"));
-						insert.add(new FieldInsnNode(PUTFIELD, "paulscode/sound/libraries/ChannelLWJGLOpenAL", "bufferBuffer", "Ljava/nio/ByteBuffer;"));
-						init.instructions.insert(insn, insert);
-						success |= true;
-						break;
-					}
-					insn = nextInsn(insn);
-				}
-			}
-		}
-		if(success) {
-			source.overrideClass(libraryChannel);
-			source.overrideClass(libraryOpenAL);
-			debugInfo("Fixed indirect buffers in paulscode");
-		}
-	}
 
 	protected void init() {
 		minecraftApplet = getApplet();
@@ -1784,13 +1608,21 @@ public class LegacyTweak extends Tweak {
 	    	}
 	    }
 	    int i = 0;
+	    boolean previousIsWidth = false;
+	    FieldNode width = null;
+	    FieldNode height = null;
 	    for(FieldNode field : minecraft.fields) {
-	    	if("I".equals(field.desc) && i <= 1 && (field.access & ACC_STATIC) == 0) {
+	    	if("I".equals(field.desc) && (field.access & ACC_STATIC) == 0) {
 	    		// Width and height are always the first two ints in Minecraft class
 	    		// Apparently they're the first two NON-STATIC fields
-				if(i == 0) width = field;
-				if(i == 1) height = field;
+				if(i == 0) {
+					previousIsWidth = true;
+					width = field;
+				}
+				if(i == 1 && previousIsWidth) height = field;
 	    		i++;
+	    	} else {
+	    		previousIsWidth = false;
 	    	}
 	    	if("Ljava/io/File;".equals(field.desc)) {
 	    		mcDir = field; // Possible candidate (Needed for infdev)
@@ -1799,6 +1631,10 @@ public class LegacyTweak extends Tweak {
 	    			break;
 	    		}
 	    	}
+	    }
+	    if(width != null && height != null) {
+	    	this.width = width;
+	    	this.height = height;
 	    }
 		if(minecraftApplet != null) {
 		    String mcDesc = "L" + minecraft.name + ";";
@@ -1841,6 +1677,15 @@ public class LegacyTweak extends Tweak {
 	    			insn = nextInsn(insn);
 	    		}
 	    	}
+		}
+		if(launch.forceResizable.get()) {
+			supportsResizing = true;
+		}
+		if(launch.skinProxy.get() != null) {
+			skinType = SkinType.get(launch.skinProxy.get());
+		}
+		if(launch.resourcesProxyPort.get() != null) {
+			port = launch.resourcesProxyPort.get();
 		}
 	}
 

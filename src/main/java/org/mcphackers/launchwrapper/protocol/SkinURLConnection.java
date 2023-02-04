@@ -21,7 +21,7 @@ public class SkinURLConnection extends HttpURLConnection {
 	public SkinURLConnection(URL url, SkinType skin) {
 		super(url);
 		responseCode = 200;
-		skinType = skin;
+		skinType = skin == null ? SkinType.DEFAULT : skin;
 	}
 
 	@Override

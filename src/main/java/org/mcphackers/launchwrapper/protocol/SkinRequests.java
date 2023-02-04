@@ -121,7 +121,6 @@ public class SkinRequests {
 				switch(skinType) {
 				case CLASSIC:
 				case PRE_B1_9:
-				case PRE_1_7:
 				case PRE_1_8:
 					ByteArrayInputStream bis = new ByteArrayInputStream(skindata.cape);
 	
@@ -158,18 +157,15 @@ public class SkinRequests {
 					overlayHeadLayer(imgu);
 				case PRE_B1_9:
 					rotateBottomTX(imgu);
-				case PRE_1_7:
-					useLeftArm(imgu);
-					useLeftLeg(imgu);
 				case PRE_1_8:
-					overlay64to32(imgu);
+					if(imgu.getImage().getHeight() == 64)
+						overlay64to32(imgu);
 					if(skindata.slim)
 						alexToSteve(imgu);
 					imgu = imgu.crop(0, 0, 64, 32);
 				case DEFAULT:
 					break;
 				}
-
 				skin = imgu.getInByteForm();
 			}
 		} catch (Throwable t) {

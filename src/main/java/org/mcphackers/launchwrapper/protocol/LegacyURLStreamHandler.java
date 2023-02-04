@@ -50,8 +50,7 @@ public class LegacyURLStreamHandler extends URLStreamHandlerProxy {
 	
 	public enum SkinType {
 		CLASSIC("classic"),
-		PRE_B1_9("pre-b1.9"),
-		PRE_1_7("pre-1.7"),
+		PRE_B1_9("pre-b1.9-pre4"),
 		PRE_1_8("pre-1.8"),
 		DEFAULT("default");
 		

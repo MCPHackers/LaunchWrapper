@@ -43,6 +43,7 @@ public class LaunchConfig {
 	public LaunchParameter<Boolean> lwjglFrame = new LaunchParameter<Boolean>("lwjglFrame", Boolean.class, true, true);
 	public LaunchParameter<Boolean> isom = new LaunchParameter<Boolean>("isom", Boolean.class, false, true);
 	public LaunchParameter<Boolean> forceVsync = new LaunchParameter<Boolean>("forceVsync", Boolean.class, false, true);
+	public LaunchParameter<Boolean> forceResizable = new LaunchParameter<Boolean>("forceResizable", Boolean.class, false, true);
 	public LaunchParameter<String> skinProxy = new LaunchParameter<String>("skinProxy", String.class, null, true);
 	public LaunchParameter<Integer> resourcesProxyPort = new LaunchParameter<Integer>("resourcesProxyPort", Integer.class, null, true);
 	public LaunchParameter<String> serverURL = new LaunchParameter<String>("serverURL", String.class, null, true);
@@ -85,7 +86,7 @@ public class LaunchConfig {
 		Map<String, String> map = new HashMap<String, String>();
 		for(Entry<String, LaunchParameter<Object>> param : parameters.entrySet()) {
 			if(!param.getValue().wrapperOnly && param.getValue().value != null && param.getValue().value != Boolean.FALSE) {
-				map.put(param.getKey(), param.getValue().getString());
+				map.put(param.getValue().name, param.getValue().getString());
 			}
 		}
 		return map;
@@ -99,7 +100,7 @@ public class LaunchConfig {
 					if(param.getValue().get().equals(true))
 						list.add("--" + param.getKey());
 				} else {
-					list.add("--" + param.getKey());
+					list.add("--" + param.getValue().name);
 					list.add(param.getValue().getString());
 				}
 			}
@@ -111,6 +112,7 @@ public class LaunchConfig {
 	public class LaunchParameter<T> {
 		private Class<?> type;
 		private T value;
+		private final String name;
 		public boolean wrapperOnly;
 		
 		public LaunchParameter(String name, Class<?> type) {
@@ -126,6 +128,7 @@ public class LaunchConfig {
 		public LaunchParameter(String name, Class<?> type, T defaultValue) {
 			this.type = type;
 			this.value = defaultValue;
+			this.name = name;
 			parameters.put(name.toLowerCase(Locale.ROOT), (LaunchParameter<Object>) this);
 		}
 		

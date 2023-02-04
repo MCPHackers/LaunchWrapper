@@ -1,6 +1,7 @@
 package org.mcphackers.launchwrapper.loader;
 
-import static org.objectweb.asm.ClassWriter.*;
+import static org.objectweb.asm.ClassWriter.COMPUTE_FRAMES;
+import static org.objectweb.asm.ClassWriter.COMPUTE_MAXS;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -8,9 +9,9 @@ import java.lang.reflect.InvocationTargetException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.net.URLConnection;
-import java.security.CodeSigner;
 import java.security.CodeSource;
 import java.security.ProtectionDomain;
+import java.security.cert.Certificate;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
@@ -103,7 +104,7 @@ public class LaunchClassLoader extends ClassLoader implements ClassNodeSource {
 			e.printStackTrace();
 			return null;
 		}
-        CodeSource codeSource = urlConnection == null ? null : new CodeSource(urlConnection.getURL(), new CodeSigner[0]);
+        CodeSource codeSource = urlConnection == null ? null : new CodeSource(urlConnection.getURL(), new Certificate[0]);
 		return new ProtectionDomain(codeSource, null);
 	}
 
