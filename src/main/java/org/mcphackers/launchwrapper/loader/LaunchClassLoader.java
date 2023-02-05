@@ -12,8 +12,11 @@ import java.net.URLConnection;
 import java.security.CodeSource;
 import java.security.ProtectionDomain;
 import java.security.cert.Certificate;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.mcphackers.launchwrapper.inject.ClassNodeSource;
@@ -58,6 +61,9 @@ public class LaunchClassLoader extends ClassLoader implements ClassNodeSource {
 	public Class<?> findClass(String name) throws ClassNotFoundException {
 		if(!classNodeCache.isEmpty()) {
 			classNodeCache.clear();
+		}
+		if(name.startsWith("java.")) {
+			parent.loadClass(name);
 		}
 		name = className(name);
 		Class<?> cls = exceptions.get(name);
