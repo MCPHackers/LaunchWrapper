@@ -1,5 +1,6 @@
 package org.mcphackers.launchwrapper.protocol;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -51,12 +52,13 @@ public class ListLevelsURLConnection extends URLConnection {
 		for(int i = 0; i < maxLevels; i++) {
 			lvls += lvlNames[i] + ";";
 		}
+		byte[] lvlsData = lvls.getBytes();
 		if(levelsChanged) {
 			FileOutputStream outputNames = new FileOutputStream(levelNames);
-			outputNames.write(lvls.getBytes());
+			outputNames.write(lvlsData);
 			outputNames.close();
 		}
-		return new FileInputStream(levelNames);
+		return new ByteArrayInputStream(lvlsData);
 	}
 
 }
