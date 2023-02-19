@@ -16,6 +16,7 @@ public class LaunchConfig {
 	public LaunchParameter<String> server = new LaunchParameter<String>("server", String.class);
 	public LaunchParameter<Integer> port = new LaunchParameter<Integer>("port", Integer.class, 25565);
 	public LaunchParameter<File> gameDir = new LaunchParameter<File>("gameDir", File.class);
+	public LaunchParameter<File> workDir = new LaunchParameter<File>("workDir", File.class);
 	public LaunchParameter<File> assetsDir = new LaunchParameter<File>("assetsDir", File.class);
 	public LaunchParameter<File> resourcePackDir = new LaunchParameter<File>("resourcePackDir", File.class);
 	public LaunchParameter<String> proxyHost = new LaunchParameter<String>("proxyHost", String.class);
@@ -24,6 +25,7 @@ public class LaunchConfig {
 	public LaunchParameter<String> proxyPass = new LaunchParameter<String>("proxyPass", String.class);
 	public LaunchParameter<String> username = new LaunchParameter<String>("username", String.class, "Player" + System.currentTimeMillis() % 1000L);
 	public LaunchParameter<String> sessionid = new LaunchParameter<String>("sessionid", String.class, "-");
+	public LaunchParameter<String> session = new LaunchParameter<String>("session", String.class, "-");
 	public LaunchParameter<String> password = new LaunchParameter<String>("password", String.class);
 	public LaunchParameter<String> uuid = new LaunchParameter<String>("uuid", String.class);
 	public LaunchParameter<String> accessToken = new LaunchParameter<String>("accessToken", String.class);
@@ -65,9 +67,23 @@ public class LaunchConfig {
 					try {
 						if(param != null) {
 							if(param.type == String.class) {
+								//TODO better handling for alternative parameter names
+								if(param.equals(session)) {
+									sessionid.set(args[i + 1]);
+								}
+								if(param.equals(sessionid)) {
+									session.set(args[i + 1]);
+								}
 								param.set(args[i + 1]);
 							}
 							else if(param.type == File.class) {
+								//TODO better handling for alternative parameter names
+								if(param.equals(gameDir)) {
+									workDir.set(new File(args[i + 1]));
+								}
+								if(param.equals(workDir)) {
+									gameDir.set(new File(args[i + 1]));
+								}
 								param.set(new File(args[i + 1]));
 							}
 							else if(param.type == Integer.class) {
@@ -80,6 +96,16 @@ public class LaunchConfig {
 			}
 			i++;
 		}
+	}
+
+	public List<LaunchParameter<?>> getParamsAsList() {
+		List<LaunchParameter<?>> list = new ArrayList<LaunchParameter<?>>();
+		for(Entry<String, LaunchParameter<Object>> param : parameters.entrySet()) {
+			if(!param.getValue().wrapperOnly && param.getValue().value != null && param.getValue().value != Boolean.FALSE) {
+				list.add(param.getValue());
+			}
+		}
+		return list;
 	}
 
 	public Map<String, String> getArgsAsMap() {
@@ -112,7 +138,7 @@ public class LaunchConfig {
 	public class LaunchParameter<T> {
 		private Class<?> type;
 		private T value;
-		private final String name;
+		public final String name;
 		public boolean wrapperOnly;
 		
 		public LaunchParameter(String name, Class<?> type) {

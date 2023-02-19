@@ -34,7 +34,6 @@ public class SkinURLConnection extends HttpURLConnection {
 
 	@Override
 	public void connect() throws IOException {
-//		File skinDir = new File(Launch.INSTANCE.config.gameDir.get(), "skins");
 		Map<String, String> queryMap = Util.queryMap(url);
 		String username = queryMap.get("user");
 		String path = url.getPath();
@@ -55,11 +54,6 @@ public class SkinURLConnection extends HttpURLConnection {
 			if (path.startsWith(template)) {
 				if(username == null)
 					username = path.substring(template.length()).replace(".png", "");
-//				File cached = new File(skinDir, username + ".png");
-//				if(cached.exists()) {
-//					inputStream = new FileInputStream(cached);
-//					return;
-//				}
 				byte[] skinData = SkinRequests.getSkin(username, skinType);
 				if(skinData != null) {
 					inputStream = new ByteArrayInputStream(skinData);

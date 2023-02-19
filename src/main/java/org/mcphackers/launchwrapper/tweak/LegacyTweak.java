@@ -1264,7 +1264,7 @@ public class LegacyTweak extends Tweak {
 	    }
 		AbstractInsnNode insn = init.instructions.getFirst();
 		while(insn != null) {
-			AbstractInsnNode[] insns2 = fill(insn, 5);
+			AbstractInsnNode[] insns2 = fill(insn, 6);
 			if(compareInsn(insns2[1], PUTFIELD, minecraftApplet.name, mcField, mcDesc)
 			&& compareInsn(insns2[0], INVOKESPECIAL, null, "<init>")) {
 				MethodInsnNode invoke = (MethodInsnNode)insns2[0];
@@ -1279,6 +1279,28 @@ public class LegacyTweak extends Tweak {
 				}
 				init.instructions.remove(invoke);
 				insn = insns2[1];
+			}
+			if(compareInsn(insns2[0], ALOAD, 0)
+			&& compareInsn(insns2[1], GETFIELD, minecraftApplet.name, mcField, mcDesc)
+			&& compareInsn(insns2[2], NEW)
+			&& compareInsn(insns2[3], DUP)
+			&& compareInsn(insns2[4], INVOKESPECIAL, null, "<init>", "()V")
+			&& compareInsn(insns2[5], PUTFIELD, minecraft.name)) {
+				TypeInsnNode type = (TypeInsnNode)insns2[2];
+				ClassNode node = source.getClass(type.desc);
+				MethodNode method = InjectUtils.getMethod(node, "<init>", "()V");
+				AbstractInsnNode[] insns3 = fill(nextInsn(method.instructions.getFirst()), 4);
+				if(compareInsn(insns3[0], ALOAD, 0)
+				&& compareInsn(insns3[1], LDC, "DemoUser")
+				&& compareInsn(insns3[2], LDC, "n/a")
+				&& compareInsn(insns3[3], INVOKESPECIAL, node.superName, "<init>", "(Ljava/lang/String;Ljava/lang/String;)V")) {
+					InsnList insert = new InsnList();
+					insert.add(new LdcInsnNode(launch.username.get()));
+					insert.add(new LdcInsnNode(launch.sessionid.get()));
+					method.instructions.insert(insns2[3], insert);
+					method.instructions.set(insns2[2], new TypeInsnNode(NEW, node.superName));
+					method.instructions.set(insns2[4], new MethodInsnNode(INVOKESPECIAL, node.superName, "<init>", "(Ljava/lang/String;Ljava/lang/String;)V"));
+				}
 			}
 			if(compareInsn(insns2[0], ALOAD, 0)
 			&& compareInsn(insns2[1], GETFIELD, minecraftApplet.name, mcField, mcDesc)
