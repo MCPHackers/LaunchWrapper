@@ -30,7 +30,7 @@ public class LaunchConfig {
 	public LaunchParameter<String> version = new LaunchParameter<String>("version", String.class);
 	public LaunchParameter<Integer> width = new LaunchParameter<Integer>("width", Integer.class, 854);
 	public LaunchParameter<Integer> height = new LaunchParameter<Integer>("height", Integer.class, 480);
-	public LaunchParameter<String> userProperties = new LaunchParameter<String>("userProperties", String.class, "{}");
+	public LaunchParameter<String> userProperties = new LaunchParameter<String>("userProperties", String.class);
 	public LaunchParameter<String> profileProperties = new LaunchParameter<String>("profileProperties", String.class);
 	public LaunchParameter<String> assetIndex = new LaunchParameter<String>("assetIndex", String.class);
 	public LaunchParameter<String> userType = new LaunchParameter<String>("userType", String.class);
