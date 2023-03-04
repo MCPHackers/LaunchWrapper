@@ -8,6 +8,8 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.imageio.ImageIO;
 
@@ -88,8 +90,8 @@ public class Inject {
         return buffer;
     }
 
-    public static ByteBuffer[] loadIcons(boolean useDefault) {
-    	if(!useDefault) {
+    public static ByteBuffer[] loadDefaultIcon(boolean grassBlock) {
+    	if(!grassBlock) {
 	    	try {
 	        	return new ByteBuffer[] {
                     loadIcon("/icon_16x16.png"),
@@ -102,7 +104,30 @@ public class Inject {
     	return new ByteBuffer[] { loadIcon(DEFAULT_ICON) };
     }
 	
-	public static ByteBuffer loadIcon(String icon) throws IOException {
+	public static ByteBuffer[] loadIcons() {
+		List<ByteBuffer> processedIcons = new ArrayList<ByteBuffer>();
+		for(File icon : LAUNCH.config.icon.get()) {
+			if(!icon.exists()) {
+				continue;
+			}
+			try {
+				processedIcons.add(loadIcon(ImageIO.read(icon)));
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+		return processedIcons.toArray(new ByteBuffer[0]);
+	}
+	
+	public static ByteBuffer[] loadIcon(File icon) {
+		try {
+			return new ByteBuffer[] { loadIcon(ImageIO.read(icon)) };
+		} catch (IOException e) {
+			return null;
+		}
+	}
+	
+	private static ByteBuffer loadIcon(String icon) throws IOException {
 		return loadIcon(ImageIO.read(Inject.class.getResourceAsStream(icon)));
 	}
 	

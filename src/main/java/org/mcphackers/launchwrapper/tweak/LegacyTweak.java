@@ -25,20 +25,7 @@ import org.mcphackers.launchwrapper.util.Util;
 import org.mcphackers.rdi.util.IdentifyCall;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
-import org.objectweb.asm.tree.AbstractInsnNode;
-import org.objectweb.asm.tree.ClassNode;
-import org.objectweb.asm.tree.FieldInsnNode;
-import org.objectweb.asm.tree.FieldNode;
-import org.objectweb.asm.tree.InsnList;
-import org.objectweb.asm.tree.InsnNode;
-import org.objectweb.asm.tree.JumpInsnNode;
-import org.objectweb.asm.tree.LabelNode;
-import org.objectweb.asm.tree.LdcInsnNode;
-import org.objectweb.asm.tree.MethodInsnNode;
-import org.objectweb.asm.tree.MethodNode;
-import org.objectweb.asm.tree.TryCatchBlockNode;
-import org.objectweb.asm.tree.TypeInsnNode;
-import org.objectweb.asm.tree.VarInsnNode;
+import org.objectweb.asm.tree.*;
 
 public class LegacyTweak extends Tweak {
 	
@@ -380,6 +367,7 @@ public class LegacyTweak extends Tweak {
 	}
 
 	private void displayPatch(MethodNode init, boolean supportsResizing) {
+		boolean foundTitle = false; // TODO
 		boolean classic = isClassic();
 		String canvasName = null;
     	
@@ -494,11 +482,18 @@ public class LegacyTweak extends Tweak {
 	    			insn2 = previousInsn(insn2);
 	    		}
     		}
-    		if(insn.getOpcode() == LDC) {
+    		if(compareInsn(insns[0], LDC)
+    		&& compareInsn(insns[1], INVOKESTATIC, "org/lwjgl/opengl/Display", "setTitle", "(Ljava/lang/String;)V")) {
     			LdcInsnNode ldc = (LdcInsnNode)insn;
     			if(ldc.cst instanceof String) {
+    				foundTitle = true;
     				String value = (String)ldc.cst;
-    				if(value.startsWith("Minecraft Minecraft")) {
+    				if(launch.title.get() != null) {
+    					//TODO replace title even if there isn't a setTitle call
+    					debugInfo("Replaced title");
+    					ldc.cst = launch.title.get();
+    				}
+    				else if(value.startsWith("Minecraft Minecraft")) {
     					debugInfo("Fixed title");
     					ldc.cst = value.substring(10);
     				}
@@ -530,6 +525,7 @@ public class LegacyTweak extends Tweak {
 			debugInfo("Fullscreen init patch");
 			insnList.insertBefore(afterLabel, aLabel);
 			InsnList insert = new InsnList();
+			//Place that outside of the condition?
 			insert.add(getIcon(classic));
 			if(supportsResizing) {
 				insert.add(new InsnNode(ICONST_1));
@@ -1061,13 +1057,12 @@ public class LegacyTweak extends Tweak {
 	private MethodNode getInit(MethodNode run) {
 		for(AbstractInsnNode insn : run.instructions) {
 			if(insn.getType() == AbstractInsnNode.METHOD_INSN) {
-				if(insn.getOpcode() != INVOKEVIRTUAL) {
-					break;
-				}
-			}
-			if(compareInsn(insn, INVOKEVIRTUAL, minecraft.name)) {
 				MethodInsnNode invoke = (MethodInsnNode)insn;
-				return InjectUtils.getMethod(minecraft, invoke.name, invoke.desc);
+				if(invoke.owner.equals(minecraft.name)) {
+					return InjectUtils.getMethod(minecraft, invoke.name, invoke.desc);
+				} else {
+					return run;
+				}
 			}
 		}
 		return run;
@@ -1110,14 +1105,27 @@ public class LegacyTweak extends Tweak {
 		return run;
 	}
 
-	private InsnList getIcon(boolean useDefault) {
+	private InsnList getIcon(boolean grassIcon) {
 		debugInfo("Replaced icon");
 		InsnList insert = new InsnList();
-		insert.add(booleanInsn(useDefault));
-		insert.add(new MethodInsnNode(INVOKESTATIC, "org/mcphackers/launchwrapper/inject/Inject", "loadIcons", "(Z)[Ljava/nio/ByteBuffer;"));
+		if(launch.icon.get() != null && hasIcon(launch.icon.get())) {
+			insert.add(new MethodInsnNode(INVOKESTATIC, "org/mcphackers/launchwrapper/inject/Inject", "loadIcons", "()[Ljava/nio/ByteBuffer;"));
+		} else {
+			insert.add(booleanInsn(grassIcon));
+			insert.add(new MethodInsnNode(INVOKESTATIC, "org/mcphackers/launchwrapper/inject/Inject", "loadDefaultIcon", "(Z)[Ljava/nio/ByteBuffer;"));
+		}
 		insert.add(new MethodInsnNode(INVOKESTATIC, "org/lwjgl/opengl/Display", "setIcon", "([Ljava/nio/ByteBuffer;)I"));
 		insert.add(new InsnNode(POP));
 		return insert;
+	}
+	
+	private boolean hasIcon(File[] icons) {
+		for(File f : icons) {
+			if(f.exists()) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	private MethodNode getMain() {

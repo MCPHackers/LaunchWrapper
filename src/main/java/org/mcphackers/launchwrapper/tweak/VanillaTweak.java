@@ -1,17 +1,9 @@
 package org.mcphackers.launchwrapper.tweak;
 
-import static org.mcphackers.launchwrapper.inject.InsnHelper.compareInsn;
-import static org.mcphackers.launchwrapper.inject.InsnHelper.fill;
-import static org.mcphackers.launchwrapper.inject.InsnHelper.nextInsn;
-import static org.mcphackers.launchwrapper.inject.InsnHelper.previousInsn;
-import static org.objectweb.asm.Opcodes.ALOAD;
-import static org.objectweb.asm.Opcodes.DUP;
-import static org.objectweb.asm.Opcodes.GETFIELD;
-import static org.objectweb.asm.Opcodes.INVOKESPECIAL;
-import static org.objectweb.asm.Opcodes.INVOKEVIRTUAL;
-import static org.objectweb.asm.Opcodes.LDC;
-import static org.objectweb.asm.Opcodes.NEW;
+import static org.mcphackers.launchwrapper.inject.InsnHelper.*;
+import static org.objectweb.asm.Opcodes.*;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -25,14 +17,8 @@ import org.mcphackers.launchwrapper.loader.LaunchClassLoader;
 import org.mcphackers.launchwrapper.protocol.LegacyURLStreamHandler;
 import org.mcphackers.launchwrapper.protocol.LegacyURLStreamHandler.SkinType;
 import org.mcphackers.launchwrapper.protocol.URLStreamHandlerProxy;
-import org.objectweb.asm.tree.AbstractInsnNode;
-import org.objectweb.asm.tree.ClassNode;
-import org.objectweb.asm.tree.InsnList;
-import org.objectweb.asm.tree.InsnNode;
-import org.objectweb.asm.tree.LdcInsnNode;
-import org.objectweb.asm.tree.MethodInsnNode;
-import org.objectweb.asm.tree.MethodNode;
-import org.objectweb.asm.tree.TypeInsnNode;
+import org.mcphackers.rdi.util.IdentifyCall;
+import org.objectweb.asm.tree.*;
 
 public class VanillaTweak extends Tweak {
 	public static final String MAIN_CLASS = "net/minecraft/client/main/Main";
@@ -40,6 +26,7 @@ public class VanillaTweak extends Tweak {
 	protected LaunchConfig launch;
 	protected ClassNode minecraftMain;
 	protected ClassNode minecraft;
+	protected MethodNode run;
 	private List<String> availableParameters = new ArrayList<String>();
 
 	public VanillaTweak(ClassNodeSource source, LaunchConfig launch) {
@@ -55,7 +42,9 @@ public class VanillaTweak extends Tweak {
 		while(insn != null) {
 			// Last call inside of main is minecraft.run();
 			if(insn.getOpcode() == INVOKEVIRTUAL) {
-				minecraft = source.getClass(((MethodInsnNode)insn).owner);
+				MethodInsnNode invoke = (MethodInsnNode)insn; 
+				minecraft = source.getClass(invoke.owner);
+				run = InjectUtils.getMethod(minecraft, invoke.name, invoke.desc);
 				break;
 			}
 			insn = previousInsn(insn);
@@ -82,8 +71,58 @@ public class VanillaTweak extends Tweak {
 				injectAssetsDirectory(assets);
 			}
 		}
+		replaceIconAndTitle(getInit(run));
 		source.overrideClass(minecraft);
 		return true;
+	}
+	
+	private void replaceIconAndTitle(MethodNode init) {
+		AbstractInsnNode insn = init.instructions.getFirst();
+		while(insn != null) {
+			AbstractInsnNode[] insns = fill(insn, 6);
+    		if(compareInsn(insns[0], LDC)
+    		&& compareInsn(insns[1], INVOKESTATIC, "org/lwjgl/opengl/Display", "setTitle", "(Ljava/lang/String;)V")) {
+    			LdcInsnNode ldc = (LdcInsnNode)insn;
+    			if(ldc.cst instanceof String) {
+    				if(launch.title.get() != null) {
+    					debugInfo("Replaced title");
+    					ldc.cst = launch.title.get();
+    				}
+    			}
+    		}
+    		if(launch.icon.get() != null && hasIcon(launch.icon.get())
+    		&& compareInsn(insn, INVOKESTATIC, "org/lwjgl/opengl/Display", "setIcon", "([Ljava/nio/ByteBuffer;)I")) {
+    			IdentifyCall call = new IdentifyCall((MethodInsnNode)insn);
+    			for(AbstractInsnNode[] arg : call.getArguments()) {
+        			remove(init.instructions, arg);
+    			}
+    			MethodInsnNode insert = new MethodInsnNode(INVOKESTATIC, "org/mcphackers/launchwrapper/inject/Inject", "loadIcons", "()[Ljava/nio/ByteBuffer;");
+    			init.instructions.insertBefore(insn, insert);
+    			debugInfo("Replaced icon");
+    		}
+			insn = nextInsn(insn);
+		}
+	}
+	
+	private boolean hasIcon(File[] icons) {
+		for(File f : icons) {
+			if(f.exists()) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	private MethodNode getInit(MethodNode run) {
+		for(AbstractInsnNode insn : run.instructions) {
+			if(insn.getType() == AbstractInsnNode.METHOD_INSN) {
+				MethodInsnNode invoke = (MethodInsnNode)insn;
+				if(invoke.owner.equals(minecraft.name)) {
+					return InjectUtils.getMethod(minecraft, invoke.name, invoke.desc);
+				}
+			}
+		}
+		return run;
 	}
 
 	protected void injectAssetsDirectory(String assets) {
