@@ -45,7 +45,7 @@ public class LaunchConfig {
 	public LaunchParameterSwitch isom 				= new LaunchParameterSwitch("isom", false, true);
 	public LaunchParameterSwitch forceVsync 		= new LaunchParameterSwitch("forceVsync", false, true);
 	public LaunchParameterSwitch forceResizable 	= new LaunchParameterSwitch("forceResizable", false, true);
-	public LaunchParameterString skinProxy 			= new LaunchParameterString("skinProxy", null, true);
+	public LaunchParameterString skinProxy 			= new LaunchParameterString("skinProxy", "default", true);
 	public LaunchParameterNumber resourcesProxyPort = new LaunchParameterNumber("resourcesProxyPort", null, true);
 	public LaunchParameterString serverURL 			= new LaunchParameterString("serverURL", null, true);
 	public LaunchParameterString serverSHA1 		= new LaunchParameterString("serverSHA1", null, true);
