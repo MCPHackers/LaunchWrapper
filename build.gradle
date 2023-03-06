@@ -14,7 +14,7 @@ repositories {
 group = 'org.mcphackers'
 archivesBaseName = 'launchwrapper'
 version = '1.0'
-sourceCompatibility = 1.6
+sourceCompatibility = 1.5
 
 dependencies {
     implementation 'org.lwjgl.lwjgl:lwjgl:2.9.4'

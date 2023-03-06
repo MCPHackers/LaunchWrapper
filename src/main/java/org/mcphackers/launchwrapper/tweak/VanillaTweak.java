@@ -45,6 +45,7 @@ public class VanillaTweak extends Tweak {
 				MethodInsnNode invoke = (MethodInsnNode)insn; 
 				minecraft = source.getClass(invoke.owner);
 				run = InjectUtils.getMethod(minecraft, invoke.name, invoke.desc);
+				debugInfo(minecraft.name + "." + invoke.name + invoke.desc + " is Minecraft.run()");
 				break;
 			}
 			insn = previousInsn(insn);
@@ -71,15 +72,28 @@ public class VanillaTweak extends Tweak {
 				injectAssetsDirectory(assets);
 			}
 		}
-		replaceIconAndTitle(getInit(run));
+		MethodNode init = getInit(run);
+		boolean fixedTitle = replaceTitle(init);
+		boolean fixedIcon = replaceIcon(init);
+			for(MethodNode m : minecraft.methods) {
+				if(!fixedTitle) {
+					fixedTitle = replaceTitle(m);
+				}
+				if(!fixedIcon) {
+					fixedIcon = replaceIcon(m);
+				}
+				if(fixedTitle && fixedIcon) {
+					break;
+				}
+			}
 		source.overrideClass(minecraft);
 		return true;
 	}
 	
-	private void replaceIconAndTitle(MethodNode init) {
-		AbstractInsnNode insn = init.instructions.getFirst();
+	private boolean replaceTitle(MethodNode m) {
+		AbstractInsnNode insn = m.instructions.getFirst();
 		while(insn != null) {
-			AbstractInsnNode[] insns = fill(insn, 6);
+			AbstractInsnNode[] insns = fill(insn, 2);
     		if(compareInsn(insns[0], LDC)
     		&& compareInsn(insns[1], INVOKESTATIC, "org/lwjgl/opengl/Display", "setTitle", "(Ljava/lang/String;)V")) {
     			LdcInsnNode ldc = (LdcInsnNode)insn;
@@ -87,21 +101,32 @@ public class VanillaTweak extends Tweak {
     				if(launch.title.get() != null) {
     					debugInfo("Replaced title");
     					ldc.cst = launch.title.get();
+    					return true;
     				}
     			}
     		}
+			insn = nextInsn(insn);
+		}
+		return false;
+	}
+	
+	private boolean replaceIcon(MethodNode m) {
+		AbstractInsnNode insn = m.instructions.getFirst();
+		while(insn != null) {
     		if(launch.icon.get() != null && hasIcon(launch.icon.get())
     		&& compareInsn(insn, INVOKESTATIC, "org/lwjgl/opengl/Display", "setIcon", "([Ljava/nio/ByteBuffer;)I")) {
     			IdentifyCall call = new IdentifyCall((MethodInsnNode)insn);
     			for(AbstractInsnNode[] arg : call.getArguments()) {
-        			remove(init.instructions, arg);
+        			remove(m.instructions, arg);
     			}
     			MethodInsnNode insert = new MethodInsnNode(INVOKESTATIC, "org/mcphackers/launchwrapper/inject/Inject", "loadIcons", "()[Ljava/nio/ByteBuffer;");
-    			init.instructions.insertBefore(insn, insert);
+    			m.instructions.insertBefore(insn, insert);
     			debugInfo("Replaced icon");
+				return true;
     		}
 			insn = nextInsn(insn);
 		}
+		return false;
 	}
 	
 	private boolean hasIcon(File[] icons) {
@@ -154,6 +179,7 @@ public class VanillaTweak extends Tweak {
 						m.instructions.remove(insns[3]);
 						m.instructions.set(insns[5], new MethodInsnNode(INVOKESPECIAL, "java/io/File", "<init>", "(Ljava/lang/String;)V"));
 					}
+					debugInfo("Replaced assets path");
 				}
 				insn = nextInsn(insn);
 			}

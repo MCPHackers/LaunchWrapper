@@ -88,7 +88,7 @@ public final class Util {
 		try {
 			md = MessageDigest.getInstance("SHA-1");
 		} catch (NoSuchAlgorithmException e) {
-			throw new IOException(e);
+			throw new IOException(e.getMessage());
 		}
 		BufferedInputStream bs = new BufferedInputStream(is);
 		byte[] buffer = new byte[1024];

@@ -74,7 +74,11 @@ public class IsomTweak extends LegacyTweak {
 	public LaunchTarget getLaunchTarget(LaunchClassLoader loader) {
 		if(isomApplet != null) {
 			AppletLaunchTarget launchTarget = new AppletLaunchTarget(loader, isomApplet.name);
-			launchTarget.setTitle("Isometric Preview");
+			if(launch.title.get() != null) {
+				launchTarget.setTitle(launch.title.get());
+			} else {
+				launchTarget.setTitle("IsomPreview");
+			}
 			launchTarget.setIcon(Inject.getIcon());
 			launchTarget.setResolution(launch.width.get(), launch.height.get());
 			return launchTarget;

@@ -36,24 +36,15 @@ public class SkinRequests {
 
 	public static JSONObject requestUUIDfromName(String name) {
 		try {
-			int attemptCount = 0;
-			while(attemptCount < 2) {
-				attemptCount++;
-				URL nametouuidURL = new URL("https://api.mojang.com/users/profiles/minecraft/" + name);
-				HttpURLConnection connection = (HttpURLConnection)nametouuidURL.openConnection();
-				if(connection.getResponseCode() == 429) {
-					// wait for the block to pass
-					Thread.sleep(300000);
-					continue;
-				}
-				InputStream connStream = connection.getInputStream();
-				JSONObject uuidjson	= new JSONObject(new String(Util.readStream(connStream), "UTF-8"));
-	
-				return uuidjson;
-			}
+			URL profileURL = new URL("https://api.mojang.com/users/profiles/minecraft/" + name);
+			InputStream connStream = profileURL.openConnection().getInputStream();
+			JSONObject uuidJson	= new JSONObject(new String(Util.readStream(connStream), "UTF-8"));
+
+			return uuidJson;
 		} catch (Throwable t) {
+			t.printStackTrace();
+			return null;
 		}
-		return null;
 	}
 
 	public static SkinData fetchSkin(String uuid) {

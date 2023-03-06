@@ -57,16 +57,16 @@ public class LaunchConfig {
 		while(i < args.length) {
 			if(args[i].startsWith("--")) {
 				String paramName = args[i].substring(2);
-				LaunchParameter<?> param = parameters.get(paramName.toLowerCase(Locale.ROOT));
-				if(param != null && param.isSwitch()) {
-					((LaunchParameterSwitch)param).set(true);
-				}
-				else if(paramName.equalsIgnoreCase("awtFrame")) {
+				LaunchParameter<?> param = parameters.get(paramName.toLowerCase(Locale.ENGLISH));
+				if(paramName.equalsIgnoreCase("awtFrame")) {
 					lwjglFrame.set(false);
 				}
-				else if(i + 1 < args.length) {
-					try {
-						if(param != null) {
+				else if(param != null) {
+					if(param.isSwitch()) {
+						((LaunchParameterSwitch)param).set(true);
+					}
+					else if(i + 1 < args.length) {
+						try {
 							//TODO better handling for alternative parameter names
 							if(param.equals(session)) {
 								sessionid.set(args[i + 1]);
@@ -82,8 +82,8 @@ public class LaunchConfig {
 							}
 							param.setString(args[i + 1]);
 							i++;
-						}
-					} catch (IllegalArgumentException e) {}
+						} catch (IllegalArgumentException e) {}
+					}
 				}
 			}
 			i++;
@@ -138,7 +138,7 @@ public class LaunchConfig {
 		protected LaunchParameter(String name, boolean wrapper) {
 			this.name = name;
 			this.wrapperOnly = wrapper;
-			parameters.put(name.toLowerCase(Locale.ROOT), this);
+			parameters.put(name.toLowerCase(Locale.ENGLISH), this);
 		}
 		
 		public boolean isSwitch() {
@@ -282,7 +282,7 @@ public class LaunchConfig {
 		
 		@Override
 		public void set(Boolean value) {
-			this.value = value;
+			this.value = value == null ? false : value;
 		}
 	}
 	

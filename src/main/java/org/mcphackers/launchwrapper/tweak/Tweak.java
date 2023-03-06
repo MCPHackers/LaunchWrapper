@@ -23,21 +23,20 @@ public abstract class Tweak {
 		if(launch.isom.get()) {
 			return new IsomTweak(classLoader, launch);
 		}
-		if(classLoader.getClass(VanillaTweak.MAIN_CLASS) == null) {
-			for(String cls : LegacyTweak.MAIN_CLASSES) {
-				if(classLoader.getClass(cls) != null) {
-					return new LegacyTweak(classLoader, launch);
-				}
-			}
-			for(String cls : LegacyTweak.MAIN_APPLETS) {
-				if(classLoader.getClass(cls) != null) {
-					return new LegacyTweak(classLoader, launch);
-				}
-			}
-			return null; // Tweak not found
-		} else {
+		if(classLoader.getClass(VanillaTweak.MAIN_CLASS) != null) {
 			return new VanillaTweak(classLoader, launch);
 		}
+		for(String cls : LegacyTweak.MAIN_CLASSES) {
+			if(classLoader.getClass(cls) != null) {
+				return new LegacyTweak(classLoader, launch);
+			}
+		}
+		for(String cls : LegacyTweak.MAIN_APPLETS) {
+			if(classLoader.getClass(cls) != null) {
+				return new LegacyTweak(classLoader, launch);
+			}
+		}
+		return null; // Tweak not found
 	}
 	
 	protected void debugInfo(String msg) {
