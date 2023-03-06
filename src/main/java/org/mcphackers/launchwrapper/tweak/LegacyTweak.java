@@ -1075,30 +1075,22 @@ public class LegacyTweak extends Tweak {
 		AbstractInsnNode insn = run.instructions.getFirst();
 		while(insn != null) {
 			AbstractInsnNode[] insns = fill(insn, 3);
-			if(compareInsn(insns[0], ALOAD)
-			&& compareInsn(insns[1], GETFIELD, minecraft.name, running.name, running.desc)
-    		&& compareInsn(insns[2], IFEQ)) {
-	    		while(insn != null) {
-	    			if(compareInsn(insn.getPrevious(), ALOAD, 0)
-	    			&& compareInsn(insn, INVOKESPECIAL, minecraft.name, null, "()V")) {
-	    				MethodInsnNode invoke = (MethodInsnNode)insn;
-	    				MethodNode testedMethod = InjectUtils.getMethod(minecraft, invoke.name, invoke.desc);
-	    				if(testedMethod != null) {
-	    					AbstractInsnNode insn2 = testedMethod.instructions.getFirst();
-	    					while(insn2 != null) {
-	    						insns = fill(insn2, 3);
-	    						if(compareInsn(insns[0], ALOAD)
-	    						&& compareInsn(insns[1], ICONST_0)
-	    						&& compareInsn(insns[2], PUTFIELD, minecraft.name, running.name, running.desc)) {
-	    							return testedMethod;
-	    						}
-	    						insn2 = nextInsn(insn2);
-	    					}
-	    				}
-	    			}
-	    			insn = nextInsn(insn);
-	    		}
-				break;
+			if(compareInsn(insn.getPrevious(), ALOAD)
+			&& compareInsn(insn, INVOKESPECIAL, minecraft.name, null, "()V")) {
+				MethodInsnNode invoke = (MethodInsnNode)insn;
+				MethodNode testedMethod = InjectUtils.getMethod(minecraft, invoke.name, invoke.desc);
+				if(testedMethod != null) {
+					AbstractInsnNode insn2 = testedMethod.instructions.getFirst();
+					while(insn2 != null) {
+						insns = fill(insn2, 3);
+						if(compareInsn(insns[0], ALOAD)
+						&& compareInsn(insns[1], ICONST_0)
+						&& compareInsn(insns[2], PUTFIELD, minecraft.name, running.name, running.desc)) {
+							return testedMethod;
+						}
+						insn2 = nextInsn(insn2);
+					}
+				}
 			}
 			insn = nextInsn(insn);
 		}
