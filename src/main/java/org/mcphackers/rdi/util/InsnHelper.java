@@ -67,17 +67,17 @@ public class InsnHelper {
 
 	public static InsnList clone(Iterable<AbstractInsnNode> insnList) {
 		Map<LabelNode, LabelNode> labels = new HashMap<LabelNode, LabelNode>();
-		for (AbstractInsnNode insn : insnList) {
-		    if (insn.getType() == LABEL) {
-		        LabelNode label = (LabelNode) insn;
-		        labels.put(label, new LabelNode());
-		    }
+		for(AbstractInsnNode insn : insnList) {
+			if(insn.getType() == LABEL) {
+				LabelNode label = (LabelNode) insn;
+				labels.put(label, new LabelNode());
+			}
 		}
 
 		InsnList destList = new InsnList();
-		for (AbstractInsnNode insn : insnList) {
-		    AbstractInsnNode insnCopy = insn.clone(labels);
-		    destList.add(insnCopy);
+		for(AbstractInsnNode insn : insnList) {
+			AbstractInsnNode insnCopy = insn.clone(labels);
+			destList.add(insnCopy);
 		}
 		return destList;
 	}
@@ -92,7 +92,7 @@ public class InsnHelper {
 			current = current.getPrevious();
 		}
 		if(current.getType() == LABEL) {
-			return (LabelNode)current;
+			return (LabelNode) current;
 		}
 		return null;
 	}
@@ -110,7 +110,7 @@ public class InsnHelper {
 	public static boolean containsInvoke(InsnList insns, MethodInsnNode invoke) {
 		for(AbstractInsnNode insn : insns) {
 			if(insn.getType() == METHOD_INSN) {
-				MethodInsnNode invoke2 = (MethodInsnNode)insn;
+				MethodInsnNode invoke2 = (MethodInsnNode) insn;
 				if(invoke2.getOpcode() == invoke.getOpcode() && invoke2.owner.equals(invoke.owner) && invoke2.name.equals(invoke.name) && invoke2.desc.equals(invoke.desc)) {
 					return true;
 				}
@@ -153,8 +153,8 @@ public class InsnHelper {
 		AbstractInsnNode insn = instructions.getFirst();
 		while(insn != null) {
 			if(insn.getType() == VAR_INSN) {
-				VarInsnNode var = (VarInsnNode)insn;
-				lastFree = Math.max(lastFree, var.var + 1); //FIXME 2 if it's a double or long?
+				VarInsnNode var = (VarInsnNode) insn;
+				lastFree = Math.max(lastFree, var.var + 1); // FIXME 2 if it's a double or long?
 			}
 			insn = insn.getNext();
 		}
@@ -163,41 +163,37 @@ public class InsnHelper {
 
 	public static AbstractInsnNode intInsn(int value) {
 		switch(value) {
-		case -1:
-			return new InsnNode(ICONST_M1);
-		case 0:
-			return new InsnNode(ICONST_0);
-		case 1:
-			return new InsnNode(ICONST_1);
-		case 2:
-			return new InsnNode(ICONST_2);
-		case 3:
-			return new InsnNode(ICONST_3);
-		case 4:
-			return new InsnNode(ICONST_4);
-		case 5:
-			return new InsnNode(ICONST_5);
-		default:
-			if(value >= Byte.MIN_VALUE && value <= Byte.MAX_VALUE) {
-				return new IntInsnNode(BIPUSH, value);
-			}
-			else if(value >= Short.MIN_VALUE && value <= Short.MAX_VALUE) {
-				return new IntInsnNode(SIPUSH, value);
-			}
-			else {
-				return new LdcInsnNode(value);
-			}
+			case -1:
+				return new InsnNode(ICONST_M1);
+			case 0:
+				return new InsnNode(ICONST_0);
+			case 1:
+				return new InsnNode(ICONST_1);
+			case 2:
+				return new InsnNode(ICONST_2);
+			case 3:
+				return new InsnNode(ICONST_3);
+			case 4:
+				return new InsnNode(ICONST_4);
+			case 5:
+				return new InsnNode(ICONST_5);
+			default:
+				if(value >= Byte.MIN_VALUE && value <= Byte.MAX_VALUE) {
+					return new IntInsnNode(BIPUSH, value);
+				} else if(value >= Short.MIN_VALUE && value <= Short.MAX_VALUE) {
+					return new IntInsnNode(SIPUSH, value);
+				} else {
+					return new LdcInsnNode(value);
+				}
 		}
 	}
-	
+
 	public static AbstractInsnNode longInsn(long value) {
 		if(value == 0L) {
 			return new InsnNode(LCONST_0);
-		}
-		else if(value == 1L) {
+		} else if(value == 1L) {
 			return new InsnNode(LCONST_1);
-		}
-		else {
+		} else {
 			return new LdcInsnNode(value);
 		}
 	}
@@ -209,14 +205,11 @@ public class InsnHelper {
 	public static AbstractInsnNode floatInsn(float value) {
 		if(value == 0F) {
 			return new InsnNode(FCONST_0);
-		}
-		else if(value == 1F) {
+		} else if(value == 1F) {
 			return new InsnNode(FCONST_1);
-		}
-		else if(value == 2F) {
+		} else if(value == 2F) {
 			return new InsnNode(FCONST_2);
-		}
-		else {
+		} else {
 			return new LdcInsnNode(value);
 		}
 	}
@@ -224,11 +217,9 @@ public class InsnHelper {
 	public static AbstractInsnNode doubleInsn(double value) {
 		if(value == 0D) {
 			return new InsnNode(DCONST_0);
-		}
-		else if(value == 1D) {
+		} else if(value == 1D) {
 			return new InsnNode(DCONST_1);
-		}
-		else {
+		} else {
 			return new LdcInsnNode(value);
 		}
 	}

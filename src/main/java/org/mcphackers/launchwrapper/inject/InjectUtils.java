@@ -15,11 +15,11 @@ public class InjectUtils {
 		PRIVATE, DEFAULT, PROTECTED, PUBLIC;
 
 		public static Access getFromBytecode(int acc) {
-			if ((acc & ACC_PRIVATE) == ACC_PRIVATE)
+			if((acc & ACC_PRIVATE) == ACC_PRIVATE)
 				return PRIVATE;
-			if ((acc & ACC_PROTECTED) == ACC_PROTECTED)
+			if((acc & ACC_PROTECTED) == ACC_PROTECTED)
 				return PROTECTED;
-			if ((acc & ACC_PUBLIC) == ACC_PUBLIC)
+			if((acc & ACC_PUBLIC) == ACC_PUBLIC)
 				return PUBLIC;
 			return DEFAULT;
 		}
@@ -32,25 +32,25 @@ public class InjectUtils {
 			return acc;
 		}
 	}
-	
+
 	public static FieldNode getField(ClassNode node, String name, String desc) {
-	    for(FieldNode field : node.fields) {
-	    	if(field.name.equals(name) && field.desc.equals(desc)) {
-	    		return field;
-	    	}
-	    }
-	    return null;
+		for(FieldNode field : node.fields) {
+			if(field.name.equals(name) && field.desc.equals(desc)) {
+				return field;
+			}
+		}
+		return null;
 	}
 
 	public static MethodNode getMethod(ClassNode node, String name, String desc) {
-	    for(MethodNode method : node.methods) {
-	    	if(method.name.equals(name) && method.desc.equals(desc)) {
-	    		return method;
-	    	}
-	    }
-	    return null;
+		for(MethodNode method : node.methods) {
+			if(method.name.equals(name) && method.desc.equals(desc)) {
+				return method;
+			}
+		}
+		return null;
 	}
-	
+
 	public static List<MethodNode> getConstructors(ClassNode node) {
 		List<MethodNode> constructors = new ArrayList<MethodNode>();
 		for(MethodNode method : node.methods) {
@@ -60,15 +60,15 @@ public class InjectUtils {
 		}
 		return constructors;
 	}
-	
+
 	public static boolean isAbstract(MethodNode method) {
 		return (method.access & ACC_ABSTRACT) != 0;
 	}
-	
+
 	public static boolean isStatic(MethodNode method) {
 		return (method.access & ACC_STATIC) != 0;
 	}
-	
+
 	public static boolean isStatic(FieldNode field) {
 		return (field.access & ACC_STATIC) != 0;
 	}

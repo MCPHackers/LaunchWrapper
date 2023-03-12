@@ -11,13 +11,13 @@ import org.mcphackers.launchwrapper.protocol.LegacyURLStreamHandler.SkinType;
 import org.mcphackers.launchwrapper.util.Util;
 
 public class SkinURLConnection extends HttpURLConnection {
-	
-	private static final String[] CLOAKS = {"/cloak/", "/MinecraftCloaks/"};
-	private static final String[] SKINS = {"/skin/", "/MinecraftSkins/"};
-	
+
+	private static final String[] CLOAKS = { "/cloak/", "/MinecraftCloaks/" };
+	private static final String[] SKINS = { "/skin/", "/MinecraftSkins/" };
+
 	protected SkinType skinType;
 	protected InputStream inputStream;
-	
+
 	public SkinURLConnection(URL url, SkinType skin) {
 		super(url);
 		responseCode = 200;
@@ -25,7 +25,8 @@ public class SkinURLConnection extends HttpURLConnection {
 	}
 
 	@Override
-	public void disconnect() {}
+	public void disconnect() {
+	}
 
 	@Override
 	public boolean usingProxy() {
@@ -38,8 +39,8 @@ public class SkinURLConnection extends HttpURLConnection {
 		String username = queryMap.get("user");
 		String path = url.getPath();
 
-		for (String template : CLOAKS) {
-			if (path.startsWith(template)) {
+		for(String template : CLOAKS) {
+			if(path.startsWith(template)) {
 				if(username == null)
 					username = path.substring(template.length()).replace(".png", "");
 				byte[] skinData = SkinRequests.getCape(username, skinType);
@@ -50,8 +51,8 @@ public class SkinURLConnection extends HttpURLConnection {
 			}
 		}
 
-		for (String template : SKINS) {
-			if (path.startsWith(template)) {
+		for(String template : SKINS) {
+			if(path.startsWith(template)) {
 				if(username == null)
 					username = path.substring(template.length()).replace(".png", "");
 				byte[] skinData = SkinRequests.getSkin(username, skinType);

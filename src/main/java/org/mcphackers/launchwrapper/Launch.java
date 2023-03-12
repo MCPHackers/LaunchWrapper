@@ -10,9 +10,9 @@ public class Launch {
 
 	private static final LaunchClassLoader CLASS_LOADER = LaunchClassLoader.instantiate();
 	public static Launch INSTANCE;
-	
+
 	public final LaunchConfig config;
-	
+
 	private Launch(LaunchConfig config) {
 		this.config = config;
 	}
@@ -34,11 +34,11 @@ public class Launch {
 			mainTweak.getLaunchTarget(CLASS_LOADER).launch();
 		}
 	}
-	
+
 	public void setClassPath(URL[] urls) {
 		CLASS_LOADER.setClassPath(urls);
 	}
-	
+
 	public static Launch create(LaunchConfig config) {
 		return INSTANCE = new Launch(config);
 	}

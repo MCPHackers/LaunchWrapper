@@ -2,7 +2,6 @@ package org.mcphackers.launchwrapper.protocol;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
-import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.HashMap;
 
@@ -19,11 +18,11 @@ public class SkinRequests {
 	public static String getUUIDfromName(String username) {
 		String cachedUUID = nameToUUID.get(username);
 
-		if (cachedUUID != null) {
+		if(cachedUUID != null) {
 			return cachedUUID;
 		} else {
 			JSONObject obj = requestUUIDfromName(username);
-			if (obj != null) {
+			if(obj != null) {
 				String uuid = obj.optString("id");
 
 				nameToUUID.put(username, uuid);
@@ -38,7 +37,7 @@ public class SkinRequests {
 		try {
 			URL profileURL = new URL("https://api.mojang.com/users/profiles/minecraft/" + name);
 			InputStream connStream = profileURL.openConnection().getInputStream();
-			JSONObject uuidJson	= new JSONObject(new String(Util.readStream(connStream), "UTF-8"));
+			JSONObject uuidJson = new JSONObject(new String(Util.readStream(connStream), "UTF-8"));
 
 			return uuidJson;
 		} catch (Throwable t) {
@@ -49,24 +48,24 @@ public class SkinRequests {
 
 	public static SkinData fetchSkin(String uuid) {
 		try {
-			URL uuidtoprofileURL	= new URL("https://sessionserver.mojang.com/session/minecraft/profile/" + uuid);
+			URL uuidtoprofileURL = new URL("https://sessionserver.mojang.com/session/minecraft/profile/" + uuid);
 
-			JSONObject profilejson	= new JSONObject(new String(Util.readStream(uuidtoprofileURL.openStream()), "UTF-8"));
-			String base64tex		= profilejson.getJSONArray("properties").getJSONObject(0).optString("value");
-			String texjsonstr		= new String(Base64.decode(base64tex), "UTF-8");
+			JSONObject profilejson = new JSONObject(new String(Util.readStream(uuidtoprofileURL.openStream()), "UTF-8"));
+			String base64tex = profilejson.getJSONArray("properties").getJSONObject(0).optString("value");
+			String texjsonstr = new String(Base64.decode(base64tex), "UTF-8");
 
-			JSONObject texjson		= new JSONObject(texjsonstr);
-			JSONObject txts			= texjson.optJSONObject("textures");
-			JSONObject skinjson		= txts.optJSONObject("SKIN");
-			String skinURLstr		= skinjson.optString("url");
+			JSONObject texjson = new JSONObject(texjsonstr);
+			JSONObject txts = texjson.optJSONObject("textures");
+			JSONObject skinjson = txts.optJSONObject("SKIN");
+			String skinURLstr = skinjson.optString("url");
 
 			byte[] officialCape = null;
 			byte[] officialSkin = null;
 
 			JSONObject capejson = txts.optJSONObject("CAPE");
-			if (capejson != null) {
-				String capeURLstr	= capejson.optString("url");
-				URL capeURL			= new URL(capeURLstr);
+			if(capejson != null) {
+				String capeURLstr = capejson.optString("url");
+				URL capeURL = new URL(capeURLstr);
 
 				officialCape = Util.readStream(capeURL.openStream());
 			}
@@ -108,20 +107,20 @@ public class SkinRequests {
 
 		byte[] cape = null;
 		try {
-			if (skindata.cape != null) {
+			if(skindata.cape != null) {
 				switch(skinType) {
-				case CLASSIC:
-				case PRE_B1_9:
-				case PRE_1_8:
-					ByteArrayInputStream bis = new ByteArrayInputStream(skindata.cape);
-	
-					ImageUtils imgu = new ImageUtils(bis);
-					imgu = imgu.crop(0, 0, 64, 32);
-	
-					cape = imgu.getInByteForm();
-					break;
-				case DEFAULT:
-					return skindata.cape;
+					case CLASSIC:
+					case PRE_B1_9:
+					case PRE_1_8:
+						ByteArrayInputStream bis = new ByteArrayInputStream(skindata.cape);
+
+						ImageUtils imgu = new ImageUtils(bis);
+						imgu = imgu.crop(0, 0, 64, 32);
+
+						cape = imgu.getInByteForm();
+						break;
+					case DEFAULT:
+						return skindata.cape;
 				}
 			}
 		} catch (Throwable t) {
@@ -139,23 +138,23 @@ public class SkinRequests {
 
 		byte[] skin = null;
 		try {
-			if (skindata.skin != null) {
+			if(skindata.skin != null) {
 				ByteArrayInputStream bis = new ByteArrayInputStream(skindata.skin);
 				ImageUtils imgu = new ImageUtils(bis);
 
 				switch(skinType) {
-				case CLASSIC:
-					overlayHeadLayer(imgu);
-				case PRE_B1_9:
-					rotateBottomTX(imgu);
-				case PRE_1_8:
-					if(imgu.getImage().getHeight() == 64)
-						overlay64to32(imgu);
-					if(skindata.slim)
-						alexToSteve(imgu);
-					imgu = imgu.crop(0, 0, 64, 32);
-				case DEFAULT:
-					break;
+					case CLASSIC:
+						overlayHeadLayer(imgu);
+					case PRE_B1_9:
+						rotateBottomTX(imgu);
+					case PRE_1_8:
+						if(imgu.getImage().getHeight() == 64)
+							overlay64to32(imgu);
+						if(skindata.slim)
+							alexToSteve(imgu);
+						imgu = imgu.crop(0, 0, 64, 32);
+					case DEFAULT:
+						break;
 				}
 				skin = imgu.getInByteForm();
 			}

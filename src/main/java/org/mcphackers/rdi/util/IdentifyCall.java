@@ -16,12 +16,12 @@ import org.objectweb.asm.tree.MethodInsnNode;
 public class IdentifyCall {
 	protected MethodInsnNode invokeInsn;
 	protected List<AbstractInsnNode[]> arguments;
-	
+
 	public IdentifyCall(MethodInsnNode invoke) {
 		invokeInsn = invoke;
 		arguments = initArguments();
 	}
-	
+
 	private List<AbstractInsnNode[]> initArguments() {
 		boolean isStatic = invokeInsn.getOpcode() == Opcodes.INVOKESTATIC;
 		Type[] argTypes = Type.getArgumentTypes(invokeInsn.desc);
@@ -63,10 +63,11 @@ public class IdentifyCall {
 		}
 		return args;
 	}
-	
+
 	/**
-	 * Returns a collection of insn node arrays with each argument
-	 * Non-static methods include the owner of a call at index 0
+	 * Returns a collection of insn node arrays with each argument Non-static
+	 * methods include the owner of a call at index 0
+	 * 
 	 * @return
 	 */
 	public List<AbstractInsnNode[]> getArguments() {
@@ -76,6 +77,7 @@ public class IdentifyCall {
 	/**
 	 * Returns an array of insn nodes belonging to the argument at that index
 	 * Non-static methods include the owner of a call at index 0
+	 * 
 	 * @return
 	 */
 	public AbstractInsnNode[] getArgument(int index) {

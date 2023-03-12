@@ -26,7 +26,8 @@ public class LoadLevelURLConnection extends HttpURLConnection {
 	}
 
 	@Override
-	public void connect() throws IOException {}
+	public void connect() throws IOException {
+	}
 
 	@Override
 	public void disconnect() {

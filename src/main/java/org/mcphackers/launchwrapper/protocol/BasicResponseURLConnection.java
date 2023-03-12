@@ -21,10 +21,12 @@ public class BasicResponseURLConnection extends HttpURLConnection {
 	}
 
 	@Override
-	public void connect() throws IOException {}
+	public void connect() throws IOException {
+	}
 
 	@Override
-	public void disconnect() {}
+	public void disconnect() {
+	}
 
 	@Override
 	public boolean usingProxy() {
@@ -35,7 +37,7 @@ public class BasicResponseURLConnection extends HttpURLConnection {
 	public InputStream getInputStream() throws IOException {
 		return new ByteArrayInputStream(responseMessage.getBytes());
 	}
-	
+
 	public int getResponseCode() {
 		return responseCode;
 	}

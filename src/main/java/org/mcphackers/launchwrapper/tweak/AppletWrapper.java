@@ -15,53 +15,53 @@ import java.util.Collections;
 import java.util.Map;
 
 public class AppletWrapper extends Applet implements AppletStub {
-    private static final long serialVersionUID = 1L;
-    
-    private Map<String, String> args;
+	private static final long serialVersionUID = 1L;
 
-    public AppletWrapper(Map<String, String> argsAsMap) {
-    	args = argsAsMap;
+	private Map<String, String> args;
+
+	public AppletWrapper(Map<String, String> argsAsMap) {
+		args = argsAsMap;
 	}
 
 	public void appletResize(int width, int height) {
-    }
+	}
 
-    @Override
-    public boolean isActive() {
-        return true;
-    }
+	@Override
+	public boolean isActive() {
+		return true;
+	}
 
-    @Override
-    public URL getDocumentBase() {
-        try {
-            return new URL("http://www.minecraft.net/game/");
-        } catch (MalformedURLException e) {
-            e.printStackTrace();
-        }
-        return null;
-    }
+	@Override
+	public URL getDocumentBase() {
+		try {
+			return new URL("http://www.minecraft.net/game/");
+		} catch (MalformedURLException e) {
+			e.printStackTrace();
+		}
+		return null;
+	}
 
-    @Override
-    public URL getCodeBase() {
-        try {
-            return new URL("http://www.minecraft.net/game/");
-        } catch (MalformedURLException e) {
-            e.printStackTrace();
-        }
-        return null;
-    }
+	@Override
+	public URL getCodeBase() {
+		try {
+			return new URL("http://www.minecraft.net/game/");
+		} catch (MalformedURLException e) {
+			e.printStackTrace();
+		}
+		return null;
+	}
 
-    @Override
-    public String getParameter(String paramName) {
-        return args.get(paramName);
-    }
-    
-    public static void startApplet(Class<? extends Applet> appletClass, int width, int height, String title) {
-    	startApplet(appletClass, width, height, title, null);
-    }
-    
-    public static void startApplet(Class<? extends Applet> appletClass, int width, int height, String title, Image icon) {
-    	try {
+	@Override
+	public String getParameter(String paramName) {
+		return args.get(paramName);
+	}
+
+	public static void startApplet(Class<? extends Applet> appletClass, int width, int height, String title) {
+		startApplet(appletClass, width, height, title, null);
+	}
+
+	public static void startApplet(Class<? extends Applet> appletClass, int width, int height, String title, Image icon) {
+		try {
 			final Applet applet = appletClass.newInstance();
 			if(applet != null) {
 				applet.setStub(new AppletWrapper(Collections.<String, String>emptyMap()));
@@ -82,8 +82,8 @@ public class AppletWrapper extends Applet implements AppletStub {
 				}
 			});
 			applet.start();
-    	} catch (Exception e) {
-    		e.printStackTrace();
-    	};
-    }
+		} catch (Exception e) {
+			e.printStackTrace();
+		} ;
+	}
 }

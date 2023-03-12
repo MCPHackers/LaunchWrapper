@@ -21,7 +21,7 @@ public class SaveLevelURLConnection extends HttpURLConnection {
 
 	ByteArrayOutputStream levelOutput = new ByteArrayOutputStream();
 	Exception exception;
-	
+
 	public SaveLevelURLConnection(URL url) {
 		super(url);
 	}
@@ -39,7 +39,6 @@ public class SaveLevelURLConnection extends HttpURLConnection {
 		return false;
 	}
 
-	@SuppressWarnings("unused")
 	@Override
 	public InputStream getInputStream() throws IOException {
 		try {
@@ -70,12 +69,11 @@ public class SaveLevelURLConnection extends HttpURLConnection {
 			if(levelName.equals("---")) {
 				level.delete();
 				lvlNames[levelId] = EMPTY_LEVEL;
-			}
-			else {
+			} else {
 				if(!levels.exists()) {
 					levels.mkdirs();
 				}
-				OutputStream fileOutput = new FileOutputStream(level);		
+				OutputStream fileOutput = new FileOutputStream(level);
 				fileOutput.write(levelData);
 				fileOutput.close();
 			}

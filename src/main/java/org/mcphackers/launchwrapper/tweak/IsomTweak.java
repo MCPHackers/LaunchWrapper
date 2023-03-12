@@ -30,7 +30,7 @@ public class IsomTweak extends LegacyTweak {
 	public IsomTweak(ClassNodeSource source, LaunchConfig launch) {
 		super(source, launch);
 	}
-	
+
 	protected void init() {
 		super.init();
 		isomApplet = source.getClass(MAIN_ISOM);
@@ -70,7 +70,7 @@ public class IsomTweak extends LegacyTweak {
 		source.overrideClass(isomCanvas);
 		return true;
 	}
-	
+
 	public LaunchTarget getLaunchTarget(LaunchClassLoader loader) {
 		if(isomApplet != null) {
 			AppletLaunchTarget launchTarget = new AppletLaunchTarget(loader, isomApplet.name);

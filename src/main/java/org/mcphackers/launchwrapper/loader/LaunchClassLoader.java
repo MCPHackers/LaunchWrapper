@@ -65,13 +65,13 @@ public class LaunchClassLoader extends ClassLoader implements ClassNodeSource {
 		name = className(name);
 		Class<?> cls = exceptions.get(name);
 		if(cls != null) {
-            return cls;
+			return cls;
 		}
 		cls = transformedClass(name);
 		if(cls != null) {
-	        return cls;
+			return cls;
 		}
-        throw new ClassNotFoundException(name);
+		throw new ClassNotFoundException(name);
 	}
 
 	public void invokeMain(String launchTarget, String... args) {
@@ -89,36 +89,41 @@ public class LaunchClassLoader extends ClassLoader implements ClassNodeSource {
 
 	protected Class<?> redefineClass(String name) {
 		byte[] classData = getClassAsBytes(name);
-		if(classData == null) return null;
+		if(classData == null)
+			return null;
+		System.out.println(name);
 		Class<?> definedClass = defineClass(name, classData, 0, classData.length, getProtectionDomain(name));
 		classes.put(name, definedClass);
 		return definedClass;
 	}
 
 	private ProtectionDomain getProtectionDomain(String name) {
-        final URL resource = parent.getResource(classResourceName(name));
-        if (resource == null) {
-        	return null;
-        }
-        URLConnection urlConnection;
+		final URL resource = parent.getResource(classResourceName(name));
+		if(resource == null) {
+			return null;
+		}
+		URLConnection urlConnection;
 		try {
 			urlConnection = resource.openConnection();
 		} catch (IOException e) {
 			e.printStackTrace();
 			return null;
 		}
-        CodeSource codeSource = urlConnection == null ? null : new CodeSource(urlConnection.getURL(), new Certificate[0]);
+		CodeSource codeSource = urlConnection == null ? null : new CodeSource(urlConnection.getURL(), new Certificate[0]);
 		return new ProtectionDomain(codeSource, null);
 	}
 
 	public void overrideClass(ClassNode node) {
-		if(node == null) return;
+		if(node == null)
+			return;
 		overridenClasses.put(className(node.name), node);
 		classNodeCache.put(node.name, node);
 	}
 
 	/**
-	 * @param name can be specified either as net.minecraft.client.Minecraft or as net/minecraft/client/Minecraft
+	 * @param name
+	 *            can be specified either as net.minecraft.client.Minecraft or as
+	 *            net/minecraft/client/Minecraft
 	 * @return parsed ClassNode
 	 */
 	public ClassNode getClass(String name) {
@@ -127,20 +132,21 @@ public class LaunchClassLoader extends ClassLoader implements ClassNodeSource {
 			return node;
 		}
 		byte[] classData = getClassAsBytes(name);
-		if(classData == null) return null;
+		if(classData == null)
+			return null;
 		ClassNode classNode = new ClassNode();
-	    ClassReader classReader = new ClassReader(classData);
-	    classReader.accept(classNode, 0);
-	    classNodeCache.put(classNode.name, classNode);
-	    return classNode;
+		ClassReader classReader = new ClassReader(classData);
+		classReader.accept(classNode, 0);
+		classNodeCache.put(classNode.name, classNode);
+		return classNode;
 	}
 
 	public FieldNode getField(String owner, String name, String desc) {
-	    return InjectUtils.getField(getClass(owner), name, desc);
+		return InjectUtils.getField(getClass(owner), name, desc);
 	}
 
 	public MethodNode getMethod(String owner, String name, String desc) {
-	    return InjectUtils.getMethod(getClass(owner), name, desc);
+		return InjectUtils.getMethod(getClass(owner), name, desc);
 	}
 
 	private Class<?> redefineClass(ClassNode node) {
@@ -168,17 +174,18 @@ public class LaunchClassLoader extends ClassLoader implements ClassNodeSource {
 	}
 
 	private byte[] getClassAsBytes(String name) {
-    	InputStream is = parent.getResourceAsStream(classResourceName(name));
-    	if(is == null) return null;
-    	byte[] classData;
+		InputStream is = parent.getResourceAsStream(classResourceName(name));
+		if(is == null)
+			return null;
+		byte[] classData;
 		try {
 			classData = Util.readStream(is);
 		} catch (IOException e) {
-	        Util.closeSilently(is);
+			Util.closeSilently(is);
 			return null;
 		}
-        Util.closeSilently(is);
-        return classData;
+		Util.closeSilently(is);
+		return classData;
 	}
 
 	private Class<?> transformedClass(String name) {
@@ -188,11 +195,11 @@ public class LaunchClassLoader extends ClassLoader implements ClassNodeSource {
 		}
 		ClassNode transformed = overridenClasses.get(name);
 		if(transformed != null) {
-	        return redefineClass(transformed);
+			return redefineClass(transformed);
 		}
-        return redefineClass(name);
+		return redefineClass(name);
 	}
-	
+
 	public void addException(Class<?> cls) {
 		exceptions.put(cls.getName(), cls);
 	}

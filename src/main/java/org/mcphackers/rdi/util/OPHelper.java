@@ -10,9 +10,9 @@ import static org.objectweb.asm.Opcodes.*;
 import org.objectweb.asm.Type;
 
 public final class OPHelper {
-	
+
 	private static final int[] STACK_SIZE_DELTA = new int[0xFF];
-	
+
 	static {
 		STACK_SIZE_DELTA[NOP] = 0;
 		STACK_SIZE_DELTA[ACONST_NULL] = 1;
@@ -179,14 +179,14 @@ public final class OPHelper {
 			return 0;
 		}
 		if(insn.getType() == AbstractInsnNode.LDC_INSN) {
-			LdcInsnNode ldc = (LdcInsnNode)insn;
+			LdcInsnNode ldc = (LdcInsnNode) insn;
 			if(ldc.cst instanceof Double || ldc.cst instanceof Long) {
 				return 2;
 			}
 			return 1;
 		}
 		if(insn.getType() == AbstractInsnNode.METHOD_INSN) {
-			MethodInsnNode invoke = (MethodInsnNode)insn;
+			MethodInsnNode invoke = (MethodInsnNode) insn;
 			int sizes = Type.getArgumentsAndReturnSizes(invoke.desc);
 			int argumentSizes = sizes >> 2;
 			if(opcode == INVOKESTATIC) {
@@ -196,189 +196,180 @@ public final class OPHelper {
 			return returnSize - argumentSizes;
 		}
 		if(insn.getType() == AbstractInsnNode.FIELD_INSN) {
-			FieldInsnNode field = (FieldInsnNode)insn;
+			FieldInsnNode field = (FieldInsnNode) insn;
 			int returnSize = Type.getType(field.desc).getSize();
 			if(opcode == GETSTATIC) {
 				return returnSize;
 			}
 			return returnSize - 1;
-		}
-		else if(opcode != ATHROW && opcode != MULTIANEWARRAY && opcode != INVOKEDYNAMIC) {
+		} else if(opcode != ATHROW && opcode != MULTIANEWARRAY && opcode != INVOKEDYNAMIC) {
 			return STACK_SIZE_DELTA[opcode];
 		}
 		throw new IllegalArgumentException("Could not get stack size delta for " + opcode);
 	}
 
 	public static boolean isReturn(int opcode) {
-		return
-		opcode == RETURN  ||
-		opcode == IRETURN ||
-		opcode == LRETURN ||
-		opcode == FRETURN ||
-		opcode == DRETURN ||
-		opcode == ARETURN;
+		return opcode == RETURN || opcode == IRETURN || opcode == LRETURN || opcode == FRETURN || opcode == DRETURN || opcode == ARETURN;
 	}
 
 	public static final boolean isArrayLoad(int opcode) {
-		switch (opcode) {
-		case AALOAD:
-		case BALOAD: // for booleans and bytes
-		case CALOAD:
-		case DALOAD:
-		case FALOAD:
-		case IALOAD:
-		case LALOAD:
-		case SALOAD:
-			return true;
-		default:
-			return false;
+		switch(opcode) {
+			case AALOAD:
+			case BALOAD: // for booleans and bytes
+			case CALOAD:
+			case DALOAD:
+			case FALOAD:
+			case IALOAD:
+			case LALOAD:
+			case SALOAD:
+				return true;
+			default:
+				return false;
 		}
 	}
 
 	public static final boolean isVarLoad(int opcode) {
-		switch (opcode) {
-		case ALOAD:
-		//case BLOAD: // bytes & booleans are also regular integers
-		//case CLOAD: // characters are regular integers (?) under the hood
-		case DLOAD:
-		case FLOAD:
-		case ILOAD:
-		case LLOAD:
-		//case SLOAD: // and so are shorts
-			return true;
-		default:
-			return false;
+		switch(opcode) {
+			case ALOAD:
+				// case BLOAD: // bytes & booleans are also regular integers
+				// case CLOAD: // characters are regular integers (?) under the hood
+			case DLOAD:
+			case FLOAD:
+			case ILOAD:
+			case LLOAD:
+				// case SLOAD: // and so are shorts
+				return true;
+			default:
+				return false;
 		}
 	}
 
 	public static final int reverseVarOpcode(int opcode) {
-		switch (opcode) {
-		case AALOAD:
-			return AASTORE;
-		case BALOAD:
-			return BASTORE;
-		case CALOAD:
-			return CASTORE;
-		case IALOAD:
-			return IASTORE;
-		case SALOAD:
-			return IASTORE;
-		case DALOAD:
-			return IASTORE;
-		case FALOAD:
-			return IASTORE;
-		case LALOAD:
-			return IASTORE;
-		case ALOAD:
-			return IASTORE;
-		case DLOAD:
-			return IASTORE;
-		case FLOAD:
-			return IASTORE;
-		case ILOAD:
-			return IASTORE;
-		case LLOAD:
-			return IASTORE;
-		case AASTORE:
-			return AALOAD;
-		case BASTORE:
-			return BALOAD;
-		case CASTORE:
-			return CALOAD;
-		case IASTORE:
-			return IALOAD;
-		case SASTORE:
-			return SALOAD;
-		case DASTORE:
-			return DALOAD;
-		case FASTORE:
-			return FALOAD;
-		case LASTORE:
-			return LALOAD;
-		case ASTORE:
-			return ALOAD;
-		case DSTORE:
-			return DLOAD;
-		case FSTORE:
-			return FLOAD;
-		case ISTORE:
-			return ILOAD;
-		case LSTORE:
-			return LLOAD;
-		default:
-			throw new IllegalArgumentException("Opcode not valid.");
+		switch(opcode) {
+			case AALOAD:
+				return AASTORE;
+			case BALOAD:
+				return BASTORE;
+			case CALOAD:
+				return CASTORE;
+			case IALOAD:
+				return IASTORE;
+			case SALOAD:
+				return IASTORE;
+			case DALOAD:
+				return IASTORE;
+			case FALOAD:
+				return IASTORE;
+			case LALOAD:
+				return IASTORE;
+			case ALOAD:
+				return IASTORE;
+			case DLOAD:
+				return IASTORE;
+			case FLOAD:
+				return IASTORE;
+			case ILOAD:
+				return IASTORE;
+			case LLOAD:
+				return IASTORE;
+			case AASTORE:
+				return AALOAD;
+			case BASTORE:
+				return BALOAD;
+			case CASTORE:
+				return CALOAD;
+			case IASTORE:
+				return IALOAD;
+			case SASTORE:
+				return SALOAD;
+			case DASTORE:
+				return DALOAD;
+			case FASTORE:
+				return FALOAD;
+			case LASTORE:
+				return LALOAD;
+			case ASTORE:
+				return ALOAD;
+			case DSTORE:
+				return DLOAD;
+			case FSTORE:
+				return FLOAD;
+			case ISTORE:
+				return ILOAD;
+			case LSTORE:
+				return LLOAD;
+			default:
+				throw new IllegalArgumentException("Opcode not valid.");
 		}
 	}
 
 	public static final boolean isVarSimilarType(int opcode1, int opcode2) {
-		switch (opcode1) {
-		case AALOAD:
-			return opcode2 == ALOAD;
-		case BALOAD:
-		case CALOAD:
-		case IALOAD:
-		case SALOAD:
-			return opcode2 == ILOAD;
-		case DALOAD:
-			return opcode2 == DLOAD;
-		case FALOAD:
-			return opcode2 == FLOAD;
-		case LALOAD:
-			return opcode2 == LLOAD;
-		case ALOAD:
-			return opcode2 == AALOAD;
-		case DLOAD:
-			return opcode2 == DALOAD;
-		case FLOAD:
-			return opcode2 == FALOAD;
-		case ILOAD:
-			return opcode2 == IALOAD || opcode2 == SALOAD
-				|| opcode2 == BALOAD || opcode2 == CALOAD;
-		case LLOAD:
-			return opcode2 == LALOAD;
-		// -- The same story for the store operation family --
-		case AASTORE:
-			return opcode2 == ASTORE;
-		case BASTORE:
-		case CASTORE:
-		case IASTORE:
-		case SASTORE:
-			return opcode2 == ISTORE;
-		case DASTORE:
-			return opcode2 == DSTORE;
-		case FASTORE:
-			return opcode2 == FSTORE;
-		case LASTORE:
-			return opcode2 == LSTORE;
-		case ASTORE:
-			return opcode2 == ASTORE;
-		case DSTORE:
-			return opcode2 == DSTORE;
-		case FSTORE:
-			return opcode2 == FSTORE;
-		case ISTORE:
-			return opcode2 == IASTORE || opcode2 == SASTORE
-				|| opcode2 == BASTORE || opcode2 == CASTORE;
-		case LSTORE:
-			return opcode2 == LSTORE;
-		default:
-			throw new IllegalArgumentException("Opcode1 not valid.");
+		switch(opcode1) {
+			case AALOAD:
+				return opcode2 == ALOAD;
+			case BALOAD:
+			case CALOAD:
+			case IALOAD:
+			case SALOAD:
+				return opcode2 == ILOAD;
+			case DALOAD:
+				return opcode2 == DLOAD;
+			case FALOAD:
+				return opcode2 == FLOAD;
+			case LALOAD:
+				return opcode2 == LLOAD;
+			case ALOAD:
+				return opcode2 == AALOAD;
+			case DLOAD:
+				return opcode2 == DALOAD;
+			case FLOAD:
+				return opcode2 == FALOAD;
+			case ILOAD:
+				return opcode2 == IALOAD || opcode2 == SALOAD || opcode2 == BALOAD || opcode2 == CALOAD;
+			case LLOAD:
+				return opcode2 == LALOAD;
+			// -- The same story for the store operation family --
+			case AASTORE:
+				return opcode2 == ASTORE;
+			case BASTORE:
+			case CASTORE:
+			case IASTORE:
+			case SASTORE:
+				return opcode2 == ISTORE;
+			case DASTORE:
+				return opcode2 == DSTORE;
+			case FASTORE:
+				return opcode2 == FSTORE;
+			case LASTORE:
+				return opcode2 == LSTORE;
+			case ASTORE:
+				return opcode2 == ASTORE;
+			case DSTORE:
+				return opcode2 == DSTORE;
+			case FSTORE:
+				return opcode2 == FSTORE;
+			case ISTORE:
+				return opcode2 == IASTORE || opcode2 == SASTORE || opcode2 == BASTORE || opcode2 == CASTORE;
+			case LSTORE:
+				return opcode2 == LSTORE;
+			default:
+				throw new IllegalArgumentException("Opcode1 not valid.");
 		}
 	}
 
 	public static final boolean isVarStore(int opcode) {
-		switch (opcode) {
-		case ASTORE:
-		//case BSTORE: // bytes & booleans are also regular integers
-		//case CSTORE: // characters are regular integers (?) under the hood
-		case DSTORE:
-		case FSTORE:
-		case ISTORE:
-		case LSTORE:
-		//case SSTORE: // and so are shorts
-			return true;
-		default:
-			return false;
+		switch(opcode) {
+			case ASTORE:
+				// case BSTORE: // bytes & booleans are also regular integers
+				// case CSTORE: // characters are regular integers (?) under the hood
+			case DSTORE:
+			case FSTORE:
+			case ISTORE:
+			case LSTORE:
+				// case SSTORE: // and so are shorts
+				return true;
+			default:
+				return false;
 		}
 	}
 }

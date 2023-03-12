@@ -18,16 +18,16 @@ public class AppletLaunchTarget extends LaunchTarget {
 		targetClass = classTarget;
 		title = classTarget;
 	}
-	
+
 	public void setTitle(String title) {
 		this.title = title;
 	}
-	
+
 	public void setResolution(int w, int h) {
 		width = w;
 		height = h;
 	}
-	
+
 	public void setIcon(Image img) {
 		icon = img;
 	}

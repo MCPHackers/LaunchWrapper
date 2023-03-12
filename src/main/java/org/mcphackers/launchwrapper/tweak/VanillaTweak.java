@@ -22,7 +22,7 @@ import org.objectweb.asm.tree.*;
 
 public class VanillaTweak extends Tweak {
 	public static final String MAIN_CLASS = "net/minecraft/client/main/Main";
-	
+
 	protected LaunchConfig launch;
 	protected ClassNode minecraftMain;
 	protected ClassNode minecraft;
@@ -37,12 +37,13 @@ public class VanillaTweak extends Tweak {
 	public boolean transform() {
 		minecraftMain = source.getClass(MAIN_CLASS);
 		MethodNode main = InjectUtils.getMethod(minecraftMain, "main", "([Ljava/lang/String;)V");
-		if(main == null) return false;
+		if(main == null)
+			return false;
 		AbstractInsnNode insn = main.instructions.getLast();
 		while(insn != null) {
 			// Last call inside of main is minecraft.run();
 			if(insn.getOpcode() == INVOKEVIRTUAL) {
-				MethodInsnNode invoke = (MethodInsnNode)insn; 
+				MethodInsnNode invoke = (MethodInsnNode) insn;
 				minecraft = source.getClass(invoke.owner);
 				run = InjectUtils.getMethod(minecraft, invoke.name, invoke.desc);
 				debugInfo(minecraft.name + "." + invoke.name + invoke.desc + " is Minecraft.run()");
@@ -53,9 +54,9 @@ public class VanillaTweak extends Tweak {
 		for(AbstractInsnNode insn2 = main.instructions.getFirst(); insn2 != null; insn2 = nextInsn(insn2)) {
 			if(compareInsn(insn2, INVOKEVIRTUAL, "joptsimple/OptionParser", "accepts", "(Ljava/lang/String;)Ljoptsimple/OptionSpecBuilder;")) {
 				if(insn2.getPrevious() != null && insn2.getPrevious().getType() == AbstractInsnNode.LDC_INSN) {
-					LdcInsnNode ldc = (LdcInsnNode)insn2.getPrevious();
+					LdcInsnNode ldc = (LdcInsnNode) insn2.getPrevious();
 					if(ldc.cst instanceof String) {
-						availableParameters.add((String)ldc.cst);
+						availableParameters.add((String) ldc.cst);
 					}
 				}
 			}
@@ -75,60 +76,58 @@ public class VanillaTweak extends Tweak {
 		MethodNode init = getInit(run);
 		boolean fixedTitle = replaceTitle(init);
 		boolean fixedIcon = replaceIcon(init);
-			for(MethodNode m : minecraft.methods) {
-				if(!fixedTitle) {
-					fixedTitle = replaceTitle(m);
-				}
-				if(!fixedIcon) {
-					fixedIcon = replaceIcon(m);
-				}
-				if(fixedTitle && fixedIcon) {
-					break;
-				}
+		for(MethodNode m : minecraft.methods) {
+			if(!fixedTitle) {
+				fixedTitle = replaceTitle(m);
 			}
+			if(!fixedIcon) {
+				fixedIcon = replaceIcon(m);
+			}
+			if(fixedTitle && fixedIcon) {
+				break;
+			}
+		}
 		source.overrideClass(minecraft);
 		return true;
 	}
-	
+
 	private boolean replaceTitle(MethodNode m) {
 		AbstractInsnNode insn = m.instructions.getFirst();
 		while(insn != null) {
 			AbstractInsnNode[] insns = fill(insn, 2);
-    		if(compareInsn(insns[0], LDC)
-    		&& compareInsn(insns[1], INVOKESTATIC, "org/lwjgl/opengl/Display", "setTitle", "(Ljava/lang/String;)V")) {
-    			LdcInsnNode ldc = (LdcInsnNode)insn;
-    			if(ldc.cst instanceof String) {
-    				if(launch.title.get() != null) {
-    					debugInfo("Replaced title");
-    					ldc.cst = launch.title.get();
-    					return true;
-    				}
-    			}
-    		}
+			if(compareInsn(insns[0], LDC) && compareInsn(insns[1], INVOKESTATIC, "org/lwjgl/opengl/Display", "setTitle", "(Ljava/lang/String;)V")) {
+				LdcInsnNode ldc = (LdcInsnNode) insn;
+				if(ldc.cst instanceof String) {
+					if(launch.title.get() != null) {
+						debugInfo("Replaced title");
+						ldc.cst = launch.title.get();
+						return true;
+					}
+				}
+			}
 			insn = nextInsn(insn);
 		}
 		return false;
 	}
-	
+
 	private boolean replaceIcon(MethodNode m) {
 		AbstractInsnNode insn = m.instructions.getFirst();
 		while(insn != null) {
-    		if(launch.icon.get() != null && hasIcon(launch.icon.get())
-    		&& compareInsn(insn, INVOKESTATIC, "org/lwjgl/opengl/Display", "setIcon", "([Ljava/nio/ByteBuffer;)I")) {
-    			IdentifyCall call = new IdentifyCall((MethodInsnNode)insn);
-    			for(AbstractInsnNode[] arg : call.getArguments()) {
-        			remove(m.instructions, arg);
-    			}
-    			MethodInsnNode insert = new MethodInsnNode(INVOKESTATIC, "org/mcphackers/launchwrapper/inject/Inject", "loadIcons", "()[Ljava/nio/ByteBuffer;");
-    			m.instructions.insertBefore(insn, insert);
-    			debugInfo("Replaced icon");
+			if(launch.icon.get() != null && hasIcon(launch.icon.get()) && compareInsn(insn, INVOKESTATIC, "org/lwjgl/opengl/Display", "setIcon", "([Ljava/nio/ByteBuffer;)I")) {
+				IdentifyCall call = new IdentifyCall((MethodInsnNode) insn);
+				for(AbstractInsnNode[] arg : call.getArguments()) {
+					remove(m.instructions, arg);
+				}
+				MethodInsnNode insert = new MethodInsnNode(INVOKESTATIC, "org/mcphackers/launchwrapper/inject/Inject", "loadIcons", "()[Ljava/nio/ByteBuffer;");
+				m.instructions.insertBefore(insn, insert);
+				debugInfo("Replaced icon");
 				return true;
-    		}
+			}
 			insn = nextInsn(insn);
 		}
 		return false;
 	}
-	
+
 	private boolean hasIcon(File[] icons) {
 		for(File f : icons) {
 			if(f.exists()) {
@@ -141,7 +140,7 @@ public class VanillaTweak extends Tweak {
 	private MethodNode getInit(MethodNode run) {
 		for(AbstractInsnNode insn : run.instructions) {
 			if(insn.getType() == AbstractInsnNode.METHOD_INSN) {
-				MethodInsnNode invoke = (MethodInsnNode)insn;
+				MethodInsnNode invoke = (MethodInsnNode) insn;
 				if(invoke.owner.equals(minecraft.name)) {
 					return InjectUtils.getMethod(minecraft, invoke.name, invoke.desc);
 				}
@@ -155,14 +154,9 @@ public class VanillaTweak extends Tweak {
 			AbstractInsnNode insn = m.instructions.getFirst();
 			while(insn != null) {
 				AbstractInsnNode[] insns = fill(insn, 6);
-				if(compareInsn(insns[0], NEW, "java/io/File")
-			    && compareInsn(insns[1], DUP)
-			    && compareInsn(insns[2], ALOAD, 0)
-			    && compareInsn(insns[3], GETFIELD, minecraft.name, null, "Ljava/io/File;")
-			    && compareInsn(insns[4], LDC)
-			    && compareInsn(insns[5], INVOKESPECIAL, "java/io/File", "<init>", "(Ljava/io/File;Ljava/lang/String;)V")) {
-					LdcInsnNode ldc = (LdcInsnNode)insns[4];
-					String s = (String)ldc.cst;
+				if(compareInsn(insns[0], NEW, "java/io/File") && compareInsn(insns[1], DUP) && compareInsn(insns[2], ALOAD, 0) && compareInsn(insns[3], GETFIELD, minecraft.name, null, "Ljava/io/File;") && compareInsn(insns[4], LDC) && compareInsn(insns[5], INVOKESPECIAL, "java/io/File", "<init>", "(Ljava/io/File;Ljava/lang/String;)V")) {
+					LdcInsnNode ldc = (LdcInsnNode) insns[4];
+					String s = (String) ldc.cst;
 					if(s.startsWith("assets/")) {
 						ldc.cst = s.substring(6);
 						InsnList insert = new InsnList();
@@ -173,7 +167,7 @@ public class VanillaTweak extends Tweak {
 						m.instructions.remove(insns[2]);
 						m.instructions.remove(insns[3]);
 						m.instructions.insert(insns[1], insert);
-					} else if (s.equals("assets")) {
+					} else if(s.equals("assets")) {
 						ldc.cst = assets;
 						m.instructions.remove(insns[2]);
 						m.instructions.remove(insns[3]);

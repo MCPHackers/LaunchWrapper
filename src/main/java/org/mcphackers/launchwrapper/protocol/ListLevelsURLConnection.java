@@ -13,15 +13,16 @@ import org.mcphackers.launchwrapper.Launch;
 import org.mcphackers.launchwrapper.util.Util;
 
 public class ListLevelsURLConnection extends URLConnection {
-	
+
 	public static final String EMPTY_LEVEL = "-";
-	
+
 	public ListLevelsURLConnection(URL url) {
 		super(url);
 	}
 
 	@Override
-	public void connect() throws IOException {}
+	public void connect() throws IOException {
+	}
 
 	public InputStream getInputStream() throws IOException {
 		File levels = new File(Launch.INSTANCE.config.gameDir.get(), "levels");

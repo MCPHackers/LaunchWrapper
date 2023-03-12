@@ -9,6 +9,7 @@ import java.util.Map;
 
 public class LaunchConfig {
 	private Map<String, LaunchParameter<?>> parameters = new HashMap<String, LaunchParameter<?>>();
+
 	public LaunchParameterSwitch demo 				= new LaunchParameterSwitch("demo", false);
 	public LaunchParameterSwitch fullscreen 		= new LaunchParameterSwitch("fullscreen", false);
 	public LaunchParameterSwitch checkGlErrors 		= new LaunchParameterSwitch("checkGlErrors", false);
@@ -41,7 +42,7 @@ public class LaunchConfig {
 	public LaunchParameterString loadmap_user 		= new LaunchParameterString("loadmap_user");
 	public LaunchParameterNumber loadmap_id 		= new LaunchParameterNumber("loadmap_id");
 	public LaunchParameterString mppass 			= new LaunchParameterString("mppass", "");
-	public LaunchParameterSwitch lwjglFrame 		= new LaunchParameterSwitch("lwjglFrame", true, true);
+	public LaunchParameterSwitch lwjglFrame 		= new LaunchParameterSwitch("awtFrame", true, true);
 	public LaunchParameterSwitch isom 				= new LaunchParameterSwitch("isom", false, true);
 	public LaunchParameterSwitch forceVsync 		= new LaunchParameterSwitch("forceVsync", false, true);
 	public LaunchParameterSwitch forceResizable 	= new LaunchParameterSwitch("forceResizable", false, true);
@@ -53,40 +54,36 @@ public class LaunchConfig {
 	public LaunchParameterString title 				= new LaunchParameterString("title", null, true);
 
 	public LaunchConfig(String[] args) {
-		int i = 0;
-		while(i < args.length) {
+		for(int i = 0; i < args.length; i++) {
 			if(args[i].startsWith("--")) {
 				String paramName = args[i].substring(2);
 				LaunchParameter<?> param = parameters.get(paramName.toLowerCase(Locale.ENGLISH));
-				if(paramName.equalsIgnoreCase("awtFrame")) {
-					lwjglFrame.set(false);
+				if(param == null) {
+					continue;
 				}
-				else if(param != null) {
-					if(param.isSwitch()) {
-						((LaunchParameterSwitch)param).set(true);
-					}
-					else if(i + 1 < args.length) {
-						try {
-							//TODO better handling for alternative parameter names
-							if(param.equals(session)) {
-								sessionid.set(args[i + 1]);
-							}
-							if(param.equals(sessionid)) {
-								session.set(args[i + 1]);
-							}
-							if(param.equals(gameDir)) {
-								workDir.set(new File(args[i + 1]));
-							}
-							if(param.equals(workDir)) {
-								gameDir.set(new File(args[i + 1]));
-							}
-							param.setString(args[i + 1]);
-							i++;
-						} catch (IllegalArgumentException e) {}
+				if(param.isSwitch()) {
+					((LaunchParameterSwitch) param).setFlag();
+				} else if(i + 1 < args.length) {
+					try {
+						// TODO better handling for alternative parameter names
+						if(param.equals(session)) {
+							sessionid.set(args[i + 1]);
+						}
+						if(param.equals(sessionid)) {
+							session.set(args[i + 1]);
+						}
+						if(param.equals(gameDir)) {
+							workDir.set(new File(args[i + 1]));
+						}
+						if(param.equals(workDir)) {
+							gameDir.set(new File(args[i + 1]));
+						}
+						param.setString(args[i + 1]);
+						i++;
+					} catch (IllegalArgumentException e) {
 					}
 				}
 			}
-			i++;
 		}
 	}
 
@@ -109,7 +106,7 @@ public class LaunchConfig {
 		}
 		return map;
 	}
-	
+
 	public String[] getArgs() {
 		List<String> list = new ArrayList<String>();
 		for(LaunchParameter<?> param : parameters.values()) {
@@ -126,46 +123,46 @@ public class LaunchConfig {
 		String[] arr = new String[list.size()];
 		return list.toArray(arr);
 	}
-	
+
 	public abstract class LaunchParameter<T> {
 		public final String name;
 		public final boolean wrapperOnly;
-		
+
 		protected LaunchParameter(String name) {
 			this(name, false);
 		}
-		
+
 		protected LaunchParameter(String name, boolean wrapper) {
 			this.name = name;
 			this.wrapperOnly = wrapper;
 			parameters.put(name.toLowerCase(Locale.ENGLISH), this);
 		}
-		
+
 		public boolean isSwitch() {
 			return false;
 		}
-		
+
 		public abstract String getString();
-		
+
 		public abstract void setString(String argument);
-		
+
 		public abstract Object get();
-		
+
 		public abstract void set(T value);
 	}
-	
+
 	public class LaunchParameterFile extends LaunchParameter<File> {
 		private File value;
 
 		public LaunchParameterFile(String name) {
 			super(name);
 		}
-		
+
 		public LaunchParameterFile(String name, File defaultValue) {
 			super(name);
 			value = defaultValue;
 		}
-		
+
 		public LaunchParameterFile(String name, File defaultValue, boolean wrapper) {
 			super(name, wrapper);
 			value = defaultValue;
@@ -173,7 +170,8 @@ public class LaunchConfig {
 
 		@Override
 		public String getString() {
-			if(value == null) return null;
+			if(value == null)
+				return null;
 			return this.value.getAbsolutePath();
 		}
 
@@ -186,25 +184,25 @@ public class LaunchConfig {
 		public File get() {
 			return this.value;
 		}
-		
+
 		@Override
 		public void set(File value) {
 			this.value = value;
 		}
 	}
-	
+
 	public class LaunchParameterFileList extends LaunchParameter<File[]> {
 		private File[] value;
 
 		public LaunchParameterFileList(String name) {
 			super(name);
 		}
-		
+
 		public LaunchParameterFileList(String name, File[] defaultValue) {
 			super(name);
 			value = defaultValue;
 		}
-		
+
 		public LaunchParameterFileList(String name, File[] defaultValue, boolean wrapper) {
 			super(name, wrapper);
 			value = defaultValue;
@@ -212,7 +210,8 @@ public class LaunchConfig {
 
 		@Override
 		public String getString() {
-			if(value == null) return null;
+			if(value == null)
+				return null;
 			String s = "";
 			for(int i = 0; i < value.length; i++) {
 				if(i != 0) {
@@ -237,30 +236,33 @@ public class LaunchConfig {
 		public File[] get() {
 			return this.value;
 		}
-		
+
 		@Override
 		public void set(File[] value) {
 			this.value = value;
 		}
 	}
-	
+
 	public class LaunchParameterSwitch extends LaunchParameter<Boolean> {
 		private boolean value;
+		private boolean defaultValue;
 
 		public LaunchParameterSwitch(String name) {
 			super(name);
 		}
-		
-		public LaunchParameterSwitch(String name, Boolean defaultValue) {
+
+		public LaunchParameterSwitch(String name, Boolean defaultVal) {
 			super(name);
-			value = defaultValue;
+			defaultValue = defaultVal;
+			value = defaultVal;
 		}
-		
-		public LaunchParameterSwitch(String name, Boolean defaultValue, boolean wrapper) {
+
+		public LaunchParameterSwitch(String name, Boolean defaultVal, boolean wrapper) {
 			super(name, wrapper);
-			value = defaultValue;
+			defaultValue = defaultVal;
+			value = defaultVal;
 		}
-		
+
 		public boolean isSwitch() {
 			return true;
 		}
@@ -279,25 +281,33 @@ public class LaunchConfig {
 		public Boolean get() {
 			return this.value;
 		}
-		
+
 		@Override
 		public void set(Boolean value) {
 			this.value = value == null ? false : value;
 		}
+
+		public void setFlag() {
+			this.value = !defaultValue;
+		}
+
+		public void toggle() {
+			this.value = !value;
+		}
 	}
-	
+
 	public class LaunchParameterString extends LaunchParameter<String> {
 		private String value;
 
 		public LaunchParameterString(String name) {
 			super(name);
 		}
-		
+
 		public LaunchParameterString(String name, String defaultValue) {
 			super(name);
 			value = defaultValue;
 		}
-		
+
 		public LaunchParameterString(String name, String defaultValue, boolean wrapper) {
 			super(name, wrapper);
 			value = defaultValue;
@@ -317,25 +327,25 @@ public class LaunchConfig {
 		public String get() {
 			return this.value;
 		}
-		
+
 		@Override
 		public void set(String value) {
 			this.value = value;
 		}
 	}
-	
+
 	public class LaunchParameterNumber extends LaunchParameter<Integer> {
 		private Integer value;
 
 		public LaunchParameterNumber(String name) {
 			super(name);
 		}
-		
+
 		public LaunchParameterNumber(String name, Integer defaultValue) {
 			super(name);
 			value = defaultValue;
 		}
-		
+
 		public LaunchParameterNumber(String name, Integer defaultValue, boolean wrapper) {
 			super(name, wrapper);
 			value = defaultValue;
@@ -355,7 +365,7 @@ public class LaunchConfig {
 		public Integer get() {
 			return this.value;
 		}
-		
+
 		@Override
 		public void set(Integer value) {
 			this.value = value;

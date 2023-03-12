@@ -18,26 +18,26 @@ import org.mcphackers.launchwrapper.tweak.AppletWrapper;
 import org.mcphackers.launchwrapper.util.Util;
 
 public class Inject {
-	
+
 	private static final Launch LAUNCH = Launch.INSTANCE;
 	private static final BufferedImage DEFAULT_ICON = getIcon();
 
-    public static AppletWrapper getApplet() {
-        return new AppletWrapper(LAUNCH.config.getArgsAsMap());
-    }
-    
-    /**
-     * Indev load level injection
-     */
-    public static File getLevelFile(int index) {
-    	return new File(LAUNCH.config.gameDir.get(), "levels/level" + index + ".dat");
-    }
+	public static AppletWrapper getApplet() {
+		return new AppletWrapper(LAUNCH.config.getArgsAsMap());
+	}
 
-    /**
-     * Indev save level injection
-     */
-    public static File saveLevel(int index, String levelName) {
-    	final int maxLevels = 5;
+	/**
+	 * Indev load level injection
+	 */
+	public static File getLevelFile(int index) {
+		return new File(LAUNCH.config.gameDir.get(), "levels/level" + index + ".dat");
+	}
+
+	/**
+	 * Indev save level injection
+	 */
+	public static File saveLevel(int index, String levelName) {
+		final int maxLevels = 5;
 		File levels = new File(LAUNCH.config.gameDir.get(), "levels");
 		File level = new File(levels, "level" + index + ".dat");
 		File levelNames = new File(levels, "levels.txt");
@@ -77,33 +77,30 @@ public class Inject {
 			return null;
 		}
 		return level;
-    }
+	}
 
-    public static ByteBuffer loadIcon(BufferedImage icon) {
-        final int[] rgb = icon.getRGB(0, 0, icon.getWidth(), icon.getHeight(), null, 0, icon.getWidth());
+	public static ByteBuffer loadIcon(BufferedImage icon) {
+		final int[] rgb = icon.getRGB(0, 0, icon.getWidth(), icon.getHeight(), null, 0, icon.getWidth());
 
-        final ByteBuffer buffer = ByteBuffer.allocate(4 * rgb.length);
-        for (int color : rgb) {
-            buffer.putInt(color << 8 | ((color >> 24) & 0xFF));
-        }
-        buffer.flip();
-        return buffer;
-    }
+		final ByteBuffer buffer = ByteBuffer.allocate(4 * rgb.length);
+		for(int color : rgb) {
+			buffer.putInt(color << 8 | ((color >> 24) & 0xFF));
+		}
+		buffer.flip();
+		return buffer;
+	}
 
-    public static ByteBuffer[] loadDefaultIcon(boolean grassBlock) {
-    	if(!grassBlock) {
-	    	try {
-	        	return new ByteBuffer[] {
-                    loadIcon("/icon_16x16.png"),
-                    loadIcon("/icon_32x32.png")
-	            };
-		    } catch (IOException e) {
-		        e.printStackTrace();
-		    }
-    	}
-    	return new ByteBuffer[] { loadIcon(DEFAULT_ICON) };
-    }
-	
+	public static ByteBuffer[] loadDefaultIcon(boolean grassBlock) {
+		if(!grassBlock) {
+			try {
+				return new ByteBuffer[] { loadIcon("/icon_16x16.png"), loadIcon("/icon_32x32.png") };
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+		return new ByteBuffer[] { loadIcon(DEFAULT_ICON) };
+	}
+
 	public static ByteBuffer[] loadIcons() {
 		List<ByteBuffer> processedIcons = new ArrayList<ByteBuffer>();
 		for(File icon : LAUNCH.config.icon.get()) {
@@ -118,7 +115,7 @@ public class Inject {
 		}
 		return processedIcons.toArray(new ByteBuffer[0]);
 	}
-	
+
 	public static ByteBuffer[] loadIcon(File icon) {
 		try {
 			return new ByteBuffer[] { loadIcon(ImageIO.read(icon)) };
@@ -126,11 +123,11 @@ public class Inject {
 			return null;
 		}
 	}
-	
+
 	private static ByteBuffer loadIcon(String icon) throws IOException {
 		return loadIcon(ImageIO.read(Inject.class.getResourceAsStream(icon)));
 	}
-	
+
 	public static BufferedImage getIcon() {
 		if(DEFAULT_ICON != null) {
 			return DEFAULT_ICON;

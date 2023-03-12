@@ -9,18 +9,19 @@ import org.mcphackers.launchwrapper.protocol.LegacyURLStreamHandler.ResourceInde
 import org.mcphackers.launchwrapper.util.Util;
 
 public class ResourceIndexURLConnection extends URLConnection {
-	private static final String[] RESOURCES = new String[] {"/resources/", "/MinecraftResources/"};
+	private static final String[] RESOURCES = new String[] { "/resources/", "/MinecraftResources/" };
 
 	ResourceIndex index = null;
 	int port = -1;
-	
+
 	public ResourceIndexURLConnection(URL url, int port) {
 		super(url);
 		this.port = port;
 	}
 
 	@Override
-	public void connect() throws IOException {}
+	public void connect() throws IOException {
+	}
 
 	@Override
 	public InputStream getInputStream() throws IOException {
@@ -32,7 +33,7 @@ public class ResourceIndexURLConnection extends URLConnection {
 		}
 		return url.openStream();
 	}
-	
+
 	protected int getPort() {
 		return port;
 	}

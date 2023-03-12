@@ -8,15 +8,15 @@ import org.mcphackers.launchwrapper.loader.LaunchClassLoader;
 public abstract class Tweak {
 
 	private static final boolean DEBUG = true;
-	
+
 	protected ClassNodeSource source;
-	
+
 	public Tweak(ClassNodeSource source) {
 		this.source = source;
 	}
-	
+
 	public abstract boolean transform();
-	
+
 	public abstract LaunchTarget getLaunchTarget(LaunchClassLoader loader);
 
 	public static Tweak get(LaunchClassLoader classLoader, LaunchConfig launch) {
@@ -38,7 +38,7 @@ public abstract class Tweak {
 		}
 		return null; // Tweak not found
 	}
-	
+
 	protected void debugInfo(String msg) {
 		if(DEBUG)
 			System.out.println("TWEAK: " + msg);

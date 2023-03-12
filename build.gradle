@@ -21,7 +21,7 @@ dependencies {
     implementation 'org.lwjgl.lwjgl:lwjgl_util:2.9.4'
     implementation 'org.ow2.asm:asm:9.3'
     implementation 'org.ow2.asm:asm-tree:9.3'
-    implementation 'org.json:json:20220924'
+    implementation 'org.json:json:20230311'
 }
 
 task sourcesJar(type: Jar) {
