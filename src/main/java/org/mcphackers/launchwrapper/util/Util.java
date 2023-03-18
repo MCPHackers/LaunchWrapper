@@ -1,7 +1,11 @@
 package org.mcphackers.launchwrapper.util;
 
-import java.io.*;
-import java.lang.reflect.Field;
+import java.io.BufferedInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.Closeable;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLDecoder;
@@ -10,46 +14,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.Map;
 
-import sun.misc.Unsafe;
-
 public final class Util {
-
-	private static final Unsafe theUnsafe = getUnsafe();
-
-	private static Unsafe getUnsafe() {
-		try {
-			final Field unsafeField = Unsafe.class.getDeclaredField("theUnsafe");
-			unsafeField.setAccessible(true);
-			final Unsafe unsafe = (Unsafe) unsafeField.get(null);
-			return unsafe;
-		} catch (Exception e) {
-			e.printStackTrace();
-			return null;
-		}
-	}
-
-	public static void setStaticBooleanUnsafe(final Field field, boolean value) {
-		final Object staticFieldBase = theUnsafe.staticFieldBase(field);
-		final long staticFieldOffset = theUnsafe.staticFieldOffset(field);
-		theUnsafe.putBoolean(staticFieldBase, staticFieldOffset, value);
-	}
-
-	public static void setStaticObjectUnsafe(final Field field, Object value) {
-		final Object staticFieldBase = theUnsafe.staticFieldBase(field);
-		final long staticFieldOffset = theUnsafe.staticFieldOffset(field);
-		theUnsafe.putObject(staticFieldBase, staticFieldOffset, value);
-	}
-
-	public static Object getStaticObjectUnsafe(final Field field) {
-		final Object staticFieldBase = theUnsafe.staticFieldBase(field);
-		final long staticFieldOffset = theUnsafe.staticFieldOffset(field);
-		return theUnsafe.getObject(staticFieldBase, staticFieldOffset);
-	}
-
-	public static Object getObjectUnsafe(final Object base, final Field field) {
-		final long fieldOffset = theUnsafe.objectFieldOffset(field);
-		return theUnsafe.getObject(base, fieldOffset);
-	}
 
 	public static void closeSilently(Closeable closeable) {
 		if(closeable != null) {

@@ -48,7 +48,7 @@ public class LoadLevelURLConnection extends HttpURLConnection {
 				throw new MalformedURLException("Query is missing \"id\" parameter");
 			}
 			int levelId = Integer.parseInt(query.get("id"));
-			File levels = new File(Launch.INSTANCE.config.gameDir.get(), "levels");
+			File levels = new File(Launch.getConfig().gameDir.get(), "levels");
 			File level = new File(levels, "level" + levelId + ".dat");
 			if(!level.exists()) {
 				throw new FileNotFoundException("Level doesn't exist");

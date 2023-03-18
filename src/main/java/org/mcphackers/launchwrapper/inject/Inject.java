@@ -18,19 +18,17 @@ import org.mcphackers.launchwrapper.tweak.AppletWrapper;
 import org.mcphackers.launchwrapper.util.Util;
 
 public class Inject {
-
-	private static final Launch LAUNCH = Launch.INSTANCE;
 	private static final BufferedImage DEFAULT_ICON = getIcon();
 
 	public static AppletWrapper getApplet() {
-		return new AppletWrapper(LAUNCH.config.getArgsAsMap());
+		return new AppletWrapper(Launch.getConfig().getArgsAsMap());
 	}
 
 	/**
 	 * Indev load level injection
 	 */
 	public static File getLevelFile(int index) {
-		return new File(LAUNCH.config.gameDir.get(), "levels/level" + index + ".dat");
+		return new File(Launch.getConfig().gameDir.get(), "levels/level" + index + ".dat");
 	}
 
 	/**
@@ -38,7 +36,7 @@ public class Inject {
 	 */
 	public static File saveLevel(int index, String levelName) {
 		final int maxLevels = 5;
-		File levels = new File(LAUNCH.config.gameDir.get(), "levels");
+		File levels = new File(Launch.getConfig().gameDir.get(), "levels");
 		File level = new File(levels, "level" + index + ".dat");
 		File levelNames = new File(levels, "levels.txt");
 		String[] lvlNames = new String[maxLevels];
@@ -103,7 +101,7 @@ public class Inject {
 
 	public static ByteBuffer[] loadIcons() {
 		List<ByteBuffer> processedIcons = new ArrayList<ByteBuffer>();
-		for(File icon : LAUNCH.config.icon.get()) {
+		for(File icon : Launch.getConfig().icon.get()) {
 			if(!icon.exists()) {
 				continue;
 			}

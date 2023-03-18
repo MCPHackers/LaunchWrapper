@@ -20,7 +20,6 @@ import static org.mcphackers.launchwrapper.protocol.ListLevelsURLConnection.EMPT
 public class SaveLevelURLConnection extends HttpURLConnection {
 
 	ByteArrayOutputStream levelOutput = new ByteArrayOutputStream();
-	Exception exception;
 
 	public SaveLevelURLConnection(URL url) {
 		super(url);
@@ -41,8 +40,9 @@ public class SaveLevelURLConnection extends HttpURLConnection {
 
 	@Override
 	public InputStream getInputStream() throws IOException {
+		Exception exception = null;
 		try {
-			File levels = new File(Launch.INSTANCE.config.gameDir.get(), "levels");
+			File levels = new File(Launch.getConfig().gameDir.get(), "levels");
 			byte[] data = levelOutput.toByteArray();
 			DataInputStream in = new DataInputStream(new ByteArrayInputStream(data));
 			String username = in.readUTF();

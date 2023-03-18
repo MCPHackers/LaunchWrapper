@@ -17,6 +17,7 @@ version = '1.0'
 sourceCompatibility = 1.5
 
 dependencies {
+    implementation 'org.mcphackers.rdi:rdi:1.0'
     implementation 'org.lwjgl.lwjgl:lwjgl:2.9.4'
     implementation 'org.lwjgl.lwjgl:lwjgl_util:2.9.4'
     implementation 'org.ow2.asm:asm:9.3'

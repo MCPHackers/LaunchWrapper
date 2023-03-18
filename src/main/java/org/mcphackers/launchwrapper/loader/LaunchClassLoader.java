@@ -3,6 +3,8 @@ package org.mcphackers.launchwrapper.loader;
 import static org.objectweb.asm.ClassWriter.COMPUTE_FRAMES;
 import static org.objectweb.asm.ClassWriter.COMPUTE_MAXS;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
@@ -17,8 +19,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.mcphackers.launchwrapper.inject.ClassNodeSource;
-import org.mcphackers.launchwrapper.inject.InjectUtils;
 import org.mcphackers.launchwrapper.util.Util;
+import org.mcphackers.rdi.util.NodeHelper;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.tree.ClassNode;
@@ -37,6 +39,7 @@ public class LaunchClassLoader extends ClassLoader implements ClassNodeSource {
 	private Map<String, ClassNode> overridenClasses = new HashMap<String, ClassNode>();
 	/** Keys should contain slashes */
 	private Map<String, ClassNode> classNodeCache = new HashMap<String, ClassNode>();
+	private File debugOutput;
 
 	public LaunchClassLoader(ClassLoader parent) {
 		super(null);
@@ -45,6 +48,10 @@ public class LaunchClassLoader extends ClassLoader implements ClassNodeSource {
 
 	public void setClassPath(URL[] urls) {
 		this.parent = new URLClassLoader(urls, parent);
+	}
+	
+	public void setDebugOutput(File directory) {
+		debugOutput = directory;
 	}
 
 	public URL getResource(String name) {
@@ -56,9 +63,6 @@ public class LaunchClassLoader extends ClassLoader implements ClassNodeSource {
 	}
 
 	public Class<?> findClass(String name) throws ClassNotFoundException {
-		if(!classNodeCache.isEmpty()) {
-			classNodeCache.clear();
-		}
 		if(name.startsWith("java.")) {
 			return parent.loadClass(name);
 		}
@@ -75,6 +79,7 @@ public class LaunchClassLoader extends ClassLoader implements ClassNodeSource {
 	}
 
 	public void invokeMain(String launchTarget, String... args) {
+		classNodeCache.clear();
 		try {
 			Class<?> mainClass = findClass(launchTarget);
 			mainClass.getDeclaredMethod("main", String[].class).invoke(null, (Object) args);
@@ -91,7 +96,6 @@ public class LaunchClassLoader extends ClassLoader implements ClassNodeSource {
 		byte[] classData = getClassAsBytes(name);
 		if(classData == null)
 			return null;
-		System.out.println(name);
 		Class<?> definedClass = defineClass(name, classData, 0, classData.length, getProtectionDomain(name));
 		classes.put(name, definedClass);
 		return definedClass;
@@ -116,8 +120,27 @@ public class LaunchClassLoader extends ClassLoader implements ClassNodeSource {
 	public void overrideClass(ClassNode node) {
 		if(node == null)
 			return;
+		saveDebugClass(node);
 		overridenClasses.put(className(node.name), node);
 		classNodeCache.put(node.name, node);
+	}
+
+	private void saveDebugClass(ClassNode node) {
+		if(debugOutput == null) {
+			return;
+		}
+		ClassWriter writer = new SafeClassWriter(parent, COMPUTE_MAXS);
+		node.accept(writer);
+		byte[] classData = writer.toByteArray();
+		File cls = new File(debugOutput, node.name + ".class");
+		cls.getParentFile().mkdirs();
+		try {
+			FileOutputStream fos = new FileOutputStream(cls);
+			fos.write(classData);
+			fos.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 
 	/**
@@ -142,11 +165,11 @@ public class LaunchClassLoader extends ClassLoader implements ClassNodeSource {
 	}
 
 	public FieldNode getField(String owner, String name, String desc) {
-		return InjectUtils.getField(getClass(owner), name, desc);
+		return NodeHelper.getField(getClass(owner), name, desc);
 	}
 
 	public MethodNode getMethod(String owner, String name, String desc) {
-		return InjectUtils.getMethod(getClass(owner), name, desc);
+		return NodeHelper.getMethod(getClass(owner), name, desc);
 	}
 
 	private Class<?> redefineClass(ClassNode node) {

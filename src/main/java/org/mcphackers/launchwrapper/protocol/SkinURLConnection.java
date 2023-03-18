@@ -7,7 +7,6 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.Map;
 
-import org.mcphackers.launchwrapper.protocol.LegacyURLStreamHandler.SkinType;
 import org.mcphackers.launchwrapper.util.Util;
 
 public class SkinURLConnection extends HttpURLConnection {

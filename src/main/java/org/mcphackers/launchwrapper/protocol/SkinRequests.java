@@ -6,7 +6,6 @@ import java.net.URL;
 import java.util.HashMap;
 
 import org.json.JSONObject;
-import org.mcphackers.launchwrapper.protocol.LegacyURLStreamHandler.SkinType;
 import org.mcphackers.launchwrapper.util.Base64;
 import org.mcphackers.launchwrapper.util.ImageUtils;
 import org.mcphackers.launchwrapper.util.Util;

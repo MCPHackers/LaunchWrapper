@@ -1,11 +1,15 @@
 package org.mcphackers.launchwrapper;
 
 import java.io.File;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+
+import org.mcphackers.launchwrapper.protocol.SkinType;
 
 public class LaunchConfig {
 	private Map<String, LaunchParameter<?>> parameters = new HashMap<String, LaunchParameter<?>>();
@@ -46,12 +50,16 @@ public class LaunchConfig {
 	public LaunchParameterSwitch isom 				= new LaunchParameterSwitch("isom", false, true);
 	public LaunchParameterSwitch forceVsync 		= new LaunchParameterSwitch("forceVsync", false, true);
 	public LaunchParameterSwitch forceResizable 	= new LaunchParameterSwitch("forceResizable", false, true);
-	public LaunchParameterString skinProxy 			= new LaunchParameterString("skinProxy", "default", true);
+	public LaunchParameterEnum<SkinType> skinProxy 	= new LaunchParameterEnum<SkinType>("skinProxy", SkinType.DEFAULT, true);
 	public LaunchParameterNumber resourcesProxyPort = new LaunchParameterNumber("resourcesProxyPort", null, true);
 	public LaunchParameterString serverURL 			= new LaunchParameterString("serverURL", null, true);
 	public LaunchParameterString serverSHA1 		= new LaunchParameterString("serverSHA1", null, true);
 	public LaunchParameterFileList icon 			= new LaunchParameterFileList("icon", null, true);
 	public LaunchParameterString title 				= new LaunchParameterString("title", null, true);
+	public LaunchParameterSwitch oneSixFlag 		= new LaunchParameterSwitch("oneSixFlag", false, true);
+
+	public LaunchConfig() {
+	}
 
 	public LaunchConfig(String[] args) {
 		for(int i = 0; i < args.length; i++) {
@@ -63,7 +71,9 @@ public class LaunchConfig {
 				}
 				if(param.isSwitch()) {
 					((LaunchParameterSwitch) param).setFlag();
-				} else if(i + 1 < args.length) {
+					continue;
+				}
+				if(i + 1 < args.length) {
 					try {
 						// TODO better handling for alternative parameter names
 						if(param.equals(session)) {
@@ -146,7 +156,7 @@ public class LaunchConfig {
 
 		public abstract void setString(String argument);
 
-		public abstract Object get();
+		public abstract T get();
 
 		public abstract void set(T value);
 	}
@@ -368,6 +378,54 @@ public class LaunchConfig {
 
 		@Override
 		public void set(Integer value) {
+			this.value = value;
+		}
+	}
+
+	public class LaunchParameterEnum<T extends Enum<T>> extends LaunchParameter<T> {
+		private T value;
+		private Class<T> enumType;
+
+		@SuppressWarnings("unchecked")
+		public LaunchParameterEnum(String name, Enum<T> defaultValue) {
+			super(name);
+			enumType = defaultValue.getDeclaringClass();
+			value = (T)defaultValue;
+		}
+
+		@SuppressWarnings("unchecked")
+		public LaunchParameterEnum(String name, Enum<T> defaultValue, boolean wrapper) {
+			super(name, wrapper);
+			enumType = defaultValue.getDeclaringClass();
+			value = (T)defaultValue;
+		}
+
+		@Override
+		public String getString() {
+			return value.toString();
+		}
+
+		@SuppressWarnings("unchecked")
+		@Override
+		public void setString(String argument) {
+			try {
+				Method getEnumFromString = enumType.getDeclaredMethod("getEnum", String.class);
+				if((getEnumFromString.getModifiers() & Modifier.STATIC) != 0) {
+					this.value = (T)getEnumFromString.invoke(null, argument);
+					return;
+				}
+			} catch (Exception e) {
+			}
+			this.value = Enum.valueOf(enumType, argument);
+		}
+
+		@Override
+		public T get() {
+			return this.value;
+		}
+
+		@Override
+		public void set(T value) {
 			this.value = value;
 		}
 	}

@@ -34,10 +34,10 @@ Arguments are formatted the same way as in Mojang launch wrapper. <br>
 For example: `--username DemoUser --width 1280 --height 720 --title "Minecraft Demo" --demo`
 
 Arguments may be as follows:
-- `awtFrame` - disable AWT patches (Does not work at that moment)
+- `awtFrame` - disable LWJGL frame patch and use AWT (Does not work at that moment)
 - `isom` - Launch IsomPreviewApplet
 - `forceVsync` - Launch the game with VSync enabled
-- `forceResizable` - Early Indev and Classic are don't properly update viewport, so the wrapper disables frame resizing. To enable it anyway use this argument
+- `forceResizable` - Early Indev and Classic don't properly update viewport, so the wrapper disables frame resizing. To enable it anyway use this argument
 - `skinProxy` - **classic** / **pre-b1.9-pre4** / **pre-1.8** / **default** - convert the skin to one of these specified formats
 	- **classic** - flatten all skin layers, flip bottom textures and crop to 64x32
 	- **pre-b1.9-pre4** - flip bottom textures and crop to 64x32
@@ -46,6 +46,7 @@ Arguments may be as follows:
 - `resourcesProxyPort` - Betacraft proxy port for sound resources
 - `serverSHA1` - Compare minecraft_server.jar in .minecraft/server against this hash
 - `serverURL` - URL to download the server from if the hash is mismatched or the jar is missing
-- `icon` - List of path of icon graphics separated by `;`
+- `icon` - List of paths of icon PNGs separated by `;`
 - `title` - The display title
-- \+ any Minecraft launch argument or applet parameter
+- `oneSixFlag` - Toggles notice about the release of 1.6 in 1.5.2
+- \+ any [Minecraft launch arguments](https://wiki.vg/Launching_the_game#Game_Arguments) or applet parameters

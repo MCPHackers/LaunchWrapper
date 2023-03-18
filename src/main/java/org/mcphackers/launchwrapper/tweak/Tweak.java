@@ -7,7 +7,7 @@ import org.mcphackers.launchwrapper.loader.LaunchClassLoader;
 
 public abstract class Tweak {
 
-	private static final boolean DEBUG = true;
+	private static final boolean DEBUG = false;
 
 	protected ClassNodeSource source;
 
@@ -39,7 +39,7 @@ public abstract class Tweak {
 		return null; // Tweak not found
 	}
 
-	protected void debugInfo(String msg) {
+	protected void tweakInfo(String msg) {
 		if(DEBUG)
 			System.out.println("TWEAK: " + msg);
 	}

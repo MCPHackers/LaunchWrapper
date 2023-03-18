@@ -10,7 +10,7 @@ import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.Map;
 
-import org.mcphackers.launchwrapper.util.Util;
+import org.mcphackers.launchwrapper.util.UnsafeUtils;
 
 public abstract class URLStreamHandlerProxy extends URLStreamHandler {
 	private static final Map<String, URLStreamHandler> DEFAULT_HANDLERS = new HashMap<String, URLStreamHandler>();
@@ -34,7 +34,7 @@ public abstract class URLStreamHandlerProxy extends URLStreamHandler {
 		handler.parent = getURLStreamHandler(protocol);
 		try {
 			Field handlersField = URL.class.getDeclaredField("handlers");
-			Hashtable handlers = (Hashtable) Util.getStaticObjectUnsafe(handlersField);
+			Hashtable handlers = (Hashtable) UnsafeUtils.getStaticObject(handlersField);
 			handlers.put(protocol, handler);
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -49,7 +49,7 @@ public abstract class URLStreamHandlerProxy extends URLStreamHandler {
 		try {
 			URL url = new URL(protocol + ":");
 			Field handlerField = URL.class.getDeclaredField("handler");
-			handler = (URLStreamHandler) Util.getObjectUnsafe(url, handlerField);
+			handler = (URLStreamHandler) UnsafeUtils.getObject(url, handlerField);
 			DEFAULT_HANDLERS.put(protocol, handler);
 			return handler;
 		} catch (Exception e) {
