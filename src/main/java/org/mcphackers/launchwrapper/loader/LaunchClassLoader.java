@@ -151,7 +151,7 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 		if(debugOutput == null) {
 			return;
 		}
-		ClassWriter writer = new SafeClassWriter(parent, COMPUTE_MAXS);
+		ClassWriter writer = new SafeClassWriter(this, COMPUTE_MAXS);
 		node.accept(writer);
 		byte[] classData = writer.toByteArray();
 		File cls = new File(debugOutput, node.name + ".class");
