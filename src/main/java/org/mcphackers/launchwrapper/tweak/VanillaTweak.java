@@ -1,6 +1,6 @@
 package org.mcphackers.launchwrapper.tweak;
 
-import static org.mcphackers.launchwrapper.inject.InsnHelper.*;
+import static org.mcphackers.launchwrapper.inject.InsnHelper.compareInsn;
 import static org.mcphackers.rdi.util.InsnHelper.*;
 import static org.objectweb.asm.Opcodes.*;
 
@@ -13,7 +13,6 @@ import org.mcphackers.launchwrapper.LaunchConfig.LaunchParameter;
 import org.mcphackers.launchwrapper.LaunchTarget;
 import org.mcphackers.launchwrapper.MainLaunchTarget;
 import org.mcphackers.launchwrapper.inject.ClassNodeSource;
-import org.mcphackers.launchwrapper.loader.LaunchClassLoader;
 import org.mcphackers.launchwrapper.protocol.LegacyURLStreamHandler;
 import org.mcphackers.launchwrapper.protocol.URLStreamHandlerProxy;
 import org.mcphackers.rdi.util.IdentifyCall;
@@ -190,12 +189,17 @@ public class VanillaTweak extends Tweak {
 		}
 	}
 
-	public LaunchTarget getLaunchTarget(LaunchClassLoader loader) {
+	public LaunchTarget getLaunchTarget() {
 		URLStreamHandlerProxy.setURLStreamHandler("http", new LegacyURLStreamHandler(launch.skinProxy.get(), 11707));
 		URLStreamHandlerProxy.setURLStreamHandler("https", new LegacyURLStreamHandler(launch.skinProxy.get(), 11707));
-		MainLaunchTarget target = new MainLaunchTarget(loader, MAIN_CLASS);
+		MainLaunchTarget target = new MainLaunchTarget(MAIN_CLASS);
 		target.args = launch.getArgs();
 		return target;
+	}
+
+	@Override
+	public ClassLoaderTweak getLoaderTweak() {
+		return null;
 	}
 
 }

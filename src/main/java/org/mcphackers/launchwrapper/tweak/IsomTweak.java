@@ -1,6 +1,6 @@
 package org.mcphackers.launchwrapper.tweak;
 
-import static org.mcphackers.launchwrapper.inject.InsnHelper.*;
+import static org.mcphackers.launchwrapper.inject.InsnHelper.getLastReturn;
 import static org.objectweb.asm.Opcodes.*;
 
 import org.mcphackers.launchwrapper.AppletLaunchTarget;
@@ -8,7 +8,6 @@ import org.mcphackers.launchwrapper.LaunchConfig;
 import org.mcphackers.launchwrapper.LaunchTarget;
 import org.mcphackers.launchwrapper.inject.ClassNodeSource;
 import org.mcphackers.launchwrapper.inject.Inject;
-import org.mcphackers.launchwrapper.loader.LaunchClassLoader;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldInsnNode;
 import org.objectweb.asm.tree.FieldNode;
@@ -71,9 +70,9 @@ public class IsomTweak extends LegacyTweak {
 		return true;
 	}
 
-	public LaunchTarget getLaunchTarget(LaunchClassLoader loader) {
+	public LaunchTarget getLaunchTarget() {
 		if(isomApplet != null) {
-			AppletLaunchTarget launchTarget = new AppletLaunchTarget(loader, isomApplet.name);
+			AppletLaunchTarget launchTarget = new AppletLaunchTarget(isomApplet.name);
 			if(launch.title.get() != null) {
 				launchTarget.setTitle(launch.title.get());
 			} else {

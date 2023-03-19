@@ -15,7 +15,6 @@ import org.mcphackers.launchwrapper.LaunchConfig;
 import org.mcphackers.launchwrapper.LaunchTarget;
 import org.mcphackers.launchwrapper.MainLaunchTarget;
 import org.mcphackers.launchwrapper.inject.ClassNodeSource;
-import org.mcphackers.launchwrapper.loader.LaunchClassLoader;
 import org.mcphackers.launchwrapper.protocol.LegacyURLStreamHandler;
 import org.mcphackers.launchwrapper.protocol.SkinType;
 import org.mcphackers.launchwrapper.protocol.URLStreamHandlerProxy;
@@ -105,6 +104,7 @@ public class LegacyTweak extends Tweak {
 		replaceGameDirectory(init, mcDir);
 		optionsLoadFix(init);
 		displayPatch(init, supportsResizing);
+		bitDepthFix(init);
 		fixMouseHelper(mouseHelperName);
 		patchMinecraftInit();
 
@@ -117,6 +117,10 @@ public class LegacyTweak extends Tweak {
 
 		source.overrideClass(minecraft);
 		return true;
+	}
+
+	public ClassLoaderTweak getLoaderTweak() {
+		return new LegacyClassLoaderTweak();
 	}
 
 	private void downloadServer() {
@@ -143,7 +147,7 @@ public class LegacyTweak extends Tweak {
 		}
 	}
 
-	public LaunchTarget getLaunchTarget(LaunchClassLoader loader) {
+	public LaunchTarget getLaunchTarget() {
 		if(main == null) {
 			return null;
 		}
@@ -151,7 +155,7 @@ public class LegacyTweak extends Tweak {
 		enableLegacyMergeSort();
 		URLStreamHandlerProxy.setURLStreamHandler("http", new LegacyURLStreamHandler(skinType, port));
 		URLStreamHandlerProxy.setURLStreamHandler("https", new LegacyURLStreamHandler(skinType, port));
-		MainLaunchTarget target = new MainLaunchTarget(loader, minecraft.name);
+		MainLaunchTarget target = new MainLaunchTarget(minecraft.name);
 		target.args = new String[] { launch.username.get(), launch.sessionid.get() };
 		return target;
 	}
@@ -374,6 +378,32 @@ public class LegacyTweak extends Tweak {
 			insn1 = nextInsn(insn1);
 		}
 	}
+	
+	private void bitDepthFix(MethodNode init) {
+		for(TryCatchBlockNode tryCatch : init.tryCatchBlocks) {
+			if(!"org/lwjgl/LWJGLException".equals(tryCatch.type)) {
+				continue;
+			}
+			AbstractInsnNode insn = tryCatch.end;
+			while(insn != null && insn != tryCatch.start) {
+				if(compareInsn(insn, INVOKESTATIC, "org/lwjgl/opengl/Display", "create", "(Lorg/lwjgl/opengl/PixelFormat;)V")) {
+					return;
+				}
+				if(compareInsn(insn, INVOKESTATIC, "org/lwjgl/opengl/Display", "create", "()V")) {
+					InsnList insert = new InsnList();
+					insert.add(new TypeInsnNode(NEW, "org/lwjgl/opengl/PixelFormat"));
+					insert.add(new InsnNode(DUP));
+					insert.add(new MethodInsnNode(INVOKESPECIAL, "org/lwjgl/opengl/PixelFormat", "<init>", "()V"));
+					insert.add(intInsn(24));
+					insert.add(new MethodInsnNode(INVOKEVIRTUAL, "org/lwjgl/opengl/PixelFormat", "withDepthBits", "(I)Lorg/lwjgl/opengl/PixelFormat;"));
+					insert.add(new MethodInsnNode(INVOKESTATIC, "org/lwjgl/opengl/Display", "create", "(Lorg/lwjgl/opengl/PixelFormat;)V"));
+					init.instructions.insert(insn, insert);
+					init.instructions.remove(insn);
+				}
+				insn = previousInsn(insn);
+			}
+		}
+	}
 
 	private void displayPatch(MethodNode init, boolean supportsResizing) {
 		boolean foundTitle = false; // TODO
@@ -453,8 +483,7 @@ public class LegacyTweak extends Tweak {
 			else
 			if(compareInsn(insns[0], ICONST_1)
 			&& compareInsn(insns[1], INVOKESTATIC, "org/lwjgl/opengl/Display", "setFullscreen", "(Z)V")
-			&& insns[2] != null && insns[2].getType() == AbstractInsnNode.LABEL //FIXME fill no longer stores labels
-			&& compareInsn(insns[4], INVOKESTATIC, "org/lwjgl/opengl/Display", "create", "()V")) {
+			&& compareInsn(insns[2], INVOKESTATIC, "org/lwjgl/opengl/Display", "create", "()V")) {
 				tweakInfo("Pre-classic resolution patch");
 				InsnList insert = getIcon(classic);
 				if(launch.forceVsync.get()) {
@@ -603,6 +632,7 @@ public class LegacyTweak extends Tweak {
 						&& compareInsn(insns3[7], INVOKESTATIC, "org/lwjgl/opengl/Display", "setDisplayMode", "(Lorg/lwjgl/opengl/DisplayMode;)V")) {
 							m.instructions.set(insns3[3], new FieldInsnNode(GETFIELD, minecraft.name, defaultWidth.name, defaultWidth.desc));
 							m.instructions.set(insns3[5], new FieldInsnNode(GETFIELD, minecraft.name, defaultHeight.name, defaultHeight.desc));
+							break methodLoop;
 						} else {
 							JumpInsnNode jump = (JumpInsnNode) insns2[0];
 							LabelNode newLabel = new LabelNode();
@@ -618,6 +648,7 @@ public class LegacyTweak extends Tweak {
 							insert.add(new MethodInsnNode(INVOKESPECIAL, "org/lwjgl/opengl/DisplayMode", "<init>", "(II)V"));
 							insert.add(new MethodInsnNode(INVOKESTATIC, "org/lwjgl/opengl/Display", "setDisplayMode", "(Lorg/lwjgl/opengl/DisplayMode;)V"));
 							m.instructions.insert(insns2[3], insert);
+							break methodLoop;
 						}
 					}
 					insn2 = nextInsn(insn2);
@@ -1139,7 +1170,8 @@ public class LegacyTweak extends Tweak {
 
 		String mcField = null;
 		String mcDesc = "L" + minecraft.name + ";";
-		if(minecraftApplet != null) {
+		boolean invokeAppletInit = patchAppletInit();
+		if(invokeAppletInit) {
 			for(FieldNode field : minecraftApplet.fields) {
 				if(mcDesc.equals(field.desc)) {
 					mcField = field.name;
@@ -1154,7 +1186,6 @@ public class LegacyTweak extends Tweak {
 			insns.add(new MethodInsnNode(INVOKEVIRTUAL, "java/applet/Applet", "setStub", "(Ljava/applet/AppletStub;)V"));
 			insns.add(new VarInsnNode(ALOAD, appletIndex));
 			insns.add(new MethodInsnNode(INVOKEVIRTUAL, minecraftApplet.name, "init", "()V"));
-			patchAppletInit();
 		}
 		if(!launch.lwjglFrame.get()) {
 			insns.add(new TypeInsnNode(NEW, "java/awt/Frame"));
@@ -1191,7 +1222,7 @@ public class LegacyTweak extends Tweak {
 			insns.add(new InsnNode(ACONST_NULL));
 			insns.add(new MethodInsnNode(INVOKEVIRTUAL, "java/awt/Frame", "setLocationRelativeTo", "(Ljava/awt/Component;)V"));
 		}
-		if(minecraftApplet != null) {
+		if(invokeAppletInit) {
 			insns.add(new VarInsnNode(ALOAD, appletIndex));
 			insns.add(new FieldInsnNode(GETFIELD, minecraftApplet.name, mcField, mcDesc));
 		} else {
@@ -1250,13 +1281,16 @@ public class LegacyTweak extends Tweak {
 		return node;
 	}
 
-	private void patchAppletInit() {
+	private boolean patchAppletInit() {
+		if(minecraftApplet == null) {
+			return false;
+		}
 		String mcField = null;
 		String canvasField = null;
 		String mcDesc = "L" + minecraft.name + ";";
 		MethodNode init = NodeHelper.getMethod(minecraftApplet, "init", "()V");
 		if(init == null) {
-			throw new IllegalStateException("Missing applet init");
+			return false;
 		}
 		for(FieldNode field : minecraftApplet.fields) {
 			if(mcDesc.equals(field.desc)) {
@@ -1339,6 +1373,7 @@ public class LegacyTweak extends Tweak {
 			insn = nextInsn(insn);
 		}
 		source.overrideClass(minecraftApplet);
+		return true;
 	}
 
 	private void createWindowListener(String listenerClass) {

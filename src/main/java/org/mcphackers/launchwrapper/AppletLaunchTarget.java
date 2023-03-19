@@ -13,8 +13,7 @@ public class AppletLaunchTarget extends LaunchTarget {
 	private int width = 200, height = 200;
 	private Image icon;
 
-	public AppletLaunchTarget(LaunchClassLoader classLoader, String classTarget) {
-		super(classLoader);
+	public AppletLaunchTarget(String classTarget) {
 		targetClass = classTarget;
 		title = classTarget;
 	}
@@ -32,7 +31,7 @@ public class AppletLaunchTarget extends LaunchTarget {
 		icon = img;
 	}
 
-	public void launch() {
+	public void launch(LaunchClassLoader classLoader) {
 		Class<? extends Applet> appletClass;
 		try {
 			appletClass = classLoader.findClass(targetClass).asSubclass(Applet.class);

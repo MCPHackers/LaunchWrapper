@@ -110,7 +110,10 @@ public class InsnHelper {
 				return matches;
 			case LABEL:
 				LabelNode insn9 = (LabelNode) insn;
-				// TODO
+				if(compare.length > 0) {
+					LabelNode label = (LabelNode) compare[0];
+					matches &= label == insn9;
+				}
 				return matches;
 			case LDC_INSN:
 				LdcInsnNode insn10 = (LdcInsnNode) insn;
@@ -149,8 +152,6 @@ public class InsnHelper {
 				}
 				return matches;
 			case FRAME:
-				FrameNode insn15 = (FrameNode) insn;
-				// TODO
 				return matches;
 			case LINE:
 				LineNumberNode insn16 = (LineNumberNode) insn;

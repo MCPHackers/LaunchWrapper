@@ -7,12 +7,11 @@ public class MainLaunchTarget extends LaunchTarget {
 	public String targetClass;
 	public String[] args;
 
-	public MainLaunchTarget(LaunchClassLoader classLoader, String classTarget) {
-		super(classLoader);
+	public MainLaunchTarget(String classTarget) {
 		targetClass = classTarget;
 	}
 
-	public void launch() {
+	public void launch(LaunchClassLoader classLoader) {
 		classLoader.invokeMain(targetClass, args);
 	}
 

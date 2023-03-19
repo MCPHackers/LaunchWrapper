@@ -1,5 +1,6 @@
 package org.mcphackers.launchwrapper.protocol;
 
+import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.net.URL;
@@ -108,6 +109,7 @@ public class SkinRequests {
 		try {
 			if(skindata.cape != null) {
 				switch(skinType) {
+					case PRE_19A:
 					case CLASSIC:
 					case PRE_B1_9:
 					case PRE_1_8:
@@ -142,15 +144,19 @@ public class SkinRequests {
 				ImageUtils imgu = new ImageUtils(bis);
 
 				switch(skinType) {
+					case PRE_19A:
 					case CLASSIC:
 						overlayHeadLayer(imgu);
 					case PRE_B1_9:
-						rotateBottomTX(imgu);
 					case PRE_1_8:
 						if(imgu.getImage().getHeight() == 64)
 							overlay64to32(imgu);
 						if(skindata.slim)
 							alexToSteve(imgu);
+						if(skinType == SkinType.PRE_B1_9 || skinType == SkinType.CLASSIC || skinType == SkinType.PRE_19A)
+							rotateBottomTX(imgu);
+						if(skinType == SkinType.PRE_19A)
+							flipSkin(imgu);
 						imgu = imgu.crop(0, 0, 64, 32);
 					case DEFAULT:
 						break;
@@ -161,6 +167,43 @@ public class SkinRequests {
 			t.printStackTrace();
 		}
 		return skin;
+	}
+
+	private static void flipSkin(ImageUtils imgu) {
+		BufferedImage sideLeft;
+		BufferedImage sideRight;
+		// head
+		imgu.setArea(8, 0, imgu.crop(8, 0, 8, 16).flip(true, false).getImage());
+		imgu.setArea(16, 0, imgu.crop(16, 0, 8, 8).flip(true, false).getImage());
+		imgu.setArea(24, 8, imgu.crop(24, 8, 8, 8).flip(true, false).getImage());
+		sideLeft = imgu.crop(0, 8, 8, 8).flip(true, false).getImage();
+		sideRight = imgu.crop(16, 8, 8, 8).flip(true, false).getImage();
+		imgu.setArea(16, 8, sideLeft);
+		imgu.setArea(0, 8, sideRight);
+		// body
+		imgu.setArea(20, 16, imgu.crop(20, 16, 8, 16).flip(true, false).getImage());
+		imgu.setArea(28, 16, imgu.crop(28, 16, 8, 4).flip(true, false).getImage());
+		imgu.setArea(32, 20, imgu.crop(32, 20, 8, 12).flip(true, false).getImage());
+		sideLeft = imgu.crop(16, 20, 4, 12).flip(true, false).getImage();
+		sideRight = imgu.crop(28, 20, 4, 12).flip(true, false).getImage();
+		imgu.setArea(28, 20, sideLeft);
+		imgu.setArea(16, 20, sideRight);
+		// leg
+		imgu.setArea(4, 16, imgu.crop(4, 16, 4, 16).flip(true, false).getImage());
+		imgu.setArea(8, 16, imgu.crop(8, 16, 4, 4).flip(true, false).getImage());
+		imgu.setArea(12, 20, imgu.crop(12, 20, 4, 12).flip(true, false).getImage());
+		sideLeft = imgu.crop(0, 20, 4, 12).flip(true, false).getImage();
+		sideRight = imgu.crop(8, 20, 4, 12).flip(true, false).getImage();
+		imgu.setArea(8, 20, sideLeft);
+		imgu.setArea(0, 20, sideRight);
+		// arm
+		imgu.setArea(44, 16, imgu.crop(44, 16, 4, 16).flip(true, false).getImage());
+		imgu.setArea(48, 16, imgu.crop(48, 16, 4, 4).flip(true, false).getImage());
+		imgu.setArea(52, 20, imgu.crop(52, 20, 4, 12).flip(true, false).getImage());
+		sideLeft = imgu.crop(40, 20, 4, 12).flip(true, false).getImage();
+		sideRight = imgu.crop(48, 20, 4, 12).flip(true, false).getImage();
+		imgu.setArea(48, 20, sideLeft);
+		imgu.setArea(40, 20, sideRight);
 	}
 
 	public static void rotateBottomTX(ImageUtils imgu) {
@@ -201,18 +244,9 @@ public class SkinRequests {
 	}
 
 	public static void alexToSteve(ImageUtils imgu) {
-		// make space for the left arm 1px texture
-		imgu.setArea(48, 20, imgu.crop(47, 20, 7, 12).getImage());
-		// fill the 1px space in between
-		imgu.setArea(47, 20, imgu.crop(46, 20, 1, 12).getImage());
-		// fill the 1px space on the right
-		imgu.setArea(55, 20, imgu.crop(54, 20, 1, 12).getImage());
-
-		// bottom hand
-		imgu.setArea(48, 16, imgu.crop(47, 16, 3, 4).getImage());
-		// fill the 1px of the shoulder
-		imgu.setArea(47, 16, imgu.crop(46, 16, 1, 4).getImage());
-		// fill the 1px space on the right
-		imgu.setArea(51, 16, imgu.crop(50, 16, 1, 4).getImage());
+		imgu.setArea(48, 16, imgu.crop(47, 16, 7, 16).getImage());
+		imgu.setArea(47, 16, imgu.crop(45, 16, 1, 16).getImage());
+		imgu.setArea(55, 20, imgu.crop(53, 20, 1, 12).getImage());
+		imgu.setArea(51, 16, imgu.crop(49, 16, 1, 4).getImage());
 	}
 }

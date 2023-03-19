@@ -17,9 +17,19 @@ public abstract class Tweak {
 
 	public abstract boolean transform();
 
-	public abstract LaunchTarget getLaunchTarget(LaunchClassLoader loader);
+	public abstract ClassLoaderTweak getLoaderTweak();
+
+	public abstract LaunchTarget getLaunchTarget();
 
 	public static Tweak get(LaunchClassLoader classLoader, LaunchConfig launch) {
+		Tweak tweak = getTweak(classLoader, launch);
+		if(tweak != null) {
+			classLoader.setLoaderTweak(tweak.getLoaderTweak());
+		}
+		return tweak;
+	}
+	
+	private static Tweak getTweak(LaunchClassLoader classLoader, LaunchConfig launch) {
 		if(launch.isom.get()) {
 			return new IsomTweak(classLoader, launch);
 		}

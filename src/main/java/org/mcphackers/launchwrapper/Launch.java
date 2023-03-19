@@ -34,7 +34,9 @@ public class Launch {
 			return;
 		}
 		if(mainTweak.transform()) {
-			mainTweak.getLaunchTarget(CLASS_LOADER).launch();
+			mainTweak.getLaunchTarget().launch(CLASS_LOADER);
+		} else {
+			System.err.println("Tweak could not be applied");
 		}
 	}
 	
