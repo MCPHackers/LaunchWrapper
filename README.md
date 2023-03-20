@@ -4,7 +4,7 @@
 
 LaunchWrapper is bundled in [BetterJSONs](https://github.com/MCPHackers/BetterJSONs) which are meant for official Minecraft Launcher.
 
-# Features
+## Features
 - Strips game window from Java **AWT** (**Abstract Window Toolkit**) and lets the game use internal **LWJGL** frame
 - BitDepthFix for versions before Beta 1.8
 - Allows changing assets directory in 1.6 snapshots (the game didn't have a parameter to do that yet)
@@ -28,8 +28,14 @@ LaunchWrapper is bundled in [BetterJSONs](https://github.com/MCPHackers/BetterJS
 	- The wrapper also fixes Beta 1.3, Pre-classic and Classic compatibility with Java 5
 - Built-in [Modloader Fix](https://github.com/coffeenotfound/ModloaderFix-b1.7.3)
 
-# How to use
-*This is a more in-depth guide for those who will be using the wrapper*
+## How to use
+***There will be an installer eventually.***<br>
+*For now, here is an in-depth guide for those who will be using the wrapper*
+
+- If you are using MultiMC [follow this guide](https://github.com/MCPHackers/LaunchWrapper/blob/main/MultiMC.md).<br>
+- If you are using Official Launcher (or any other launcher which follows the same versions folder structure) use [BetterJSONs](https://github.com/MCPHackers/BetterJSONs) and rename the JSONs if they are conflicting with any vanilla JSONs
+
+### Setting up manually
 
 Make sure all minecraft and wrapper libraries are on classpath<br>
 Use `java -cp <classpath> org.mcphackers.launchwrapper.Launch <arguments>` to launch the game
@@ -38,7 +44,7 @@ Arguments are formatted the same way as in Mojang launch wrapper. <br>
 For example: `--username DemoUser --width 1280 --height 720 --title "Minecraft Demo" --demo`
 
 Arguments may be as follows:
-- `awtFrame` - disable LWJGL frame patch and use AWT (Does not work at that moment)
+- `awtFrame` - disable LWJGL frame patch and use AWT
 - `isom` - Launch IsomPreviewApplet
 - `forceVsync` - Launch the game with VSync enabled
 - `forceResizable` - Early Indev and Classic don't properly update viewport, so the wrapper disables frame resizing. To enable it anyway use this argument

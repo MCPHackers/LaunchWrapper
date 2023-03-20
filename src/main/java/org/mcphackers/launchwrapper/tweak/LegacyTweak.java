@@ -78,6 +78,7 @@ public class LegacyTweak extends Tweak {
 	protected MethodNode main;
 	protected SkinType skinType = null;
 	protected int port = -1;
+	private boolean classic;
 
 	public LegacyTweak(ClassNodeSource source, LaunchConfig launch) {
 		super(source);
@@ -407,7 +408,7 @@ public class LegacyTweak extends Tweak {
 
 	private void displayPatch(MethodNode init, boolean supportsResizing) {
 		boolean foundTitle = false; // TODO
-		boolean classic = isClassic();
+		this.classic = isClassic();
 		String canvasName = null;
 
 		int thisIndex = 0;
@@ -726,7 +727,7 @@ public class LegacyTweak extends Tweak {
 
 	private void enableLegacyMergeSort() {
 		try {
-			Class<?> mergeSort = ClassLoader.getSystemClassLoader().loadClass("java.util.Arrays$LegacyMergeSort");
+			Class<?> mergeSort = Class.forName("java.util.Arrays$LegacyMergeSort");
 			Field userRequested = mergeSort.getDeclaredField("userRequested");
 			UnsafeUtils.setStaticBoolean(userRequested, true);
 		} catch (ClassNotFoundException e) {
@@ -1136,24 +1137,11 @@ public class LegacyTweak extends Tweak {
 	private InsnList getIcon(boolean grassIcon) {
 		tweakInfo("Replaced icon");
 		InsnList insert = new InsnList();
-		if(launch.icon.get() != null && hasIcon(launch.icon.get())) {
-			insert.add(new MethodInsnNode(INVOKESTATIC, "org/mcphackers/launchwrapper/inject/Inject", "loadIcons", "()[Ljava/nio/ByteBuffer;"));
-		} else {
-			insert.add(booleanInsn(grassIcon));
-			insert.add(new MethodInsnNode(INVOKESTATIC, "org/mcphackers/launchwrapper/inject/Inject", "loadDefaultIcon", "(Z)[Ljava/nio/ByteBuffer;"));
-		}
+		insert.add(booleanInsn(grassIcon));
+		insert.add(new MethodInsnNode(INVOKESTATIC, "org/mcphackers/launchwrapper/inject/Inject", "loadIcon", "(Z)[Ljava/nio/ByteBuffer;"));
 		insert.add(new MethodInsnNode(INVOKESTATIC, "org/lwjgl/opengl/Display", "setIcon", "([Ljava/nio/ByteBuffer;)I"));
 		insert.add(new InsnNode(POP));
 		return insert;
-	}
-
-	private boolean hasIcon(File[] icons) {
-		for(File f : icons) {
-			if(f.exists()) {
-				return true;
-			}
-		}
-		return false;
 	}
 
 	private MethodNode getMain() {
@@ -1162,9 +1150,8 @@ public class LegacyTweak extends Tweak {
 
 		final int appletIndex = 1;
 		final int frameIndex = 2;
-		final int canvasIndex = 3;
-		final int mcIndex = 4;
-		final int threadIndex = 5;
+		final int mcIndex = 3;
+		final int threadIndex = 4;
 
 		final String listenerClass = "org/mcphackers/launchwrapper/inject/WindowListener";
 
@@ -1190,32 +1177,29 @@ public class LegacyTweak extends Tweak {
 		if(!launch.lwjglFrame.get()) {
 			insns.add(new TypeInsnNode(NEW, "java/awt/Frame"));
 			insns.add(new InsnNode(DUP));
-			insns.add(new LdcInsnNode("Minecraft"));
+			insns.add(new LdcInsnNode(launch.title.get() == null ? "Minecraft" : launch.title.get()));
 			insns.add(new MethodInsnNode(INVOKESPECIAL, "java/awt/Frame", "<init>", "(Ljava/lang/String;)V"));
 			insns.add(new VarInsnNode(ASTORE, frameIndex));
 			insns.add(new VarInsnNode(ALOAD, frameIndex));
-			insns.add(new FieldInsnNode(INVOKESTATIC, "org/mcphackers/launchwrapper/inject/Inject", "getIcon", "()Ljava/awt/image/BufferedImage;"));
+			insns.add(booleanInsn(classic));
+			insns.add(new MethodInsnNode(INVOKESTATIC, "org/mcphackers/launchwrapper/inject/Inject", "getIcon", "(Z)Ljava/awt/image/BufferedImage;"));
 			insns.add(new MethodInsnNode(INVOKEVIRTUAL, "java/awt/Frame", "setIconImage", "(Ljava/awt/Image;)V"));
-			insns.add(new TypeInsnNode(NEW, "java/awt/Canvas"));
-			insns.add(new InsnNode(DUP));
-			insns.add(new MethodInsnNode(INVOKESPECIAL, "java/awt/Canvas", "<init>", "()V"));
-			insns.add(new VarInsnNode(ASTORE, canvasIndex));
 			insns.add(new VarInsnNode(ALOAD, frameIndex));
 			insns.add(new TypeInsnNode(NEW, "java/awt/BorderLayout"));
 			insns.add(new InsnNode(DUP));
 			insns.add(new MethodInsnNode(INVOKESPECIAL, "java/awt/BorderLayout", "<init>", "()V"));
 			insns.add(new MethodInsnNode(INVOKEVIRTUAL, "java/awt/Frame", "setLayout", "(Ljava/awt/LayoutManager;)V"));
 			insns.add(new VarInsnNode(ALOAD, frameIndex));
-			insns.add(new VarInsnNode(ALOAD, canvasIndex));
+			insns.add(new VarInsnNode(ALOAD, appletIndex));
 			insns.add(new LdcInsnNode("Center"));
 			insns.add(new MethodInsnNode(INVOKEVIRTUAL, "java/awt/Frame", "add", "(Ljava/awt/Component;Ljava/lang/Object;)V"));
-			insns.add(new VarInsnNode(ALOAD, canvasIndex));
+			insns.add(new VarInsnNode(ALOAD, appletIndex));
 			insns.add(new TypeInsnNode(NEW, "java/awt/Dimension"));
 			insns.add(new InsnNode(DUP));
 			insns.add(intInsn(launch.width.get()));
 			insns.add(intInsn(launch.height.get()));
 			insns.add(new MethodInsnNode(INVOKESPECIAL, "java/awt/Dimension", "<init>", "(II)V"));
-			insns.add(new MethodInsnNode(INVOKEVIRTUAL, "java/awt/Canvas", "setPreferredSize", "(Ljava/awt/Dimension;)V"));
+			insns.add(new MethodInsnNode(INVOKEVIRTUAL, "java/awt/Component", "setPreferredSize", "(Ljava/awt/Dimension;)V"));
 			insns.add(new VarInsnNode(ALOAD, frameIndex));
 			insns.add(new MethodInsnNode(INVOKEVIRTUAL, "java/awt/Frame", "pack", "()V"));
 			insns.add(new VarInsnNode(ALOAD, frameIndex));
@@ -1255,12 +1239,14 @@ public class LegacyTweak extends Tweak {
 			insns.add(booleanInsn(launch.applet.get()));
 			insns.add(new FieldInsnNode(PUTFIELD, minecraft.name, appletMode.name, appletMode.desc));
 		}
-		insns.add(new TypeInsnNode(NEW, "java/lang/Thread"));
-		insns.add(new InsnNode(DUP));
-		insns.add(new VarInsnNode(ALOAD, mcIndex));
-		insns.add(new LdcInsnNode("Minecraft main thread"));
-		insns.add(new MethodInsnNode(INVOKESPECIAL, "java/lang/Thread", "<init>", "(Ljava/lang/Runnable;Ljava/lang/String;)V"));
-		insns.add(new VarInsnNode(ASTORE, threadIndex));
+		if(launch.lwjglFrame.get()) {
+			insns.add(new TypeInsnNode(NEW, "java/lang/Thread"));
+			insns.add(new InsnNode(DUP));
+			insns.add(new VarInsnNode(ALOAD, mcIndex));
+			insns.add(new LdcInsnNode("Minecraft main thread"));
+			insns.add(new MethodInsnNode(INVOKESPECIAL, "java/lang/Thread", "<init>", "(Ljava/lang/Runnable;Ljava/lang/String;)V"));
+			insns.add(new VarInsnNode(ASTORE, threadIndex));
+		}
 		if(!launch.lwjglFrame.get()) {
 			insns.add(new VarInsnNode(ALOAD, frameIndex));
 			insns.add(new InsnNode(ICONST_1));
@@ -1269,13 +1255,13 @@ public class LegacyTweak extends Tweak {
 			insns.add(new TypeInsnNode(NEW, listenerClass));
 			insns.add(new InsnNode(DUP));
 			insns.add(new VarInsnNode(ALOAD, mcIndex));
-			insns.add(new VarInsnNode(ALOAD, threadIndex));
-			insns.add(new MethodInsnNode(INVOKESPECIAL, listenerClass, "<init>", "(L" + minecraft.name + ";Ljava/lang/Thread;)V"));
+			insns.add(new MethodInsnNode(INVOKESPECIAL, listenerClass, "<init>", "(L" + minecraft.name + ";)V"));
 			insns.add(new MethodInsnNode(INVOKEVIRTUAL, "java/awt/Frame", "addWindowListener", "(Ljava/awt/event/WindowListener;)V"));
 			createWindowListener(listenerClass);
+		} else {
+			insns.add(new VarInsnNode(ALOAD, threadIndex));
+			insns.add(new MethodInsnNode(INVOKEVIRTUAL, "java/lang/Thread", "start", "()V"));
 		}
-		insns.add(new VarInsnNode(ALOAD, threadIndex));
-		insns.add(new MethodInsnNode(INVOKEVIRTUAL, "java/lang/Thread", "start", "()V"));
 		insns.add(new InsnNode(RETURN));
 		tweakInfo("Added main");
 		return node;
@@ -1382,15 +1368,11 @@ public class LegacyTweak extends Tweak {
 		ClassNode node = new ClassNode();
 		node.visit(49, ACC_PUBLIC, listenerClass, null, "java/awt/event/WindowAdapter", null);
 		node.fields.add(new FieldNode(ACC_PRIVATE, "mc", "L" + minecraft.name + ";", null, null));
-		node.fields.add(new FieldNode(ACC_PRIVATE, "thread", "Ljava/lang/Thread;", null, null));
-		MethodNode init = new MethodNode(ACC_PUBLIC, "<init>", "(L" + minecraft.name + ";Ljava/lang/Thread;)V", null, null);
+		MethodNode init = new MethodNode(ACC_PUBLIC, "<init>", "(L" + minecraft.name + ";)V", null, null);
 		InsnList insns = init.instructions;
 		insns.add(new VarInsnNode(ALOAD, 0));
 		insns.add(new VarInsnNode(ALOAD, 1));
 		insns.add(new FieldInsnNode(PUTFIELD, listenerClass, "mc", "L" + minecraft.name + ";"));
-		insns.add(new VarInsnNode(ALOAD, 0));
-		insns.add(new VarInsnNode(ALOAD, 2));
-		insns.add(new FieldInsnNode(PUTFIELD, listenerClass, "thread", "Ljava/lang/Thread;"));
 		insns.add(new VarInsnNode(ALOAD, 0));
 		insns.add(new MethodInsnNode(INVOKESPECIAL, "java/awt/event/WindowAdapter", "<init>", "()V"));
 		insns.add(new InsnNode(RETURN));
@@ -1399,29 +1381,10 @@ public class LegacyTweak extends Tweak {
 		MethodNode windowClosing = new MethodNode(ACC_PUBLIC, "windowClosing", "(Ljava/awt/event/WindowEvent;)V", null, null);
 		insns = windowClosing.instructions;
 
-		LabelNode l0 = new LabelNode();
-		LabelNode l1 = new LabelNode();
-		LabelNode l2 = new LabelNode();
-		LabelNode l4 = new LabelNode();
-		windowClosing.tryCatchBlocks.add(new TryCatchBlockNode(l0, l1, l2, "java/lang/InterruptedException"));
-
 		insns.add(new VarInsnNode(ALOAD, 0));
 		insns.add(new FieldInsnNode(GETFIELD, listenerClass, "mc", "L" + minecraft.name + ";"));
 		insns.add(new InsnNode(ICONST_0));
 		insns.add(new FieldInsnNode(PUTFIELD, minecraft.name, running.name, running.desc));
-		insns.add(l0);
-		insns.add(new VarInsnNode(ALOAD, 0));
-		insns.add(new FieldInsnNode(GETFIELD, listenerClass, "thread", "Ljava/lang/Thread;"));
-		insns.add(new MethodInsnNode(INVOKEVIRTUAL, "java/lang/Thread", "join", "()V"));
-		insns.add(l1);
-		insns.add(new JumpInsnNode(GOTO, l4));
-		insns.add(l2);
-		insns.add(new VarInsnNode(ASTORE, 2));
-		insns.add(new VarInsnNode(ALOAD, 2));
-		insns.add(new MethodInsnNode(INVOKEVIRTUAL, "java/lang/InterruptedException", "printStackTrace", "()V"));
-		insns.add(l4);
-		insns.add(new InsnNode(ICONST_0));
-		insns.add(new MethodInsnNode(INVOKESTATIC, "java/lang/System", "exit", "(I)V"));
 		insns.add(new InsnNode(RETURN));
 		node.methods.add(windowClosing);
 		source.overrideClass(node);
@@ -1438,10 +1401,6 @@ public class LegacyTweak extends Tweak {
 			throw new NullPointerException();
 		}
 
-		// final int appletIndex = 1;
-		// final int frameIndex = 2;
-		// final int canvasIndex = 3;
-
 		InsnList insns = new InsnList();
 		insns.add(new TypeInsnNode(NEW, minecraftImpl.name));
 		insns.add(new InsnNode(DUP));
@@ -1455,7 +1414,6 @@ public class LegacyTweak extends Tweak {
 				if(launch.lwjglFrame.get()) {
 					insns.add(new InsnNode(ACONST_NULL));
 				} else {
-					// insns.add(new VarInsnNode(ALOAD, canvasIndex));
 					insns.add(new VarInsnNode(ALOAD, 0));
 					insns.add(new FieldInsnNode(GETFIELD, minecraftApplet.name, canvasField, "Ljava/awt/Canvas;"));
 				}
@@ -1463,10 +1421,9 @@ public class LegacyTweak extends Tweak {
 				if(launch.lwjglFrame.get()) {
 					insns.add(new InsnNode(ACONST_NULL));
 				} else {
-					// insns.add(new VarInsnNode(ALOAD, frameIndex));
+					insns.add(new VarInsnNode(ALOAD, 0));
 				}
 			} else if(minecraftApplet != null && desc.equals("L" + minecraftApplet.name + ";")) {
-				// insns.add(new VarInsnNode(ALOAD, appletIndex));
 				insns.add(new VarInsnNode(ALOAD, 0));
 			} else if(desc.equals("I")) {
 				if(i == 0) {

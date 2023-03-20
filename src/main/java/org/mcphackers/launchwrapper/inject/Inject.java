@@ -17,9 +17,12 @@ import org.mcphackers.launchwrapper.Launch;
 import org.mcphackers.launchwrapper.tweak.AppletWrapper;
 import org.mcphackers.launchwrapper.util.Util;
 
+/**
+ * DO NOT use this class under any circumstances. This class is meant to be initialized in the context of LaunchClassLoader
+ * @author Lassebq
+ *
+ */
 public class Inject {
-	private static final BufferedImage DEFAULT_ICON = getIcon();
-
 	public static AppletWrapper getApplet() {
 		return new AppletWrapper(Launch.getConfig().getArgsAsMap());
 	}
@@ -77,7 +80,7 @@ public class Inject {
 		return level;
 	}
 
-	public static ByteBuffer loadIcon(BufferedImage icon) {
+	private static ByteBuffer loadIcon(BufferedImage icon) {
 		final int[] rgb = icon.getRGB(0, 0, icon.getWidth(), icon.getHeight(), null, 0, icon.getWidth());
 
 		final ByteBuffer buffer = ByteBuffer.allocate(4 * rgb.length);
@@ -88,53 +91,80 @@ public class Inject {
 		return buffer;
 	}
 
-	public static ByteBuffer[] loadDefaultIcon(boolean grassBlock) {
-		if(!grassBlock) {
+	public static ByteBuffer[] loadIcon(boolean favIcon) {
+		File[] iconPaths = Launch.getConfig().icon.get();
+		if(iconPaths != null && hasIcon(iconPaths)) {
+			List<ByteBuffer> processedIcons = new ArrayList<ByteBuffer>();
+			for(File icon : iconPaths) {
+				if(!icon.exists()) {
+					continue;
+				}
+				try {
+					processedIcons.add(loadIcon(ImageIO.read(icon)));
+				} catch (IOException e) {
+					System.err.println("Could not load icon at: " + icon.getAbsolutePath());
+				}
+			}
+			return processedIcons.toArray(new ByteBuffer[0]);
+		}
+		if(!favIcon) {
 			try {
 				return new ByteBuffer[] { loadIcon("/icon_16x16.png"), loadIcon("/icon_32x32.png") };
 			} catch (IOException e) {
-				e.printStackTrace();
+				System.err.println("Could not load the default icon");
 			}
 		}
-		return new ByteBuffer[] { loadIcon(DEFAULT_ICON) };
-	}
-
-	public static ByteBuffer[] loadIcons() {
-		List<ByteBuffer> processedIcons = new ArrayList<ByteBuffer>();
-		for(File icon : Launch.getConfig().icon.get()) {
-			if(!icon.exists()) {
-				continue;
-			}
-			try {
-				processedIcons.add(loadIcon(ImageIO.read(icon)));
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-		}
-		return processedIcons.toArray(new ByteBuffer[0]);
-	}
-
-	public static ByteBuffer[] loadIcon(File icon) {
 		try {
-			return new ByteBuffer[] { loadIcon(ImageIO.read(icon)) };
+			return new ByteBuffer[] { loadIcon("/favicon.png") };
 		} catch (IOException e) {
-			return null;
+			System.err.println("Could not load favicon.png");
 		}
+		return null;
+	}
+
+	private static boolean hasIcon(File[] icons) {
+		for(File f : icons) {
+			if(f.exists()) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	public static BufferedImage getIcon(boolean favIcon) {
+		File[] iconPaths = Launch.getConfig().icon.get();
+		if(iconPaths != null && hasIcon(iconPaths)) {
+			for(File icon : iconPaths) {
+				if(!icon.exists()) {
+					continue;
+				}
+				try {
+					return ImageIO.read(icon);
+				} catch (IOException e) {
+					System.err.println("Could not load icon at: " + icon.getAbsolutePath());
+				}
+			}
+		}
+		if(!favIcon) {
+			try {
+				return getIcon("/icon_32x32.png");
+			} catch (IOException e) {
+				System.err.println("Could not load the default icon");
+			}
+		}
+		try {
+			return getIcon("/favicon.png");
+		} catch (IOException e) {
+			System.err.println("Could not load favicon.png");
+		}
+		return null;
+	}
+
+	private static BufferedImage getIcon(String icon) throws IOException {
+		return ImageIO.read(Inject.class.getResourceAsStream(icon));
 	}
 
 	private static ByteBuffer loadIcon(String icon) throws IOException {
-		return loadIcon(ImageIO.read(Inject.class.getResourceAsStream(icon)));
-	}
-
-	public static BufferedImage getIcon() {
-		if(DEFAULT_ICON != null) {
-			return DEFAULT_ICON;
-		}
-		try {
-			return ImageIO.read(Inject.class.getResourceAsStream("/favicon.png"));
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		return null;
+		return loadIcon(getIcon(icon));
 	}
 }

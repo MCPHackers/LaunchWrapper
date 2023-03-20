@@ -3,11 +3,15 @@ package org.mcphackers.launchwrapper.tweak;
 import static org.mcphackers.launchwrapper.inject.InsnHelper.getLastReturn;
 import static org.objectweb.asm.Opcodes.*;
 
+import java.io.IOException;
+
+import javax.imageio.ImageIO;
+
 import org.mcphackers.launchwrapper.AppletLaunchTarget;
+import org.mcphackers.launchwrapper.Launch;
 import org.mcphackers.launchwrapper.LaunchConfig;
 import org.mcphackers.launchwrapper.LaunchTarget;
 import org.mcphackers.launchwrapper.inject.ClassNodeSource;
-import org.mcphackers.launchwrapper.inject.Inject;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldInsnNode;
 import org.objectweb.asm.tree.FieldNode;
@@ -78,7 +82,11 @@ public class IsomTweak extends LegacyTweak {
 			} else {
 				launchTarget.setTitle("IsomPreview");
 			}
-			launchTarget.setIcon(Inject.getIcon());
+			try {
+				launchTarget.setIcon(ImageIO.read(Launch.class.getClassLoader().getResourceAsStream("/favicon.png")));
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
 			launchTarget.setResolution(launch.width.get(), launch.height.get());
 			return launchTarget;
 		}

@@ -34,7 +34,7 @@ public class AppletLaunchTarget extends LaunchTarget {
 	public void launch(LaunchClassLoader classLoader) {
 		Class<? extends Applet> appletClass;
 		try {
-			appletClass = classLoader.findClass(targetClass).asSubclass(Applet.class);
+			appletClass = classLoader.loadClass(targetClass).asSubclass(Applet.class);
 		} catch (Exception e) {
 			e.printStackTrace();
 			return;

@@ -38,8 +38,6 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 	private ClassLoaderTweak tweak;
 	private Map<String, Class<?>> exceptions = new HashMap<String, Class<?>>();
 	/** Keys should contain dots */
-	private Map<String, Class<?>> classes = new HashMap<String, Class<?>>();
-	/** Keys should contain dots */
 	private Map<String, ClassNode> overridenClasses = new HashMap<String, ClassNode>();
 	/** Keys should contain slashes */
 	private Map<String, ClassNode> classNodeCache = new HashMap<String, ClassNode>();
@@ -73,7 +71,6 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 	}
 
 	public Enumeration<URL> getResources(String name) throws IOException {
-		//TODO ?
 		return parent.getResources(name);
 	}
 
@@ -87,10 +84,6 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 		if(cls != null) {
 			return cls;
 		}
-		cls = classes.get(name);
-		if(cls != null) {
-			return cls;
-		}
 		cls = transformedClass(name);
 		if(cls != null) {
 			return cls;
@@ -101,7 +94,7 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 	public void invokeMain(String launchTarget, String... args) {
 		classNodeCache.clear();
 		try {
-			Class<?> mainClass = findClass(launchTarget);
+			Class<?> mainClass = loadClass(launchTarget);
 			mainClass.getDeclaredMethod("main", String[].class).invoke(null, (Object) args);
 		} catch (InvocationTargetException e1) {
 			if(e1.getCause() != null) {
@@ -197,6 +190,7 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 	protected Class<?> redefineClass(String name) {
 		ClassNode classNode = getClass(name);
 		if(classNode != null && tweak != null && tweak.tweakClass(classNode)) {
+			saveDebugClass(classNode);
 			return redefineClass(classNode);
 		}
 		byte[] classData = getClassAsBytes(name);
@@ -204,7 +198,6 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 			return null;
 		}
 		Class<?> definedClass = defineClass(name, classData, 0, classData.length, getProtectionDomain(name));
-		classes.put(name, definedClass);
 		return definedClass;
 	}
 
@@ -217,7 +210,6 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 		byte[] classData = writer.toByteArray();
 		String name = className(node.name);
 		Class<?> definedClass = defineClass(name, classData, 0, classData.length, getProtectionDomain(name));
-		classes.put(name, definedClass);
 		return definedClass;
 	}
 

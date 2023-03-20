@@ -1,6 +1,5 @@
 package org.mcphackers.launchwrapper;
 
-import org.mcphackers.launchwrapper.inject.Inject;
 import org.mcphackers.launchwrapper.loader.LaunchClassLoader;
 import org.mcphackers.launchwrapper.tweak.Tweak;
 
@@ -12,7 +11,14 @@ public class Launch {
 	public static final LaunchClassLoader CLASS_LOADER = LaunchClassLoader.instantiate();
 	static {
 		CLASS_LOADER.addException(Launch.class);
-		CLASS_LOADER.addException(Inject.class);
+		CLASS_LOADER.addException(LaunchConfig.class);
+		CLASS_LOADER.addException(LaunchConfig.LaunchParameter.class);
+		CLASS_LOADER.addException(LaunchConfig.LaunchParameterEnum.class);
+		CLASS_LOADER.addException(LaunchConfig.LaunchParameterFile.class);
+		CLASS_LOADER.addException(LaunchConfig.LaunchParameterFileList.class);
+		CLASS_LOADER.addException(LaunchConfig.LaunchParameterNumber.class);
+		CLASS_LOADER.addException(LaunchConfig.LaunchParameterString.class);
+		CLASS_LOADER.addException(LaunchConfig.LaunchParameterSwitch.class);
 	}
 	private static Launch INSTANCE;
 	
