@@ -1,5 +1,5 @@
 # LaunchWrapper
-![image](https://user-images.githubusercontent.com/68742864/227984246-66e32041-fcf1-42bb-b451-6fe4e76c70a6.png)
+![image](https://user-images.githubusercontent.com/68742864/227987160-03948674-48c2-4a69-b5b8-86793462f128.png)
 
 **LaunchWrapper** is a wrapper for legacy Minecraft which provides fixes for certain game features and also improves compatibility with launchers.
 
@@ -60,5 +60,6 @@ Arguments may be as follows:
 - `serverURL` - URL to download the server from if the hash is mismatched or the jar is missing
 - `icon` - List of paths of icon PNGs separated by `;`
 - `title` - The display title
+- `applet` - Makes the game think you're running an applet (Which removes quit button for example)
 - `oneSixFlag` - Toggles notice about the release of 1.6 in 1.5.2
 - \+ any [Minecraft launch arguments](https://wiki.vg/Launching_the_game#Game_Arguments) or applet parameters
