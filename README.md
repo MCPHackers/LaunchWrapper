@@ -1,4 +1,5 @@
 # LaunchWrapper
+![image](https://user-images.githubusercontent.com/68742864/227984246-66e32041-fcf1-42bb-b451-6fe4e76c70a6.png)
 
 **LaunchWrapper** is a wrapper for legacy Minecraft which provides fixes for certain game features and also improves compatibility with launchers.
 
@@ -32,7 +33,7 @@ LaunchWrapper is bundled in [BetterJSONs](https://github.com/MCPHackers/BetterJS
 ***There will be an installer eventually.***<br>
 *For now, here is an in-depth guide for those who will be using the wrapper*
 
-- If you are using MultiMC [follow this guide](https://github.com/MCPHackers/LaunchWrapper/blob/main/MultiMC.md).<br>
+- If you are using MultiMC [follow this guide](MultiMC.md).<br>
 - If you are using Official Launcher (or any other launcher which follows the same versions folder structure) use [BetterJSONs](https://github.com/MCPHackers/BetterJSONs) and rename the JSONs if they are conflicting with any vanilla JSONs
 
 ### Setting up manually
