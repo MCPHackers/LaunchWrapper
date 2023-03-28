@@ -1,6 +1,6 @@
 package org.mcphackers.launchwrapper.tweak;
 
-import static org.mcphackers.launchwrapper.inject.InsnHelper.getLastReturn;
+import static org.mcphackers.launchwrapper.util.InsnHelper.getLastReturn;
 import static org.objectweb.asm.Opcodes.*;
 
 import java.io.IOException;
@@ -11,7 +11,7 @@ import org.mcphackers.launchwrapper.AppletLaunchTarget;
 import org.mcphackers.launchwrapper.Launch;
 import org.mcphackers.launchwrapper.LaunchConfig;
 import org.mcphackers.launchwrapper.LaunchTarget;
-import org.mcphackers.launchwrapper.inject.ClassNodeSource;
+import org.mcphackers.launchwrapper.util.ClassNodeSource;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldInsnNode;
 import org.objectweb.asm.tree.FieldNode;

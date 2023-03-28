@@ -27,6 +27,24 @@ public final class UnsafeUtils {
 		theUnsafe.putBoolean(staticFieldBase, staticFieldOffset, value);
 	}
 
+	public static void setStaticByte(final Field field, byte value) {
+		final Object staticFieldBase = theUnsafe.staticFieldBase(field);
+		final long staticFieldOffset = theUnsafe.staticFieldOffset(field);
+		theUnsafe.putByte(staticFieldBase, staticFieldOffset, value);
+	}
+
+	public static void setStaticShort(final Field field, short value) {
+		final Object staticFieldBase = theUnsafe.staticFieldBase(field);
+		final long staticFieldOffset = theUnsafe.staticFieldOffset(field);
+		theUnsafe.putShort(staticFieldBase, staticFieldOffset, value);
+	}
+
+	public static void setStaticChar(final Field field, char value) {
+		final Object staticFieldBase = theUnsafe.staticFieldBase(field);
+		final long staticFieldOffset = theUnsafe.staticFieldOffset(field);
+		theUnsafe.putChar(staticFieldBase, staticFieldOffset, value);
+	}
+
 	public static void setStaticInt(final Field field, int value) {
 		final Object staticFieldBase = theUnsafe.staticFieldBase(field);
 		final long staticFieldOffset = theUnsafe.staticFieldOffset(field);
@@ -64,6 +82,21 @@ public final class UnsafeUtils {
 		theUnsafe.putBoolean(base, staticFieldOffset, value);
 	}
 
+	public static void setByte(final Object base, final Field field, byte value) {
+		final long staticFieldOffset = theUnsafe.staticFieldOffset(field);
+		theUnsafe.putByte(base, staticFieldOffset, value);
+	}
+
+	public static void setShort(final Object base, final Field field, short value) {
+		final long staticFieldOffset = theUnsafe.staticFieldOffset(field);
+		theUnsafe.putShort(base, staticFieldOffset, value);
+	}
+
+	public static void setChar(final Object base, final Field field, char value) {
+		final long staticFieldOffset = theUnsafe.staticFieldOffset(field);
+		theUnsafe.putChar(base, staticFieldOffset, value);
+	}
+
 	public static void setInt(final Object base, final Field field, int value) {
 		final long staticFieldOffset = theUnsafe.staticFieldOffset(field);
 		theUnsafe.putInt(base, staticFieldOffset, value);
@@ -95,6 +128,24 @@ public final class UnsafeUtils {
 		final Object staticFieldBase = theUnsafe.staticFieldBase(field);
 		final long staticFieldOffset = theUnsafe.staticFieldOffset(field);
 		return theUnsafe.getBoolean(staticFieldBase, staticFieldOffset);
+	}
+
+	public static byte getStaticByte(final Field field) {
+		final Object staticFieldBase = theUnsafe.staticFieldBase(field);
+		final long staticFieldOffset = theUnsafe.staticFieldOffset(field);
+		return theUnsafe.getByte(staticFieldBase, staticFieldOffset);
+	}
+
+	public static short getStaticShort(final Field field) {
+		final Object staticFieldBase = theUnsafe.staticFieldBase(field);
+		final long staticFieldOffset = theUnsafe.staticFieldOffset(field);
+		return theUnsafe.getShort(staticFieldBase, staticFieldOffset);
+	}
+
+	public static char getStaticChar(final Field field) {
+		final Object staticFieldBase = theUnsafe.staticFieldBase(field);
+		final long staticFieldOffset = theUnsafe.staticFieldOffset(field);
+		return theUnsafe.getChar(staticFieldBase, staticFieldOffset);
 	}
 
 	public static int getStaticInt(final Field field) {
@@ -132,6 +183,21 @@ public final class UnsafeUtils {
 	public static boolean getBoolean(final Object base, final Field field) {
 		final long fieldOffset = theUnsafe.objectFieldOffset(field);
 		return theUnsafe.getBoolean(base, fieldOffset);
+	}
+
+	public static byte getByte(final Object base, final Field field) {
+		final long staticFieldOffset = theUnsafe.staticFieldOffset(field);
+		return theUnsafe.getByte(base, staticFieldOffset);
+	}
+
+	public static short getShort(final Object base, final Field field) {
+		final long staticFieldOffset = theUnsafe.staticFieldOffset(field);
+		return theUnsafe.getShort(base, staticFieldOffset);
+	}
+
+	public static char getChar(final Object base, final Field field) {
+		final long staticFieldOffset = theUnsafe.staticFieldOffset(field);
+		return theUnsafe.getChar(base, staticFieldOffset);
 	}
 
 	public static int getInt(final Object base, final Field field) {

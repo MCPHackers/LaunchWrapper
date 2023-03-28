@@ -18,8 +18,8 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.mcphackers.launchwrapper.inject.ClassNodeSource;
 import org.mcphackers.launchwrapper.tweak.ClassLoaderTweak;
+import org.mcphackers.launchwrapper.util.ClassNodeSource;
 import org.mcphackers.launchwrapper.util.Util;
 import org.mcphackers.rdi.util.NodeHelper;
 import org.objectweb.asm.ClassReader;
@@ -50,7 +50,7 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 
 	public void setClassPath(URL[] urls) {
 		for(URL url : urls) {
-			super.addURL(url);
+			addURL(url);
 		}
 	}
 	
@@ -58,7 +58,7 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 		debugOutput = directory;
 	}
 
-    protected void addURL(URL url) {
+    public void addURL(URL url) {
     	super.addURL(url);
     }
 
@@ -169,14 +169,19 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 		if(node != null) {
 			return node;
 		}
-		byte[] classData = getClassAsBytes(name);
-		if(classData == null)
+		try {
+			InputStream is = getClassAsStream(name);
+			if(is == null) {
+				return null;
+			}
+			ClassNode classNode = new ClassNode();
+			ClassReader classReader = new ClassReader(is);
+			classReader.accept(classNode, 0);
+			classNodeCache.put(classNode.name, classNode);
+			return classNode;
+		} catch (IOException e) {
 			return null;
-		ClassNode classNode = new ClassNode();
-		ClassReader classReader = new ClassReader(classData);
-		classReader.accept(classNode, 0);
-		classNodeCache.put(classNode.name, classNode);
-		return classNode;
+		}
 	}
 
 	public FieldNode getField(String owner, String name, String desc) {
@@ -187,18 +192,22 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 		return NodeHelper.getMethod(getClass(owner), name, desc);
 	}
 
-	protected Class<?> redefineClass(String name) {
+	protected Class<?> redefineClass(String name) throws ClassNotFoundException {
 		ClassNode classNode = getClass(name);
 		if(classNode != null && tweak != null && tweak.tweakClass(classNode)) {
 			saveDebugClass(classNode);
 			return redefineClass(classNode);
 		}
-		byte[] classData = getClassAsBytes(name);
-		if(classData == null) {
-			return null;
+		try {
+			InputStream is = getClassAsStream(name);
+			if(is == null) {
+				throw new ClassNotFoundException(name);
+			}
+			byte[] classData = Util.readStream(is);
+			return defineClass(name, classData);
+		} catch (IOException e) {
+			throw new ClassNotFoundException(name, e);
 		}
-		Class<?> definedClass = defineClass(name, classData, 0, classData.length, getProtectionDomain(name));
-		return definedClass;
 	}
 
 	private Class<?> redefineClass(ClassNode node) {
@@ -209,8 +218,7 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 		node.accept(writer);
 		byte[] classData = writer.toByteArray();
 		String name = className(node.name);
-		Class<?> definedClass = defineClass(name, classData, 0, classData.length, getProtectionDomain(name));
-		return definedClass;
+		return defineClass(name, classData);
 	}
 
 	private static String className(String nameWithSlashes) {
@@ -234,22 +242,7 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 		return parent.getResourceAsStream(className);
 	}
 
-	private byte[] getClassAsBytes(String name) {
-		InputStream is = getClassAsStream(name);
-		if(is == null)
-			return null;
-		byte[] classData;
-		try {
-			classData = Util.readStream(is);
-		} catch (IOException e) {
-			Util.closeSilently(is);
-			return null;
-		}
-		Util.closeSilently(is);
-		return classData;
-	}
-
-	private Class<?> transformedClass(String name) {
+	private Class<?> transformedClass(String name) throws ClassNotFoundException {
 		ClassNode transformed = overridenClasses.get(name);
 		if(transformed != null) {
 			if(tweak != null) {
@@ -266,6 +259,17 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 
 	public void setLoaderTweak(ClassLoaderTweak classLoaderTweak) {
 		tweak = classLoaderTweak;
+	}
+	
+	private Class<?> defineClass(String name, byte[] classData) {
+		int i = name.lastIndexOf('.');
+		if (i != -1) {
+			String pkgName = name.substring(0, i);
+			if(getPackage(pkgName) == null) {
+				definePackage(pkgName, null, null, null, null, null, null, null);
+			}
+		}
+		return defineClass(name, classData, 0, classData.length, getProtectionDomain(name));
 	}
 
 	private static ClassNode getSystemClass(Class<?> cls) {

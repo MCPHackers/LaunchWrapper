@@ -1,6 +1,6 @@
 package org.mcphackers.launchwrapper.tweak;
 
-import static org.mcphackers.launchwrapper.inject.InsnHelper.compareInsn;
+import static org.mcphackers.launchwrapper.util.InsnHelper.compareInsn;
 import static org.mcphackers.rdi.util.InsnHelper.*;
 import static org.objectweb.asm.Opcodes.*;
 
@@ -12,9 +12,9 @@ import org.mcphackers.launchwrapper.LaunchConfig;
 import org.mcphackers.launchwrapper.LaunchConfig.LaunchParameter;
 import org.mcphackers.launchwrapper.LaunchTarget;
 import org.mcphackers.launchwrapper.MainLaunchTarget;
-import org.mcphackers.launchwrapper.inject.ClassNodeSource;
 import org.mcphackers.launchwrapper.protocol.LegacyURLStreamHandler;
 import org.mcphackers.launchwrapper.protocol.URLStreamHandlerProxy;
+import org.mcphackers.launchwrapper.util.ClassNodeSource;
 import org.mcphackers.rdi.util.IdentifyCall;
 import org.mcphackers.rdi.util.NodeHelper;
 import org.objectweb.asm.tree.AbstractInsnNode;
@@ -29,15 +29,13 @@ import org.objectweb.asm.tree.TypeInsnNode;
 public class VanillaTweak extends Tweak {
 	public static final String MAIN_CLASS = "net/minecraft/client/main/Main";
 
-	protected LaunchConfig launch;
 	protected ClassNode minecraftMain;
 	protected ClassNode minecraft;
 	protected MethodNode run;
 	private List<String> availableParameters = new ArrayList<String>();
 
 	public VanillaTweak(ClassNodeSource source, LaunchConfig launch) {
-		super(source);
-		this.launch = launch;
+		super(source, launch);
 	}
 
 	public boolean transform() {

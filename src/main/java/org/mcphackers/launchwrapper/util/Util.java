@@ -34,7 +34,7 @@ public final class Util {
 		while((nRead = stream.read(data, 0, data.length)) != -1) {
 			buffer.write(data, 0, nRead);
 		}
-
+		stream.close();
 		return buffer.toByteArray();
 	}
 

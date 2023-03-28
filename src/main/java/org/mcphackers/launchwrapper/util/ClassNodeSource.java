@@ -1,4 +1,4 @@
-package org.mcphackers.launchwrapper.inject;
+package org.mcphackers.launchwrapper.util;
 
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldNode;

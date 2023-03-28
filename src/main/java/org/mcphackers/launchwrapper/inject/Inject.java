@@ -18,11 +18,16 @@ import org.mcphackers.launchwrapper.tweak.AppletWrapper;
 import org.mcphackers.launchwrapper.util.Util;
 
 /**
- * DO NOT use this class under any circumstances. This class is meant to be initialized in the context of LaunchClassLoader
+ * DO NOT use this class under any circumstances. This class is meant to be
+ * initialized in the context of LaunchClassLoader
+ * 
  * @author Lassebq
  *
  */
-public class Inject {
+public final class Inject {
+	private Inject() {
+	}
+
 	public static AppletWrapper getApplet() {
 		return new AppletWrapper(Launch.getConfig().getArgsAsMap());
 	}

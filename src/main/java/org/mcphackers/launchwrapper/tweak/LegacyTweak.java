@@ -1,6 +1,6 @@
 package org.mcphackers.launchwrapper.tweak;
 
-import static org.mcphackers.launchwrapper.inject.InsnHelper.*;
+import static org.mcphackers.launchwrapper.util.InsnHelper.*;
 import static org.mcphackers.rdi.util.InsnHelper.*;
 import static org.objectweb.asm.Opcodes.*;
 
@@ -14,10 +14,10 @@ import java.net.URL;
 import org.mcphackers.launchwrapper.LaunchConfig;
 import org.mcphackers.launchwrapper.LaunchTarget;
 import org.mcphackers.launchwrapper.MainLaunchTarget;
-import org.mcphackers.launchwrapper.inject.ClassNodeSource;
 import org.mcphackers.launchwrapper.protocol.LegacyURLStreamHandler;
 import org.mcphackers.launchwrapper.protocol.SkinType;
 import org.mcphackers.launchwrapper.protocol.URLStreamHandlerProxy;
+import org.mcphackers.launchwrapper.util.ClassNodeSource;
 import org.mcphackers.launchwrapper.util.UnsafeUtils;
 import org.mcphackers.launchwrapper.util.Util;
 import org.mcphackers.rdi.injector.data.Access;
@@ -41,8 +41,6 @@ import org.objectweb.asm.tree.TypeInsnNode;
 import org.objectweb.asm.tree.VarInsnNode;
 
 public class LegacyTweak extends Tweak {
-
-	protected LaunchConfig launch;
 
 	public static final String[] MAIN_CLASSES = {
 			"net/minecraft/client/Minecraft",
@@ -81,8 +79,7 @@ public class LegacyTweak extends Tweak {
 	private boolean classic;
 
 	public LegacyTweak(ClassNodeSource source, LaunchConfig launch) {
-		super(source);
-		this.launch = launch;
+		super(source, launch);
 	}
 
 	public boolean transform() {
@@ -731,6 +728,7 @@ public class LegacyTweak extends Tweak {
 			Field userRequested = mergeSort.getDeclaredField("userRequested");
 			UnsafeUtils.setStaticBoolean(userRequested, true);
 		} catch (ClassNotFoundException e) {
+		} catch (SecurityException e) {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -1193,13 +1191,6 @@ public class LegacyTweak extends Tweak {
 			insns.add(new VarInsnNode(ALOAD, appletIndex));
 			insns.add(new LdcInsnNode("Center"));
 			insns.add(new MethodInsnNode(INVOKEVIRTUAL, "java/awt/Frame", "add", "(Ljava/awt/Component;Ljava/lang/Object;)V"));
-			insns.add(new VarInsnNode(ALOAD, appletIndex));
-			insns.add(new TypeInsnNode(NEW, "java/awt/Dimension"));
-			insns.add(new InsnNode(DUP));
-			insns.add(intInsn(launch.width.get()));
-			insns.add(intInsn(launch.height.get()));
-			insns.add(new MethodInsnNode(INVOKESPECIAL, "java/awt/Dimension", "<init>", "(II)V"));
-			insns.add(new MethodInsnNode(INVOKEVIRTUAL, "java/awt/Component", "setPreferredSize", "(Ljava/awt/Dimension;)V"));
 			insns.add(new VarInsnNode(ALOAD, frameIndex));
 			insns.add(new MethodInsnNode(INVOKEVIRTUAL, "java/awt/Frame", "pack", "()V"));
 			insns.add(new VarInsnNode(ALOAD, frameIndex));
@@ -1292,6 +1283,16 @@ public class LegacyTweak extends Tweak {
 			AbstractInsnNode[] insns2 = fill(insn, 6);
 			if(compareInsn(insns2[1], PUTFIELD, minecraftApplet.name, mcField, mcDesc)
 			&& compareInsn(insns2[0], INVOKESPECIAL, null, "<init>")) {
+				InsnList insns = new InsnList();
+				insns.add(new VarInsnNode(ALOAD, 0));
+				insns.add(new FieldInsnNode(GETFIELD, minecraftApplet.name, canvasField, "Ljava/awt/Canvas;"));
+				insns.add(new TypeInsnNode(NEW, "java/awt/Dimension"));
+				insns.add(new InsnNode(DUP));
+				insns.add(intInsn(launch.width.get()));
+				insns.add(intInsn(launch.height.get()));
+				insns.add(new MethodInsnNode(INVOKESPECIAL, "java/awt/Dimension", "<init>", "(II)V"));
+				insns.add(new MethodInsnNode(INVOKEVIRTUAL, "java/awt/Canvas", "setPreferredSize", "(Ljava/awt/Dimension;)V"));
+				init.instructions.insert(insns2[1], insns);
 				MethodInsnNode invoke = (MethodInsnNode) insns2[0];
 				init.instructions.insertBefore(insns2[1], getNewMinecraftImpl(source.getClass(invoke.owner), canvasField));
 				IdentifyCall call = new IdentifyCall(invoke);

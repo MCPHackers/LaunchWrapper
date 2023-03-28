@@ -22,7 +22,7 @@ public class LegacyURLStreamHandler extends URLStreamHandlerProxy {
 		String path = url.getPath();
 		if(host.endsWith(".minecraft.net") || host.equals("s3.amazonaws.com")) {
 			if(path.equals("/game/joinserver.jsp"))
-				return new BasicResponseURLConnection(url, "ok");
+				return super.openConnection(new URL("http", "session.minecraft.net", path));
 			if(path.equals("/login/session.jsp"))
 				return new BasicResponseURLConnection(url, "ok");
 			if(host.equals("login.minecraft.net") && path.equals("/session"))

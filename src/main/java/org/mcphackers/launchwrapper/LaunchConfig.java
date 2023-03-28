@@ -57,6 +57,7 @@ public class LaunchConfig {
 	public LaunchParameterFileList icon 			= new LaunchParameterFileList("icon", null, true);
 	public LaunchParameterString title 				= new LaunchParameterString("title", null, true);
 	public LaunchParameterSwitch oneSixFlag 		= new LaunchParameterSwitch("oneSixFlag", false, true);
+	public LaunchParameterString tweakClass 		= new LaunchParameterString("tweakClass", null, true);
 
 	public LaunchConfig() {
 	}

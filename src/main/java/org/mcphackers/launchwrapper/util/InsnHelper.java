@@ -1,4 +1,4 @@
-package org.mcphackers.launchwrapper.inject;
+package org.mcphackers.launchwrapper.util;
 
 import static org.objectweb.asm.Opcodes.*;
 import static org.objectweb.asm.tree.AbstractInsnNode.*;
