@@ -1,7 +1,13 @@
-apply plugin: 'java'
-apply plugin: 'eclipse'
+plugins {
+    id 'java'
+    id 'eclipse'
+    id 'maven-publish'
+}
 
 repositories {
+    flatDir {
+        dirs "libs"
+    }
     maven {
         url "https://mcphackers.github.io/libraries/"
     }
@@ -13,24 +19,51 @@ repositories {
 
 group = 'org.mcphackers'
 archivesBaseName = 'launchwrapper'
-version = '1.0'
+version = '1.0-SNAPSHOT'
 sourceCompatibility = 1.5
 
 dependencies {
     implementation 'org.mcphackers.rdi:rdi:1.0'
-    implementation 'org.lwjgl.lwjgl:lwjgl:2.9.4'
-    implementation 'org.lwjgl.lwjgl:lwjgl_util:2.9.4'
     implementation 'org.ow2.asm:asm:9.3'
     implementation 'org.ow2.asm:asm-tree:9.3'
     implementation 'org.json:json:20230311'
+    // implementation name: 'discord-rpc-1.6.2'
 }
 
 task sourcesJar(type: Jar) {
-    classifier = 'sources'
+    archiveClassifier = 'sources'
     from sourceSets.main.allSource
 }
 
 artifacts {
     archives jar
     archives sourcesJar
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+			artifactId = archivesBaseName
+		
+			artifact jar
+			artifact sourcesJar
+        }
+    }
+
+	repositories {
+		mavenLocal()
+		
+		def ENV = System.getenv()
+		if (ENV.MAVEN_URL) {
+			maven {
+				url ENV.MAVEN_URL
+				if (ENV.MAVEN_USERNAME) {
+					credentials {
+						username ENV.MAVEN_USERNAME
+						password ENV.MAVEN_PASSWORD
+					}
+				}
+			}
+		}
+	}
 }

@@ -10,8 +10,10 @@ import java.util.Locale;
 import java.util.Map;
 
 import org.mcphackers.launchwrapper.protocol.SkinType;
+import org.mcphackers.launchwrapper.util.OS;
 
 public class LaunchConfig {
+	private static final File defaultGameDir = getDefaultGameDir();
 	private Map<String, LaunchParameter<?>> parameters = new HashMap<String, LaunchParameter<?>>();
 
 	public LaunchParameterSwitch demo 				= new LaunchParameterSwitch("demo", false);
@@ -19,8 +21,8 @@ public class LaunchConfig {
 	public LaunchParameterSwitch checkGlErrors 		= new LaunchParameterSwitch("checkGlErrors", false);
 	public LaunchParameterString server 			= new LaunchParameterString("server");
 	public LaunchParameterNumber port 				= new LaunchParameterNumber("port", 25565);
-	public LaunchParameterFile gameDir 				= new LaunchParameterFile("gameDir");
-	public LaunchParameterFile workDir 				= new LaunchParameterFile("workDir");
+	public LaunchParameterFile gameDir 				= new LaunchParameterFile("gameDir", defaultGameDir);
+	public LaunchParameterFile workDir 				= new LaunchParameterFile("workDir", defaultGameDir);
 	public LaunchParameterFile assetsDir 			= new LaunchParameterFile("assetsDir");
 	public LaunchParameterFile resourcePackDir 		= new LaunchParameterFile("resourcePackDir");
 	public LaunchParameterString proxyHost 			= new LaunchParameterString("proxyHost");
@@ -58,6 +60,43 @@ public class LaunchConfig {
 	public LaunchParameterString title 				= new LaunchParameterString("title", null, true);
 	public LaunchParameterSwitch oneSixFlag 		= new LaunchParameterSwitch("oneSixFlag", false, true);
 	public LaunchParameterString tweakClass 		= new LaunchParameterString("tweakClass", null, true);
+	public LaunchParameterSwitch discordRPC 		= new LaunchParameterSwitch("discordRPC", false, true);
+
+	private static File getDefaultGameDir() {
+		String game = "minecraft";
+		String homeDir = System.getProperty("user.home", ".");
+		File gameDir;
+		switch(OS.getOs()) {
+			case LINUX:
+			case SOLARIS:
+				String dataHome = System.getProperty("XDG_DATA_HOME");
+				if(dataHome != null) {
+					gameDir = new File(dataHome, "." + game + '/');
+				} else {
+					gameDir = new File(homeDir, ".local/share/" + game + '/');
+				}
+				break;
+			case WINDOWS:
+				String appdata = System.getenv("APPDATA");
+				if(appdata != null) {
+					gameDir = new File(appdata, "." + game + '/');
+				} else {
+					gameDir = new File(homeDir, '.' + game + '/');
+				}
+				break;
+			case OSX:
+				gameDir = new File(homeDir, "Library/Application Support/" + game);
+				break;
+			default:
+				gameDir = new File(homeDir, game + '/');
+		}
+
+		if(!gameDir.exists() && !gameDir.mkdirs()) {
+			throw new RuntimeException("The working directory could not be created: " + gameDir);
+		} else {
+			return gameDir;
+		}
+	}
 
 	public LaunchConfig() {
 	}

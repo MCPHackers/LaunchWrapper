@@ -3,6 +3,8 @@
 .project
 .settings/
 
+.vscode/
+
 # netbeans
 nbproject
 

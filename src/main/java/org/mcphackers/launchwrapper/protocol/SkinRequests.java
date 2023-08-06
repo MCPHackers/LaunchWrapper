@@ -3,6 +3,7 @@ package org.mcphackers.launchwrapper.protocol;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.HashMap;
 
@@ -36,7 +37,11 @@ public class SkinRequests {
 	public static JSONObject requestUUIDfromName(String name) {
 		try {
 			URL profileURL = new URL("https://api.mojang.com/users/profiles/minecraft/" + name);
-			InputStream connStream = profileURL.openConnection().getInputStream();
+			HttpURLConnection connection = (HttpURLConnection)profileURL.openConnection();
+			if(connection.getResponseCode() == 404) {
+				return null;
+			}
+			InputStream connStream = connection.getInputStream();
 			JSONObject uuidJson = new JSONObject(new String(Util.readStream(connStream), "UTF-8"));
 
 			return uuidJson;

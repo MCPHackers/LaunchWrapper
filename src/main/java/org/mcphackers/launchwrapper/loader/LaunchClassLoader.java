@@ -53,7 +53,7 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 			addURL(url);
 		}
 	}
-	
+
 	public void setDebugOutput(File directory) {
 		debugOutput = directory;
 	}
@@ -62,15 +62,19 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
     	super.addURL(url);
     }
 
-	public URL getResource(String name) {
-		URL url = super.getResource(name);
+	public URL findResource(String name) {
+		URL url = super.findResource(name);
 		if(url != null) {
 			return url;
 		}
 		return parent.getResource(name);
 	}
 
-	public Enumeration<URL> getResources(String name) throws IOException {
+	public URL getResource(String name) {
+		return super.getResource(name);
+	}
+
+	public Enumeration<URL> findResources(String name) throws IOException {
 		return parent.getResources(name);
 	}
 
@@ -117,7 +121,7 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 				path = path.substring("file:".length());
 				int i = path.lastIndexOf('!');
 				if(i != -1) {
-					path.substring(0, i);
+					path = path.substring(0, i);
 				}
 			}
 			try {
@@ -260,7 +264,7 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 	public void setLoaderTweak(ClassLoaderTweak classLoaderTweak) {
 		tweak = classLoaderTweak;
 	}
-	
+
 	private Class<?> defineClass(String name, byte[] classData) {
 		int i = name.lastIndexOf('.');
 		if (i != -1) {
@@ -297,6 +301,14 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 			throw new IllegalStateException("Can only have one instance of LaunchClassLoader!");
 		}
 		return INSTANCE = new LaunchClassLoader(getSystemClassLoader());
+	}
+
+	public URL getLocation(String className) {
+		try {
+			return loadClass(className).getProtectionDomain().getCodeSource().getLocation();
+		} catch (Exception e) {
+			return null;
+		}
 	}
 
 }

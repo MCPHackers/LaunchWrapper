@@ -1,5 +1,7 @@
 package org.mcphackers.launchwrapper.util;
 
+import java.net.URL;
+
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.MethodNode;
@@ -13,5 +15,7 @@ public interface ClassNodeSource {
 	MethodNode getMethod(String owner, String name, String desc);
 
 	void overrideClass(ClassNode node);
+	
+	URL getLocation(String className);
 
 }

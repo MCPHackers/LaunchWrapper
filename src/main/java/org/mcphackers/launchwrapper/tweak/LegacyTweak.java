@@ -404,7 +404,7 @@ public class LegacyTweak extends Tweak {
 	}
 
 	private void displayPatch(MethodNode init, boolean supportsResizing) {
-		boolean foundTitle = false; // TODO
+		boolean foundTitle = false;
 		this.classic = isClassic();
 		String canvasName = null;
 
@@ -526,7 +526,6 @@ public class LegacyTweak extends Tweak {
 					foundTitle = true;
 					String value = (String) ldc.cst;
 					if(launch.title.get() != null) {
-						// TODO replace title even if there isn't a setTitle call
 						tweakInfo("Replaced title");
 						ldc.cst = launch.title.get();
 					} else if(value.startsWith("Minecraft Minecraft")) {
@@ -551,6 +550,10 @@ public class LegacyTweak extends Tweak {
 				}
 			}
 			insn = nextInsn(insn);
+		}
+
+		if(!foundTitle && launch.title.get() != null) {
+			//TODO
 		}
 
 		if(afterLabel != null
@@ -1258,7 +1261,7 @@ public class LegacyTweak extends Tweak {
 		return node;
 	}
 
-	private boolean patchAppletInit() {
+	protected boolean patchAppletInit() {
 		if(minecraftApplet == null) {
 			return false;
 		}
