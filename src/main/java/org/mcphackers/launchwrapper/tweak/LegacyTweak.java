@@ -553,7 +553,7 @@ public class LegacyTweak extends Tweak {
 		}
 
 		if(!foundTitle && launch.title.get() != null) {
-			//TODO
+			//TODO figure out where to insert title
 		}
 
 		if(afterLabel != null
@@ -936,7 +936,7 @@ public class LegacyTweak extends Tweak {
 				}
 			}
 		}
-		tweakInfo("MouseHelper fixed in " + (System.currentTimeMillis() - i) + " ms");
+		tweakInfo("MouseHelper fix", (System.currentTimeMillis() - i) + " ms");
 		source.overrideClass(mouseHelper);
 	}
 
@@ -987,7 +987,7 @@ public class LegacyTweak extends Tweak {
 				&& containsInvoke(m.instructions, new MethodInsnNode(INVOKESTATIC, "org/lwjgl/input/Keyboard", "destroy", "()V"))
 				&& containsInvoke(m.instructions, new MethodInsnNode(INVOKESTATIC, "org/lwjgl/opengl/Display", "destroy", "()V"))) {
 					destroy = m;
-					tweakInfo(destroy.name + destroy.desc + " is the destroy() method");
+					tweakInfo("destroy()", destroy.name + destroy.desc);
 					break;
 				}
 			}
@@ -1048,7 +1048,7 @@ public class LegacyTweak extends Tweak {
 						MethodInsnNode invoke = (MethodInsnNode) insns2[2];
 						if(Type.getReturnType(invoke.desc).getSort() == Type.VOID) {
 							addTryCatch(destroy, insns2[0], insns2[2], "java/lang/Throwable");
-							tweakInfo("Fixed sound manager shutdown (b1.0 - b1.3)");
+							tweakInfo("SoundManager shutdown");
 							break;
 						}
 					}
@@ -1085,7 +1085,7 @@ public class LegacyTweak extends Tweak {
 					insn = insn.getPrevious();
 				}
 				if(lbl2 != null) {
-					tweakInfo("Indev launch tweak");
+					tweakInfo("Indev launch");
 					removeRange(setLevel.instructions, handler.start.getNext(), lbl2);
 					setLevel.tryCatchBlocks.remove(handler);
 				}
@@ -1323,6 +1323,7 @@ public class LegacyTweak extends Tweak {
 				&& compareInsn(insns3[1], LDC, "DemoUser")
 				&& compareInsn(insns3[2], LDC, "n/a")
 				&& compareInsn(insns3[3], INVOKESPECIAL, node.superName, "<init>", "(Ljava/lang/String;Ljava/lang/String;)V")) {
+					tweakInfo("DemoUser");
 					InsnList insert = new InsnList();
 					insert.add(new LdcInsnNode(launch.username.get()));
 					insert.add(new LdcInsnNode(launch.sessionid.get()));
@@ -1359,6 +1360,7 @@ public class LegacyTweak extends Tweak {
 				insert.add(new JumpInsnNode(IFNULL, label));
 				init.instructions.insertBefore(insns2[0], insert);
 				init.instructions.insert(insns2[4], label);
+				tweakInfo("Custom server fix");
 			}
 			insn = nextInsn(insn);
 		}

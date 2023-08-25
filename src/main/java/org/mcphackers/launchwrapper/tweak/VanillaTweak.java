@@ -50,7 +50,7 @@ public class VanillaTweak extends Tweak {
 				MethodInsnNode invoke = (MethodInsnNode) insn;
 				minecraft = source.getClass(invoke.owner);
 				run = NodeHelper.getMethod(minecraft, invoke.name, invoke.desc);
-				tweakInfo(minecraft.name + "." + invoke.name + invoke.desc + " is Minecraft.run()");
+				tweakInfo("Minecraft.run()", minecraft.name + "." + invoke.name + invoke.desc);
 				break;
 			}
 			insn = previousInsn(insn);
@@ -100,7 +100,7 @@ public class VanillaTweak extends Tweak {
 				LdcInsnNode ldc = (LdcInsnNode) insn;
 				if(ldc.cst instanceof String) {
 					if(launch.title.get() != null) {
-						tweakInfo("Replaced title");
+						tweakInfo("Replaced title", launch.title.get());
 						ldc.cst = launch.title.get();
 						return true;
 					}

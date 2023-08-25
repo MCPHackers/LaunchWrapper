@@ -1,6 +1,5 @@
 plugins {
     id 'java'
-    id 'eclipse'
     id 'maven-publish'
 }
 
@@ -21,13 +20,23 @@ group = 'org.mcphackers'
 archivesBaseName = 'launchwrapper'
 version = '1.0-SNAPSHOT'
 sourceCompatibility = 1.5
+targetCompatibility = 1.5
 
 dependencies {
     implementation 'org.mcphackers.rdi:rdi:1.0'
     implementation 'org.ow2.asm:asm:9.3'
     implementation 'org.ow2.asm:asm-tree:9.3'
     implementation 'org.json:json:20230311'
-    // implementation name: 'discord-rpc-1.6.2'
+    // I'll bring discord RPC support later, when I have an environment to compile natives
+
+    testCompileOnly 'junit:junit:4.12'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.0.0'
+}
+
+test {
+    useJUnitPlatform()
+    workingDir = "build"
+    testLogging.showStandardStreams = true
 }
 
 task sourcesJar(type: Jar) {

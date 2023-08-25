@@ -1,5 +1,8 @@
 package org.mcphackers.launchwrapper.tweak;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.mcphackers.launchwrapper.LaunchConfig;
 import org.mcphackers.launchwrapper.LaunchTarget;
 import org.mcphackers.launchwrapper.loader.LaunchClassLoader;
@@ -7,16 +10,25 @@ import org.mcphackers.launchwrapper.util.ClassNodeSource;
 
 public abstract class Tweak {
 
-	private static final boolean DEBUG = false;
-
 	protected ClassNodeSource source;
 	protected LaunchConfig launch;
+    private List<FeatureInfo> features = new ArrayList<FeatureInfo>();
 
+	/**
+	 * Every tweak must implement this constructor
+	 * Overloads are not supported!!!
+	 * @param source
+	 * @param launch
+	 */
 	public Tweak(ClassNodeSource source, LaunchConfig launch) {
 		this.source = source;
 		this.launch = launch;
 	}
 
+	/**
+	 * This method does return true even if some of the changes weren't applied, even when they should've been
+	 * @return true if given ClassNodeSource was modified without fatal errors
+	 */
 	public abstract boolean transform();
 
 	public abstract ClassLoaderTweak getLoaderTweak();
@@ -34,6 +46,7 @@ public abstract class Tweak {
 	private static Tweak getTweak(LaunchClassLoader classLoader, LaunchConfig launch) {
 		if(launch.tweakClass.get() != null) {
 			try {
+				// Instantiate custom tweak if it's present on classpath;
 				return (Tweak)Class.forName(launch.tweakClass.get())
 						.getConstructor(ClassNodeSource.class, LaunchConfig.class)
 						.newInstance(classLoader, launch);
@@ -41,6 +54,7 @@ public abstract class Tweak {
 				return null;
 			} catch (Exception e) {
 				e.printStackTrace();
+				return null;
 			}
 		}
 		if(launch.isom.get()) {
@@ -62,8 +76,11 @@ public abstract class Tweak {
 		return null; // Tweak not found
 	}
 
-	protected void tweakInfo(String msg) {
-		if(DEBUG)
-			System.out.println("TWEAK: " + msg);
+	protected void tweakInfo(String name, String... extra) {
+		features.add(new FeatureInfo(name));
+	}
+
+	public void clear() {
+		features.clear();
 	}
 }

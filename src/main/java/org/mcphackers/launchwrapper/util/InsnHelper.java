@@ -31,6 +31,7 @@ public class InsnHelper {
 		return insn;
 	}
 
+	@SuppressWarnings("unused")
 	public static boolean compareInsn(AbstractInsnNode insn, int opcode, Object... compare) {
 		if(insn == null) {
 			return false;

@@ -1,14 +1,12 @@
 package org.mcphackers.launchwrapper;
 
-import java.io.File;
-
 import org.mcphackers.launchwrapper.loader.LaunchClassLoader;
 import org.mcphackers.launchwrapper.tweak.Tweak;
 
 public class Launch {
 
 	/**
-	 * Class loader where overwritten classes are stored
+	 * Class loader where overwritten classes will be stored
 	 */
 	public static final LaunchClassLoader CLASS_LOADER = LaunchClassLoader.instantiate();
 	static {
@@ -36,7 +34,6 @@ public class Launch {
 	}
 
 	public void launch() {
-		Launch.CLASS_LOADER.setDebugOutput(new File(config.gameDir.get(), "debug"));
 		Tweak mainTweak = Tweak.get(CLASS_LOADER, config);
 		if(mainTweak == null) {
 			System.err.println("Could not find launch target");
@@ -46,6 +43,7 @@ public class Launch {
 			if(config.discordRPC.get()) {
 				setupDiscordRPC();
 			}
+			mainTweak.clear(); // Clearing some garbage
 			mainTweak.getLaunchTarget().launch(CLASS_LOADER);
 		} else {
 			System.err.println("Tweak could not be applied");
@@ -53,38 +51,7 @@ public class Launch {
 	}
 	
 	protected void setupDiscordRPC() {
-		// String applicationId = "356875570916753438";
-		// DiscordEventHandlers handlers = new DiscordEventHandlersAdapter() {};
-		// DiscordRPC.discordInitialize(applicationId, handlers, true);
-		// DiscordRichPresence presence = new DiscordRichPresence();
-		// if(config.version.get() != null) {
-		// 	presence.state = "Version: " + config.version.get();
-		// }
-		// if(config.username.get() != null) {
-		// 	presence.details = "Username: " + config.username.get();
-		// }
-		// presence.startTimestamp = System.currentTimeMillis() / 1000;
-		// presence.largeImageKey = "https://cdn.discordapp.com/app-icons/356875570916753438/166fbad351ecdd02d11a3b464748f66b.png?size=256";
-		// DiscordRPC.discordUpdatePresence(presence);
-		// final Thread thread =
-		// new Thread("Discord RPC") {
-		// 	public void run() {
-		// 		while(true) {
-		// 			DiscordRPC.discordRunCallbacks();
-		// 			try {
-		// 				Thread.sleep(2000);
-		// 			} catch (InterruptedException e) {
-		// 			}
-		// 		}
-		// 	}
-		// };
-		// Runtime.getRuntime().addShutdownHook(new Thread() {
-		// 	public void run() {
-		// 		DiscordRPC.discordShutdown();
-		// 		thread.interrupt();
-		// 	}
-		// });
-		// thread.start();
+		// TODO
 	}
 
 	public static Launch getInstance() {

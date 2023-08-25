@@ -14,6 +14,7 @@ import org.mcphackers.launchwrapper.util.OS;
 
 public class LaunchConfig {
 	private static final File defaultGameDir = getDefaultGameDir();
+	//TODO allow arbitary parameters instead of the ones documented below
 	private Map<String, LaunchParameter<?>> parameters = new HashMap<String, LaunchParameter<?>>();
 
 	public LaunchParameterSwitch demo 				= new LaunchParameterSwitch("demo", false);

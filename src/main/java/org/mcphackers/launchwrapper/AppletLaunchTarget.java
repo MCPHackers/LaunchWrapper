@@ -6,6 +6,10 @@ import java.awt.Image;
 import org.mcphackers.launchwrapper.loader.LaunchClassLoader;
 import org.mcphackers.launchwrapper.tweak.AppletWrapper;
 
+/**
+ * Runs an applet
+ * (For example net.minecraft.client.MinecraftApplet)
+ */
 public class AppletLaunchTarget extends LaunchTarget {
 
 	private final String targetClass;

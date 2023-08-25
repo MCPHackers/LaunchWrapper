@@ -39,6 +39,7 @@ public class SaveLevelURLConnection extends HttpURLConnection {
 	}
 
 	@Override
+	@SuppressWarnings("unused")
 	public InputStream getInputStream() throws IOException {
 		Exception exception = null;
 		try {
