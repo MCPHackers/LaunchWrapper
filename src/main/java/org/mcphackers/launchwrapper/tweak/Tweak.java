@@ -1,6 +1,7 @@
 package org.mcphackers.launchwrapper.tweak;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import org.mcphackers.launchwrapper.LaunchConfig;
@@ -74,6 +75,10 @@ public abstract class Tweak {
 			}
 		}
 		return null; // Tweak not found
+	}
+
+	public List<FeatureInfo> getTweakInfo() {
+		return Collections.unmodifiableList(features);
 	}
 
 	protected void tweakInfo(String name, String... extra) {

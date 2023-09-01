@@ -5,6 +5,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -36,6 +37,16 @@ public final class Util {
 		}
 		stream.close();
 		return buffer.toByteArray();
+	}
+
+	public static void copyStream(InputStream stream1, OutputStream stream2) throws IOException {
+		int nRead;
+		byte[] data = new byte[16384];
+
+		while((nRead = stream1.read(data, 0, data.length)) != -1) {
+			stream2.write(data, 0, nRead);
+		}
+		stream1.close();
 	}
 
 	public static URL replaceHost(URL url, String hostName, int port) {

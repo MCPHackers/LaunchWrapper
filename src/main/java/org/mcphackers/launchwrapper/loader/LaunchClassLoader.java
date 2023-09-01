@@ -303,12 +303,4 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 		return INSTANCE = new LaunchClassLoader(getSystemClassLoader());
 	}
 
-	public URL getLocation(String className) {
-		try {
-			return loadClass(className).getProtectionDomain().getCodeSource().getLocation();
-		} catch (Exception e) {
-			return null;
-		}
-	}
-
 }

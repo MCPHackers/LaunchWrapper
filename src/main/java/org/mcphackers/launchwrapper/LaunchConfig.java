@@ -14,7 +14,6 @@ import org.mcphackers.launchwrapper.util.OS;
 
 public class LaunchConfig {
 	private static final File defaultGameDir = getDefaultGameDir();
-	//TODO allow arbitary parameters instead of the ones documented below
 	private Map<String, LaunchParameter<?>> parameters = new HashMap<String, LaunchParameter<?>>();
 
 	public LaunchParameterSwitch demo 				= new LaunchParameterSwitch("demo", false);
@@ -107,6 +106,7 @@ public class LaunchConfig {
 			if(args[i].startsWith("--")) {
 				String paramName = args[i].substring(2);
 				LaunchParameter<?> param = parameters.get(paramName.toLowerCase(Locale.ENGLISH));
+				//TODO allow arbitary parameter names instead of ignoring them
 				if(param == null) {
 					continue;
 				}
@@ -116,21 +116,24 @@ public class LaunchConfig {
 				}
 				if(i + 1 < args.length) {
 					try {
-						// TODO better handling for alternative parameter names
-						if(param.equals(session)) {
-							sessionid.set(args[i + 1]);
-						}
-						if(param.equals(sessionid)) {
-							session.set(args[i + 1]);
-						}
-						if(param.equals(gameDir)) {
-							workDir.set(new File(args[i + 1]));
-						}
-						if(param.equals(workDir)) {
-							gameDir.set(new File(args[i + 1]));
-						}
 						param.setString(args[i + 1]);
 						i++;
+						// TODO better handling for alternative parameter names
+						if(param.equals(gameDir) && assetsDir.get() == null) {
+							assetsDir.set(new File(gameDir.get(), "assets"));
+						}
+						else if(param.equals(session)) {
+							sessionid.set(session.get());
+						}
+						else if(param.equals(sessionid)) {
+							session.set(sessionid.get());
+						}
+						else if(param.equals(gameDir)) {
+							workDir.set(gameDir.get());
+						}
+						else if(param.equals(workDir)) {
+							gameDir.set(workDir.get());
+						}
 					} catch (IllegalArgumentException e) {
 					}
 				}

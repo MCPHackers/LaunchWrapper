@@ -35,8 +35,6 @@ dependencies {
 
 test {
     useJUnitPlatform()
-    workingDir = "build"
-    testLogging.showStandardStreams = true
 }
 
 task sourcesJar(type: Jar) {
