@@ -29,8 +29,8 @@ dependencies {
     implementation 'org.json:json:20230311'
     // I'll bring discord RPC support later, when I have an environment to compile natives
 
-    testCompileOnly 'junit:junit:4.12'
-    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.0.0'
+    testImplementation 'junit:junit:4.12'
+    testImplementation 'org.junit.jupiter:junit-jupiter-engine:5.0.0'
 }
 
 test {
