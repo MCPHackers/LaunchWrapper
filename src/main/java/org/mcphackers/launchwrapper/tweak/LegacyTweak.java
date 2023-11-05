@@ -50,7 +50,7 @@ public class LegacyTweak extends Tweak {
 	};
 	public static final String[] MAIN_APPLETS = {
 			"net/minecraft/client/MinecraftApplet",
-			"com/mojang/minecraft/MinecraftApplet" 
+			"com/mojang/minecraft/MinecraftApplet"
 	};
 
 	public static final boolean EXPERIMENTAL_INDEV_SAVING = true;
@@ -109,6 +109,7 @@ public class LegacyTweak extends Tweak {
 		if(main == null) {
 			minecraft.methods.add(main = getMain());
 		} else {
+			// Try to patch main instead of replacing. Issues with BTA
 			minecraft.methods.remove(main);
 			minecraft.methods.add(main = getMain());
 		}
@@ -376,7 +377,7 @@ public class LegacyTweak extends Tweak {
 			insn1 = nextInsn(insn1);
 		}
 	}
-	
+
 	private void bitDepthFix(MethodNode init) {
 		for(TryCatchBlockNode tryCatch : init.tryCatchBlocks) {
 			if(!"org/lwjgl/LWJGLException".equals(tryCatch.type)) {
@@ -1204,7 +1205,12 @@ public class LegacyTweak extends Tweak {
 			insns.add(new VarInsnNode(ALOAD, appletIndex));
 			insns.add(new FieldInsnNode(GETFIELD, minecraftApplet.name, mcField, mcDesc));
 		} else {
-			insns.add(getNewMinecraftImpl(minecraft, null));
+			InsnList constructor = getNewMinecraftImpl(minecraft, null);
+			if(constructor != null) {
+				insns.add(constructor);
+			} else {
+				throw new IllegalStateException("Unexpected constructor!");
+			}
 		}
 		insns.add(new VarInsnNode(ASTORE, mcIndex));
 		if(width != null && height != null) {
@@ -1286,27 +1292,30 @@ public class LegacyTweak extends Tweak {
 			AbstractInsnNode[] insns2 = fill(insn, 6);
 			if(compareInsn(insns2[1], PUTFIELD, minecraftApplet.name, mcField, mcDesc)
 			&& compareInsn(insns2[0], INVOKESPECIAL, null, "<init>")) {
-				InsnList insns = new InsnList();
-				insns.add(new VarInsnNode(ALOAD, 0));
-				insns.add(new FieldInsnNode(GETFIELD, minecraftApplet.name, canvasField, "Ljava/awt/Canvas;"));
-				insns.add(new TypeInsnNode(NEW, "java/awt/Dimension"));
-				insns.add(new InsnNode(DUP));
-				insns.add(intInsn(launch.width.get()));
-				insns.add(intInsn(launch.height.get()));
-				insns.add(new MethodInsnNode(INVOKESPECIAL, "java/awt/Dimension", "<init>", "(II)V"));
-				insns.add(new MethodInsnNode(INVOKEVIRTUAL, "java/awt/Canvas", "setPreferredSize", "(Ljava/awt/Dimension;)V"));
-				init.instructions.insert(insns2[1], insns);
 				MethodInsnNode invoke = (MethodInsnNode) insns2[0];
-				init.instructions.insertBefore(insns2[1], getNewMinecraftImpl(source.getClass(invoke.owner), canvasField));
-				IdentifyCall call = new IdentifyCall(invoke);
-				AbstractInsnNode newInsn = call.getArgument(0)[0].getPrevious();
-				if(newInsn.getOpcode() == NEW) {
-					init.instructions.remove(newInsn);
+				InsnList constructor = getNewMinecraftImpl(source.getClass(invoke.owner), canvasField);
+				if(constructor != null) {
+					InsnList insns = new InsnList();
+					insns.add(new VarInsnNode(ALOAD, 0));
+					insns.add(new FieldInsnNode(GETFIELD, minecraftApplet.name, canvasField, "Ljava/awt/Canvas;"));
+					insns.add(new TypeInsnNode(NEW, "java/awt/Dimension"));
+					insns.add(new InsnNode(DUP));
+					insns.add(intInsn(launch.width.get()));
+					insns.add(intInsn(launch.height.get()));
+					insns.add(new MethodInsnNode(INVOKESPECIAL, "java/awt/Dimension", "<init>", "(II)V"));
+					insns.add(new MethodInsnNode(INVOKEVIRTUAL, "java/awt/Canvas", "setPreferredSize", "(Ljava/awt/Dimension;)V"));
+					init.instructions.insert(insns2[1], insns);
+					init.instructions.insertBefore(insns2[1], constructor);
+					IdentifyCall call = new IdentifyCall(invoke);
+					AbstractInsnNode newInsn = call.getArgument(0)[0].getPrevious();
+					if(newInsn.getOpcode() == NEW) {
+						init.instructions.remove(newInsn);
+					}
+					for(AbstractInsnNode[] arg : call.getArguments()) {
+						remove(init.instructions, arg);
+					}
+					init.instructions.remove(invoke);
 				}
-				for(AbstractInsnNode[] arg : call.getArguments()) {
-					remove(init.instructions, arg);
-				}
-				init.instructions.remove(invoke);
 				insn = insns2[1];
 			}
 			if(compareInsn(insns2[0], ALOAD, 0)
@@ -1437,13 +1446,15 @@ public class LegacyTweak extends Tweak {
 				} else if(i == 1) {
 					insns.add(intInsn(launch.height.get()));
 				} else {
-					throw new IllegalStateException("Unexpected constructor: " + init.desc);
+					return null;
+					// throw new IllegalStateException("Unexpected constructor: " + init.desc);
 				}
 				i++;
 			} else if(desc.equals("Z")) {
 				insns.add(booleanInsn(launch.fullscreen.get()));
 			} else {
-				throw new IllegalStateException("Unexpected constructor: " + init.desc);
+				return null;
+				// throw new IllegalStateException("Unexpected constructor: " + init.desc);
 			}
 		}
 		insns.add(new MethodInsnNode(INVOKESPECIAL, minecraftImpl.name, "<init>", init.desc));

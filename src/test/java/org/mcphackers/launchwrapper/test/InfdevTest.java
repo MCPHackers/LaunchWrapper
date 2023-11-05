@@ -30,6 +30,6 @@ public class InfdevTest extends TweakTest {
                         "Replaced height", "Shutdown patch", "SoundManager shutdown",
                         "Options load fix", "Replaced canvas getWidth", "Replaced canvas getHeight",
                         "Replaced title", "Replaced gameDir", "Removed canvas null check", "Set fullscreen",
-                        "Set default width and height", "Added main");
+                        "Added main");
     }
 }
