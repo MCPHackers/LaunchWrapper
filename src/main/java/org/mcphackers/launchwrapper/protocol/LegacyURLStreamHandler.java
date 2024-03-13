@@ -20,9 +20,11 @@ public class LegacyURLStreamHandler extends URLStreamHandlerProxy {
 	protected URLConnection openConnection(URL url) throws IOException {
 		String host = url.getHost();
 		String path = url.getPath();
+		String file = url.getFile();
 		if(host.endsWith(".minecraft.net") || host.equals("s3.amazonaws.com")) {
 			if(path.equals("/game/joinserver.jsp"))
-				return super.openConnection(new URL("http", "session.minecraft.net", path));
+				// TODO: update this to use the "sessionserver.mojang.com" API instead?
+				return super.openConnection(new URL("https", "session.minecraft.net", file));
 			if(path.equals("/login/session.jsp"))
 				return new BasicResponseURLConnection(url, "ok");
 			if(host.equals("login.minecraft.net") && path.equals("/session"))
