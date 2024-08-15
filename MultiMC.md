@@ -1,8 +1,8 @@
-> [!CAUTION]
-> This section is incomplete! The following method does not work.
-
 # JSON patches for MultiMC instances
 This allows changing the Minecraft version in the instance without re-editing the component, and easier interoperability with other MultiMC features. More information about JSON patches can be found [on the MultiMC wiki page about them](https://github.com/MultiMC/Launcher/wiki/JSON-Patches). Here is a [MultiMC instance](https://github.com/MCPHackers/LaunchWrapper/files/11588554/LaunchWrapperMCP-MultiMC.zip) demonstrating this.
+
+> [!IMPORTANT]
+> Please obtain a build of [LaunchWrapper](https://github.com/MCPHackers/LaunchWrapper) And place it in `<MultiMC directory>/libraries/org/mcphackers/launchwrapper/1.0-SNAPSHOT/launchwrapper-1.0-SNAPSHOT.jar`, as it is currently not recommended to use versioned release. Use latest git commit whenever possible.
 
 Instructions:
 - Create a new MultiMC instance.
@@ -27,6 +27,7 @@ Instructions:
         },
         "libraries": [
             {
+                "downloads": {},
                 "name": "org.mcphackers:launchwrapper:1.0-SNAPSHOT"
             },
             {
@@ -67,6 +68,3 @@ Instructions:
 - Save and close the document.
 
 This should produce an instance similar to the attached one. I also edited mmc-pack.json to set `dependencyOnly` to be true on the LaunchWrapper patch, which prevents disabling it (optional).
-
-> [!IMPORTANT]
-> Please obtain a build of [LaunchWrapper](https://github.com/MCPHackers/LaunchWrapper) And place it in `<MultiMC directory>/libraries/org/mcphackers/launchwrapper/1.0-SNAPSHOT/launchwrapper-1.0-SNAPSHOT.jar`, as it is currently not recommended to use versioned release. Use latest git commit whenever possible.
