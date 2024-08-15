@@ -24,7 +24,8 @@ public class BTATest extends TweakTest {
 
     @Override
     public TestFeatureBuilder getTests() {
-        return new TestFeatureBuilder();
+        return new TestFeatureBuilder()
+                .tweakInfoList("Shutdown patch", "Replaced gameDir", "Set initial width", "Set initial height");
     }
 
 }
