@@ -1,3 +1,6 @@
+> [!CAUTION]
+> This section is incomplete! The following method does not work.
+
 # JSON patches for MultiMC instances
 This allows changing the Minecraft version in the instance without re-editing the component, and easier interoperability with other MultiMC features. More information about JSON patches can be found [on the MultiMC wiki page about them](https://github.com/MultiMC/Launcher/wiki/JSON-Patches). Here is a [MultiMC instance](https://github.com/MCPHackers/LaunchWrapper/files/11588554/LaunchWrapperMCP-MultiMC.zip) demonstrating this.
 
