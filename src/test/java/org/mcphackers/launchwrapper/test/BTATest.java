@@ -14,7 +14,7 @@ public class BTATest extends TweakTest {
 
     @Override
     protected String jarUrl() {
-        return "https://github.com/Better-than-Adventure/bta-download-repo/releases/download/v1.7.7.0_02/bta.jar";
+        return "https://github.com/Better-than-Adventure/bta-download-repo/releases/download/v7.2_01/bta-7.2_01-client.jar";
     }
 
     @Override

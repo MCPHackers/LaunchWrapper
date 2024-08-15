@@ -10,7 +10,7 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.mcphackers.launchwrapper.LaunchConfig;
 import org.mcphackers.launchwrapper.tweak.FeatureInfo;
 import org.mcphackers.launchwrapper.tweak.Tweak;
@@ -18,7 +18,7 @@ import org.mcphackers.launchwrapper.util.ClassNodeSource;
 import org.mcphackers.launchwrapper.util.Util;
 
 public abstract class TweakTest {
-
+    
     @Test
     public void test() {
         try {

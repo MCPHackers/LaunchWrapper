@@ -83,6 +83,7 @@ public abstract class Tweak {
 
 	protected void tweakInfo(String name, String... extra) {
 		features.add(new FeatureInfo(name));
+		System.out.println("[LaunchWrapper] Applying tweak: " + name + " " + String.join(" ", extra));
 	}
 
 	public void clear() {

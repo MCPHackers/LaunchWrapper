@@ -1,5 +1,7 @@
 package org.mcphackers.launchwrapper;
 
+import java.io.File;
+
 import org.mcphackers.launchwrapper.loader.LaunchClassLoader;
 import org.mcphackers.launchwrapper.tweak.Tweak;
 
@@ -34,6 +36,7 @@ public class Launch {
 	}
 
 	public void launch() {
+		CLASS_LOADER.setDebugOutput(new File("/home/lassebq/.minecraft/debug"));
 		Tweak mainTweak = Tweak.get(CLASS_LOADER, config);
 		if(mainTweak == null) {
 			System.err.println("Could not find launch target");

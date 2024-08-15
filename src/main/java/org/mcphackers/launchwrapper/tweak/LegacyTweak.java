@@ -1146,7 +1146,7 @@ public class LegacyTweak extends Tweak {
 		return insert;
 	}
 
-	private MethodNode getMain() {
+	protected MethodNode getMain() {
 		MethodNode node = new MethodNode(ACC_PUBLIC | ACC_STATIC, "main", "([Ljava/lang/String;)V", null, null);
 		InsnList insns = node.instructions;
 
