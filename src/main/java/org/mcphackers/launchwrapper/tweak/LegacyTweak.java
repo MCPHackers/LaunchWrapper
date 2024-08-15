@@ -333,31 +333,36 @@ public class LegacyTweak extends Tweak {
 			&& compareInsn(insns[5], INVOKESPECIAL, minecraft.name, null, "(II)V")) {
 				supportsResizing = true;
 			}
-			if(compareInsn(insns[0], ALOAD)
-			&& compareInsn(insns[1], GETFIELD, minecraft.name, null, "Ljava/awt/Canvas;")
-			&& compareInsn(insns[2], INVOKEVIRTUAL, "java/awt/Canvas", "getWidth", "()I")) {
-				MethodInsnNode invoke = new MethodInsnNode(INVOKESTATIC, "org/lwjgl/opengl/Display", "getWidth", "()I");
-				method.instructions.insert(insns[2], invoke);
-				method.instructions.remove(insns[0]);
-				method.instructions.remove(insns[1]);
-				method.instructions.remove(insns[2]);
-				insn1 = invoke;
-				tweakInfo("Replaced canvas getWidth");
-			}
-			if(compareInsn(insns[0], ALOAD)
-			&& compareInsn(insns[1], GETFIELD, minecraft.name, null, "Ljava/awt/Canvas;")
-			&& compareInsn(insns[2], INVOKEVIRTUAL, "java/awt/Canvas", "getHeight", "()I")) {
-				MethodInsnNode invoke = new MethodInsnNode(INVOKESTATIC, "org/lwjgl/opengl/Display", "getHeight", "()I");
-				method.instructions.insert(insns[2], invoke);
-				method.instructions.remove(insns[0]);
-				method.instructions.remove(insns[1]);
-				method.instructions.remove(insns[2]);
-				insn1 = invoke;
-				tweakInfo("Replaced canvas getHeight");
+			if(launch.lwjglFrame.get()) {
+				if(compareInsn(insns[0], ALOAD)
+				&& compareInsn(insns[1], GETFIELD, minecraft.name, null, "Ljava/awt/Canvas;")
+				&& compareInsn(insns[2], INVOKEVIRTUAL, "java/awt/Canvas", "getWidth", "()I")) {
+					MethodInsnNode invoke = new MethodInsnNode(INVOKESTATIC, "org/lwjgl/opengl/Display", "getWidth", "()I");
+					method.instructions.insert(insns[2], invoke);
+					method.instructions.remove(insns[0]);
+					method.instructions.remove(insns[1]);
+					method.instructions.remove(insns[2]);
+					insn1 = invoke;
+					tweakInfo("Replaced canvas getWidth");
+				}
+				if(compareInsn(insns[0], ALOAD)
+				&& compareInsn(insns[1], GETFIELD, minecraft.name, null, "Ljava/awt/Canvas;")
+				&& compareInsn(insns[2], INVOKEVIRTUAL, "java/awt/Canvas", "getHeight", "()I")) {
+					MethodInsnNode invoke = new MethodInsnNode(INVOKESTATIC, "org/lwjgl/opengl/Display", "getHeight", "()I");
+					method.instructions.insert(insns[2], invoke);
+					method.instructions.remove(insns[0]);
+					method.instructions.remove(insns[1]);
+					method.instructions.remove(insns[2]);
+					insn1 = invoke;
+					tweakInfo("Replaced canvas getHeight");
+				}
 			}
 			insn1 = nextInsn(insn1);
 		}
 		insn1 = method.instructions.getFirst();
+		if(!launch.lwjglFrame.get()) {
+			insn1 = null;
+		}
 		while(insn1 != null) {
 			AbstractInsnNode[] insns = fill(insn1, 6);
 			if(compareInsn(insns[0], ALOAD)
@@ -616,7 +621,7 @@ public class LegacyTweak extends Tweak {
 					&& compareInsn(insns2[3], PUTFIELD, minecraft.name, height.name, height.desc)) {
 						defaultHeight = (FieldInsnNode) insns2[2];
 					}
-					if(defaultWidth != null && defaultHeight != null
+					if(defaultWidth != null && defaultHeight != null && launch.lwjglFrame.get()
 					&& compareInsn(insns2[0], IFGT)
 					&& compareInsn(insns2[1], ALOAD)
 					&& compareInsn(insns2[2], ICONST_1)
