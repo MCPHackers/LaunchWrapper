@@ -25,7 +25,7 @@ public class IndevTest extends TweakTest {
     @Override
     public TestFeatureBuilder getTests() {
         return new TestFeatureBuilder()
-                .tweakInfoList("Indev launch", "Indev save patch", "Set default width and height",
+                .tweakInfoList("Indev save patch", "Set default width and height",
                         "Fullscreen init patch", "Replaced icon", "Replaced fullscreen", "Replaced width",
                         "Replaced height", "Shutdown patch", "Options load fix",
                         "Replaced title", "Replaced gameDir", "Removed canvas null check",
