@@ -155,7 +155,7 @@ public class LegacyTweak extends Tweak {
 		URLStreamHandlerProxy.setURLStreamHandler("http", new LegacyURLStreamHandler(skinType, port));
 		URLStreamHandlerProxy.setURLStreamHandler("https", new LegacyURLStreamHandler(skinType, port));
 		MainLaunchTarget target = new MainLaunchTarget(minecraft.name);
-		target.args = new String[] { launch.username.get(), launch.sessionid.get() };
+		target.args = new String[] { launch.username.get(), launch.session.get() };
 		return target;
 	}
 
@@ -321,6 +321,10 @@ public class LegacyTweak extends Tweak {
 	}
 
 	private void removeCanvas(MethodNode method) {
+		if(!launch.lwjglFrame.get()) {
+			return;
+		}
+		
 		AbstractInsnNode insn1 = method.instructions.getFirst();
 		while(insn1 != null) {
 			AbstractInsnNode[] insns = fill(insn1, 6);
@@ -333,36 +337,31 @@ public class LegacyTweak extends Tweak {
 			&& compareInsn(insns[5], INVOKESPECIAL, minecraft.name, null, "(II)V")) {
 				supportsResizing = true;
 			}
-			if(launch.lwjglFrame.get()) {
-				if(compareInsn(insns[0], ALOAD)
-				&& compareInsn(insns[1], GETFIELD, minecraft.name, null, "Ljava/awt/Canvas;")
-				&& compareInsn(insns[2], INVOKEVIRTUAL, "java/awt/Canvas", "getWidth", "()I")) {
-					MethodInsnNode invoke = new MethodInsnNode(INVOKESTATIC, "org/lwjgl/opengl/Display", "getWidth", "()I");
-					method.instructions.insert(insns[2], invoke);
-					method.instructions.remove(insns[0]);
-					method.instructions.remove(insns[1]);
-					method.instructions.remove(insns[2]);
-					insn1 = invoke;
-					tweakInfo("Replaced canvas getWidth");
-				}
-				if(compareInsn(insns[0], ALOAD)
-				&& compareInsn(insns[1], GETFIELD, minecraft.name, null, "Ljava/awt/Canvas;")
-				&& compareInsn(insns[2], INVOKEVIRTUAL, "java/awt/Canvas", "getHeight", "()I")) {
-					MethodInsnNode invoke = new MethodInsnNode(INVOKESTATIC, "org/lwjgl/opengl/Display", "getHeight", "()I");
-					method.instructions.insert(insns[2], invoke);
-					method.instructions.remove(insns[0]);
-					method.instructions.remove(insns[1]);
-					method.instructions.remove(insns[2]);
-					insn1 = invoke;
-					tweakInfo("Replaced canvas getHeight");
-				}
+			if(compareInsn(insns[0], ALOAD)
+			&& compareInsn(insns[1], GETFIELD, minecraft.name, null, "Ljava/awt/Canvas;")
+			&& compareInsn(insns[2], INVOKEVIRTUAL, "java/awt/Canvas", "getWidth", "()I")) {
+				MethodInsnNode invoke = new MethodInsnNode(INVOKESTATIC, "org/lwjgl/opengl/Display", "getWidth", "()I");
+				method.instructions.insert(insns[2], invoke);
+				method.instructions.remove(insns[0]);
+				method.instructions.remove(insns[1]);
+				method.instructions.remove(insns[2]);
+				insn1 = invoke;
+				tweakInfo("Replaced canvas getWidth");
+			}
+			if(compareInsn(insns[0], ALOAD)
+			&& compareInsn(insns[1], GETFIELD, minecraft.name, null, "Ljava/awt/Canvas;")
+			&& compareInsn(insns[2], INVOKEVIRTUAL, "java/awt/Canvas", "getHeight", "()I")) {
+				MethodInsnNode invoke = new MethodInsnNode(INVOKESTATIC, "org/lwjgl/opengl/Display", "getHeight", "()I");
+				method.instructions.insert(insns[2], invoke);
+				method.instructions.remove(insns[0]);
+				method.instructions.remove(insns[1]);
+				method.instructions.remove(insns[2]);
+				insn1 = invoke;
+				tweakInfo("Replaced canvas getHeight");
 			}
 			insn1 = nextInsn(insn1);
 		}
 		insn1 = method.instructions.getFirst();
-		if(!launch.lwjglFrame.get()) {
-			insn1 = null;
-		}
 		while(insn1 != null) {
 			AbstractInsnNode[] insns = fill(insn1, 6);
 			if(compareInsn(insns[0], ALOAD)
@@ -1340,7 +1339,7 @@ public class LegacyTweak extends Tweak {
 					tweakInfo("DemoUser");
 					InsnList insert = new InsnList();
 					insert.add(new LdcInsnNode(launch.username.get()));
-					insert.add(new LdcInsnNode(launch.sessionid.get()));
+					insert.add(new LdcInsnNode(launch.session.get()));
 					method.instructions.insert(insns2[3], insert);
 					method.instructions.set(insns2[2], new TypeInsnNode(NEW, node.superName));
 					method.instructions.set(insns2[4], new MethodInsnNode(INVOKESPECIAL, node.superName, "<init>", "(Ljava/lang/String;Ljava/lang/String;)V"));
@@ -1738,7 +1737,33 @@ public class LegacyTweak extends Tweak {
 		}
 		if(launch.resourcesProxyPort.get() != null) {
 			port = launch.resourcesProxyPort.get();
+		} else {
+			port = getProxyPortFromVersion(launch.version.get());
+			System.out.println("[LaunchWrapper] Auto-detected proxy port: " + port);
 		}
+	}
+
+	private int getProxyPortFromVersion(String version) {
+		if(version == null) {
+			return -1;
+		}
+		if(version.startsWith("c") && version.compareTo("c0.0.22a") > 0) {
+			return 11702; // 11701 is identical in terms of sound assets
+		}
+		if(version.equals("a1.0.8")) {
+			return 11703; // cow sounds
+		}
+		if(version.startsWith("in-") || version.startsWith("inf-") || (version.compareTo("a1.2") < 0 && version.compareTo("a1.0.0") >= 0)) {
+			return 11702;
+		}
+		if(version.compareTo("a1.2") >= 0 && version.compareTo("b1.9") < 0) {
+			return 11705; // 11706 only changes skin
+		}
+		if(version.compareTo("1.5.2") <= 0) {
+			return 11707;
+		}
+
+		return -1;
 	}
 
 	public ClassNode getApplet() {

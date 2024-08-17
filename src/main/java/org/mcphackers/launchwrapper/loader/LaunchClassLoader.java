@@ -188,14 +188,6 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 		}
 	}
 
-	public FieldNode getField(String owner, String name, String desc) {
-		return NodeHelper.getField(getClass(owner), name, desc);
-	}
-
-	public MethodNode getMethod(String owner, String name, String desc) {
-		return NodeHelper.getMethod(getClass(owner), name, desc);
-	}
-
 	protected Class<?> redefineClass(String name) throws ClassNotFoundException {
 		ClassNode classNode = getClass(name);
 		if(classNode != null && tweak != null && tweak.tweakClass(classNode)) {

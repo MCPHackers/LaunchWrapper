@@ -15,14 +15,14 @@ import org.mcphackers.launchwrapper.util.OS;
 public class LaunchConfig {
 	private static final File defaultGameDir = getDefaultGameDir();
 	private Map<String, LaunchParameter<?>> parameters = new HashMap<String, LaunchParameter<?>>();
+	private Map<String, Object> unknownParameters = new HashMap<String, Object>();
 
 	public LaunchParameterSwitch demo 				= new LaunchParameterSwitch("demo", false);
 	public LaunchParameterSwitch fullscreen 		= new LaunchParameterSwitch("fullscreen", false);
 	public LaunchParameterSwitch checkGlErrors 		= new LaunchParameterSwitch("checkGlErrors", false);
 	public LaunchParameterString server 			= new LaunchParameterString("server");
 	public LaunchParameterNumber port 				= new LaunchParameterNumber("port", 25565);
-	public LaunchParameterFile gameDir 				= new LaunchParameterFile("gameDir", defaultGameDir);
-	public LaunchParameterFile workDir 				= new LaunchParameterFile("workDir", defaultGameDir);
+	public LaunchParameterFile gameDir 				= new LaunchParameterFile("gameDir", defaultGameDir).altName("workDir");
 	public LaunchParameterFile assetsDir 			= new LaunchParameterFile("assetsDir");
 	public LaunchParameterFile resourcePackDir 		= new LaunchParameterFile("resourcePackDir");
 	public LaunchParameterString proxyHost 			= new LaunchParameterString("proxyHost");
@@ -30,8 +30,7 @@ public class LaunchConfig {
 	public LaunchParameterString proxyUser 			= new LaunchParameterString("proxyUser");
 	public LaunchParameterString proxyPass 			= new LaunchParameterString("proxyPass");
 	public LaunchParameterString username 			= new LaunchParameterString("username", "Player" + System.currentTimeMillis() % 1000L);
-	public LaunchParameterString sessionid 			= new LaunchParameterString("sessionid", "-");
-	public LaunchParameterString session 			= new LaunchParameterString("session", "-");
+	public LaunchParameterString session 			= new LaunchParameterString("session", "-").altName("sessionid");
 	public LaunchParameterString password 			= new LaunchParameterString("password");
 	public LaunchParameterString uuid 				= new LaunchParameterString("uuid");
 	public LaunchParameterString accessToken 		= new LaunchParameterString("accessToken");
@@ -106,8 +105,13 @@ public class LaunchConfig {
 			if(args[i].startsWith("--")) {
 				String paramName = args[i].substring(2);
 				LaunchParameter<?> param = parameters.get(paramName.toLowerCase(Locale.ENGLISH));
-				//TODO allow arbitary parameter names instead of ignoring them
 				if(param == null) {
+					if(i + 1 >= args.length || args[i+1].startsWith("--")) {
+						unknownParameters.put(paramName, Boolean.TRUE);
+					} else {
+						unknownParameters.put(paramName, args[i+1]);
+						i++;
+					}
 					continue;
 				}
 				if(param.isSwitch()) {
@@ -118,22 +122,6 @@ public class LaunchConfig {
 					try {
 						param.setString(args[i + 1]);
 						i++;
-						// TODO better handling for alternative parameter names
-						if(param.equals(gameDir) && assetsDir.get() == null) {
-							assetsDir.set(new File(gameDir.get(), "assets"));
-						}
-						else if(param.equals(session)) {
-							sessionid.set(session.get());
-						}
-						else if(param.equals(sessionid)) {
-							session.set(sessionid.get());
-						}
-						else if(param.equals(gameDir)) {
-							workDir.set(gameDir.get());
-						}
-						else if(param.equals(workDir)) {
-							gameDir.set(workDir.get());
-						}
 					} catch (IllegalArgumentException e) {
 					}
 				}
@@ -174,6 +162,20 @@ public class LaunchConfig {
 				}
 			}
 		}
+		for(String paramName : unknownParameters.keySet()) {
+			if(paramName == null) {
+				continue;
+			}
+			Object value = unknownParameters.get(paramName); // Either Boolean.TRUE or String
+			if(value == Boolean.TRUE) {
+				list.add("--" + paramName);
+				continue;
+			}
+			if(value != null) {
+				list.add("--" + paramName);
+				list.add(value.toString());
+			}
+		}
 		String[] arr = new String[list.size()];
 		return list.toArray(arr);
 	}
@@ -191,6 +193,11 @@ public class LaunchConfig {
 			this.wrapperOnly = wrapper;
 			parameters.put(name.toLowerCase(Locale.ENGLISH), this);
 		}
+
+		public LaunchParameter<T> altName(String altName) {
+			parameters.put(altName.toLowerCase(Locale.ENGLISH), this);
+			return this;
+		} 
 
 		public boolean isSwitch() {
 			return false;
@@ -220,6 +227,10 @@ public class LaunchConfig {
 		public LaunchParameterFile(String name, File defaultValue, boolean wrapper) {
 			super(name, wrapper);
 			value = defaultValue;
+		}
+
+		public LaunchParameterFile altName(String altName) {
+			return (LaunchParameterFile)super.altName(altName);
 		}
 
 		@Override
@@ -260,6 +271,10 @@ public class LaunchConfig {
 		public LaunchParameterFileList(String name, File[] defaultValue, boolean wrapper) {
 			super(name, wrapper);
 			value = defaultValue;
+		}
+
+		public LaunchParameterFileList altName(String altName) {
+			return (LaunchParameterFileList)super.altName(altName);
 		}
 
 		@Override
@@ -317,6 +332,10 @@ public class LaunchConfig {
 			value = defaultVal;
 		}
 
+		public LaunchParameterSwitch altName(String altName) {
+			return (LaunchParameterSwitch)super.altName(altName);
+		}
+
 		public boolean isSwitch() {
 			return true;
 		}
@@ -365,6 +384,10 @@ public class LaunchConfig {
 		public LaunchParameterString(String name, String defaultValue, boolean wrapper) {
 			super(name, wrapper);
 			value = defaultValue;
+		}
+
+		public LaunchParameterString altName(String altName) {
+			return (LaunchParameterString)super.altName(altName);
 		}
 
 		@Override

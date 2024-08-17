@@ -93,14 +93,6 @@ public class FileClassNodeSource implements ClassNodeSource, Closeable {
 		}
     }
 
-	public FieldNode getField(String owner, String name, String desc) {
-		return NodeHelper.getField(getClass(owner), name, desc);
-	}
-
-	public MethodNode getMethod(String owner, String name, String desc) {
-		return NodeHelper.getMethod(getClass(owner), name, desc);
-	}
-
     public void overrideClass(ClassNode node) {
 		saveDebugClass(node);
     }
