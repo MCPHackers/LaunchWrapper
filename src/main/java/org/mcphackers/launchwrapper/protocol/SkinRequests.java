@@ -14,9 +14,16 @@ import org.mcphackers.launchwrapper.util.Util;
 
 public class SkinRequests {
 	// name->uuid requests have a rate limit, so here's cache
-	public static HashMap<String, String> nameToUUID = new HashMap<String, String>();
+	private static HashMap<String, String> nameToUUID = new HashMap<String, String>();
+
+	private static final String[] BLACKLISTED_NAMES = {"Player", "DemoUser"}; 
 
 	public static String getUUIDfromName(String username) {
+		for(String s : BLACKLISTED_NAMES) {
+			if(s.equals(username)) {
+				return null;
+			}
+		}
 		String cachedUUID = nameToUUID.get(username);
 
 		if(cachedUUID != null) {
@@ -136,9 +143,6 @@ public class SkinRequests {
 	}
 
 	public static byte[] getSkin(String name, SkinType skinType) {
-		if(name.equals("Player") || name.equals("DemoUser")) { // Reserved usernames
-			return null;
-		}
 		String uuid = getUUIDfromName(name);
 		if(uuid == null) {
 			return null;

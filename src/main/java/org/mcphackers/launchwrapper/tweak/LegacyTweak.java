@@ -11,7 +11,6 @@ import java.io.IOException;
 import java.lang.reflect.Field;
 import java.net.URL;
 
-import org.mcphackers.launchwrapper.Launch;
 import org.mcphackers.launchwrapper.LaunchConfig;
 import org.mcphackers.launchwrapper.LaunchTarget;
 import org.mcphackers.launchwrapper.MainLaunchTarget;
@@ -77,7 +76,6 @@ public class LegacyTweak extends Tweak {
 	protected MethodNode main;
 	protected SkinType skinType = null;
 	protected int port = -1;
-	private boolean classic;
 
 	public LegacyTweak(ClassNodeSource source, LaunchConfig launch) {
 		super(source, launch);
@@ -94,7 +92,6 @@ public class LegacyTweak extends Tweak {
 		}
 		MethodNode runTick = getTickMethod(run);
 		fixSplash();
-		fixIndevLaunch();
 		addIndevSaving();
 		fixA111GrayScreen();
 		fixShutdown(run);
@@ -410,7 +407,6 @@ public class LegacyTweak extends Tweak {
 
 	private void displayPatch(MethodNode init, boolean supportsResizing) {
 		boolean foundTitle = false;
-		this.classic = isClassic();
 		String canvasName = null;
 
 		int thisIndex = 0;
@@ -463,7 +459,7 @@ public class LegacyTweak extends Tweak {
 			&& compareInsn(insns[4], INVOKESPECIAL, "org/lwjgl/opengl/DisplayMode", "<init>", "(II)V")
 			&& compareInsn(insns[5], INVOKESTATIC, "org/lwjgl/opengl/Display", "setDisplayMode", "(Lorg/lwjgl/opengl/DisplayMode;)V")) {
 				tweakInfo("Pre-classic resolution patch");
-				InsnList insert = getIcon(classic);
+				InsnList insert = getIcon(isClassic());
 				if(launch.forceVsync.get()) {
 					insert.add(new InsnNode(ICONST_1));
 					insert.add(new MethodInsnNode(INVOKESTATIC, "org/lwjgl/opengl/Display", "setVSyncEnabled", "(Z)V"));
@@ -488,7 +484,7 @@ public class LegacyTweak extends Tweak {
 			&& compareInsn(insns[1], INVOKESTATIC, "org/lwjgl/opengl/Display", "setFullscreen", "(Z)V")
 			&& compareInsn(insns[2], INVOKESTATIC, "org/lwjgl/opengl/Display", "create", "()V")) {
 				tweakInfo("Pre-classic resolution patch");
-				InsnList insert = getIcon(classic);
+				InsnList insert = getIcon(isClassic());
 				if(launch.forceVsync.get()) {
 					insert.add(new InsnNode(ICONST_1));
 					insert.add(new MethodInsnNode(INVOKESTATIC, "org/lwjgl/opengl/Display", "setVSyncEnabled", "(Z)V"));
@@ -566,7 +562,7 @@ public class LegacyTweak extends Tweak {
 			insnList.insertBefore(afterLabel, aLabel);
 			InsnList insert = new InsnList();
 			// Place that outside of the condition?
-			insert.add(getIcon(classic));
+			insert.add(getIcon(isClassic()));
 			if(supportsResizing) {
 				insert.add(new InsnNode(ICONST_1));
 				insert.add(new MethodInsnNode(INVOKESTATIC, "org/lwjgl/opengl/Display", "setResizable", "(Z)V"));
@@ -1064,41 +1060,6 @@ public class LegacyTweak extends Tweak {
 		}
 	}
 
-	private void fixIndevLaunch() {
-		MethodNode setLevel = null;
-		for(MethodNode m : minecraft.methods) {
-			AbstractInsnNode insn = m.instructions.getLast();
-			if(insn == null)
-				continue;
-			AbstractInsnNode insn2 = insn.getPrevious();
-			if(compareInsn(insn2, INVOKESTATIC, "java/lang/System", "gc", "()V")
-			&& compareInsn(insn, RETURN)) {
-				setLevel = m;
-				break;
-			}
-		}
-		if(setLevel != null) {
-			if(setLevel.tryCatchBlocks.size() > 0) {
-				TryCatchBlockNode handler = setLevel.tryCatchBlocks.get(0);
-				LabelNode lbl = handler.end;
-				LabelNode lbl2 = null;
-				AbstractInsnNode insn = lbl.getPrevious();
-				while(insn != null) {
-					if(insn.getType() == AbstractInsnNode.LABEL) {
-						lbl2 = (LabelNode) insn;
-						break;
-					}
-					insn = insn.getPrevious();
-				}
-				if(lbl2 != null) {
-					tweakInfo("Indev launch");
-					removeRange(setLevel.instructions, handler.start.getNext(), lbl2);
-					setLevel.tryCatchBlocks.remove(handler);
-				}
-			}
-		}
-	}
-
 	private MethodNode getInit(MethodNode run) {
 		for(AbstractInsnNode insn : run.instructions) {
 			if(insn.getType() == AbstractInsnNode.METHOD_INSN) {
@@ -1188,7 +1149,7 @@ public class LegacyTweak extends Tweak {
 			insns.add(new MethodInsnNode(INVOKESPECIAL, "java/awt/Frame", "<init>", "(Ljava/lang/String;)V"));
 			insns.add(new VarInsnNode(ASTORE, frameIndex));
 			insns.add(new VarInsnNode(ALOAD, frameIndex));
-			insns.add(booleanInsn(classic));
+			insns.add(booleanInsn(isClassic()));
 			insns.add(new MethodInsnNode(INVOKESTATIC, "org/mcphackers/launchwrapper/inject/Inject", "getIcon", "(Z)Ljava/awt/image/BufferedImage;"));
 			insns.add(new MethodInsnNode(INVOKEVIRTUAL, "java/awt/Frame", "setIconImage", "(Ljava/awt/Image;)V"));
 			insns.add(new VarInsnNode(ALOAD, frameIndex));
