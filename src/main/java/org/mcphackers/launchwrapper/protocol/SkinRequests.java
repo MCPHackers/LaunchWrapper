@@ -136,6 +136,9 @@ public class SkinRequests {
 	}
 
 	public static byte[] getSkin(String name, SkinType skinType) {
+		if(name.equals("Player") || name.equals("DemoUser")) { // Reserved usernames
+			return null;
+		}
 		String uuid = getUUIDfromName(name);
 		if(uuid == null) {
 			return null;

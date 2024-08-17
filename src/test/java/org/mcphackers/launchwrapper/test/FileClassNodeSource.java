@@ -14,12 +14,9 @@ import java.util.zip.ZipException;
 import java.util.zip.ZipFile;
 
 import org.mcphackers.launchwrapper.util.ClassNodeSource;
-import org.mcphackers.rdi.util.NodeHelper;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.tree.ClassNode;
-import org.objectweb.asm.tree.FieldNode;
-import org.objectweb.asm.tree.MethodNode;
 
 public class FileClassNodeSource implements ClassNodeSource, Closeable {
     private final ZipFile source;

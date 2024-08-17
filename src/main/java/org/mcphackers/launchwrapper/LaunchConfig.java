@@ -6,7 +6,6 @@ import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 
 import org.mcphackers.launchwrapper.protocol.SkinType;
@@ -15,7 +14,7 @@ import org.mcphackers.launchwrapper.util.OS;
 public class LaunchConfig {
 	private static final File defaultGameDir = getDefaultGameDir();
 	private Map<String, LaunchParameter<?>> parameters = new HashMap<String, LaunchParameter<?>>();
-	private Map<String, Object> unknownParameters = new HashMap<String, Object>();
+	public Map<String, Object> unknownParameters = new HashMap<String, Object>();
 
 	public LaunchParameterSwitch demo 				= new LaunchParameterSwitch("demo", false);
 	public LaunchParameterSwitch fullscreen 		= new LaunchParameterSwitch("fullscreen", false);
@@ -30,7 +29,7 @@ public class LaunchConfig {
 	public LaunchParameterString proxyUser 			= new LaunchParameterString("proxyUser");
 	public LaunchParameterString proxyPass 			= new LaunchParameterString("proxyPass");
 	public LaunchParameterString username 			= new LaunchParameterString("username", "Player" + System.currentTimeMillis() % 1000L);
-	public LaunchParameterString session 			= new LaunchParameterString("session", "-").altName("sessionid");
+	public LaunchParameterString session 			= new LaunchParameterString("session", null).altName("sessionid");
 	public LaunchParameterString password 			= new LaunchParameterString("password");
 	public LaunchParameterString uuid 				= new LaunchParameterString("uuid");
 	public LaunchParameterString accessToken 		= new LaunchParameterString("accessToken");
@@ -104,7 +103,7 @@ public class LaunchConfig {
 		for(int i = 0; i < args.length; i++) {
 			if(args[i].startsWith("--")) {
 				String paramName = args[i].substring(2);
-				LaunchParameter<?> param = parameters.get(paramName.toLowerCase(Locale.ENGLISH));
+				LaunchParameter<?> param = parameters.get(paramName);
 				if(param == null) {
 					if(i + 1 >= args.length || args[i+1].startsWith("--")) {
 						unknownParameters.put(paramName, Boolean.TRUE);
@@ -141,9 +140,10 @@ public class LaunchConfig {
 
 	public Map<String, String> getArgsAsMap() {
 		Map<String, String> map = new HashMap<String, String>();
-		for(LaunchParameter<?> param : parameters.values()) {
+		for(String key : parameters.keySet()) {
+			LaunchParameter<?> param = parameters.get(key);
 			if(!param.wrapperOnly && param.get() != null && param.get() != Boolean.FALSE) {
-				map.put(param.name, param.getString());
+				map.put(key, param.getString());
 			}
 		}
 		return map;
@@ -151,13 +151,14 @@ public class LaunchConfig {
 
 	public String[] getArgs() {
 		List<String> list = new ArrayList<String>();
-		for(LaunchParameter<?> param : parameters.values()) {
+		for(String key : parameters.keySet()) {
+			LaunchParameter<?> param = parameters.get(key);
 			if(!param.wrapperOnly && param.get() != null) {
 				if(param.isSwitch()) {
 					if(param.get().equals(true))
-						list.add("--" + param.name);
+						list.add("--" + key);
 				} else {
-					list.add("--" + param.name);
+					list.add("--" + key);
 					list.add(param.getString());
 				}
 			}
@@ -191,11 +192,12 @@ public class LaunchConfig {
 		protected LaunchParameter(String name, boolean wrapper) {
 			this.name = name;
 			this.wrapperOnly = wrapper;
-			parameters.put(name.toLowerCase(Locale.ENGLISH), this);
+			// do not toLowerCase. Parameters names are case sensitive
+			parameters.put(name, this);
 		}
 
 		public LaunchParameter<T> altName(String altName) {
-			parameters.put(altName.toLowerCase(Locale.ENGLISH), this);
+			parameters.put(altName, this);
 			return this;
 		} 
 

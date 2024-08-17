@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import org.mcphackers.launchwrapper.Launch;
 import org.mcphackers.launchwrapper.LaunchConfig;
 import org.mcphackers.launchwrapper.LaunchTarget;
 import org.mcphackers.launchwrapper.loader.LaunchClassLoader;
@@ -84,9 +85,5 @@ public abstract class Tweak {
 	protected void tweakInfo(String name, String... extra) {
 		features.add(new FeatureInfo(name));
 		System.out.println("[LaunchWrapper] Applying tweak: " + name + " " + String.join(" ", extra));
-	}
-
-	public void clear() {
-		features.clear();
 	}
 }

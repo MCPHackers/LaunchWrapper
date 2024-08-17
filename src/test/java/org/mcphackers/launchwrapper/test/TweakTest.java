@@ -31,9 +31,9 @@ public abstract class TweakTest {
             LaunchConfig config = getDefaultConfig(testDir);
             Tweak tweak = getTweak(classNodeSource, config);
             assertTrue(tweak.transform());
-            for (FeatureInfo info : tweak.getTweakInfo()) {
-                System.out.println(info.feature);
-            }
+            // for (FeatureInfo info : tweak.getTweakInfo()) {
+            //     System.out.println(info.feature);
+            // }
             featureTest(tweak, getTests());
         } catch (Throwable e) {
             fail(e);

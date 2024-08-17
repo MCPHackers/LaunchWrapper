@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.lang.reflect.Field;
 import java.net.URL;
 
+import org.mcphackers.launchwrapper.Launch;
 import org.mcphackers.launchwrapper.LaunchConfig;
 import org.mcphackers.launchwrapper.LaunchTarget;
 import org.mcphackers.launchwrapper.MainLaunchTarget;
@@ -109,7 +110,6 @@ public class LegacyTweak extends Tweak {
 		if(main == null) {
 			minecraft.methods.add(main = getMain());
 		} else {
-			// Try to patch main instead of replacing. Issues with BTA
 			minecraft.methods.remove(main);
 			minecraft.methods.add(main = getMain());
 		}
@@ -557,10 +557,6 @@ public class LegacyTweak extends Tweak {
 			insn = nextInsn(insn);
 		}
 
-		if(!foundTitle && launch.title.get() != null) {
-			//TODO figure out where to insert title
-		}
-
 		if(afterLabel != null
 		&& iLabel != null
 		&& oLabel != null
@@ -586,6 +582,11 @@ public class LegacyTweak extends Tweak {
 			insert.add(new VarInsnNode(ALOAD, thisIndex));
 			insert.add(new FieldInsnNode(GETFIELD, minecraft.name, canvasName, "Ljava/awt/Canvas;"));
 			insert.add(new MethodInsnNode(INVOKESTATIC, "org/lwjgl/opengl/Display", "setParent", "(Ljava/awt/Canvas;)V"));
+
+			if(!foundTitle && launch.title.get() != null) {
+				insert.add(new LdcInsnNode(launch.title.get()));
+				insert.add(new MethodInsnNode(INVOKESTATIC, "org/lwjgl/opengl/Display", "setTitle", "(Ljava/lang/String;)V"));
+			}
 			insert.add(new JumpInsnNode(GOTO, iLabel));
 			insnList.insertBefore(aLabel, insert);
 			ifNoCanvas.label = oLabel;

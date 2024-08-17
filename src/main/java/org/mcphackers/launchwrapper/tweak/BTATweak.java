@@ -10,7 +10,7 @@ public class BTATweak extends LegacyTweak {
 		super(source, launch);
 	}
 
-    protected MethodNode getMain() {
+    protected MethodNode getMain() { // Do not replace main
         return main;
     }
     

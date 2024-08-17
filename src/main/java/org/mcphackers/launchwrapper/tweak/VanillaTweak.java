@@ -72,6 +72,11 @@ public class VanillaTweak extends Tweak {
 				param.set(null);
 			}
 		}
+		for(String key : launch.unknownParameters.keySet()) {
+			if(!availableParameters.contains(key)) {
+				launch.unknownParameters.remove(key);
+			}
+		}
 		if(!availableParameters.contains("assetsDir")) {
 			if(assets != null) {
 				injectAssetsDirectory(assets);

@@ -21,12 +21,9 @@ import java.util.Map;
 import org.mcphackers.launchwrapper.tweak.ClassLoaderTweak;
 import org.mcphackers.launchwrapper.util.ClassNodeSource;
 import org.mcphackers.launchwrapper.util.Util;
-import org.mcphackers.rdi.util.NodeHelper;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.tree.ClassNode;
-import org.objectweb.asm.tree.FieldNode;
-import org.objectweb.asm.tree.MethodNode;
 
 // URLClassLoader is required to support ModLoader loading mods from mod folder
 public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource {
@@ -148,12 +145,14 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 		if(debugOutput == null) {
 			return;
 		}
-		ClassWriter writer = new SafeClassWriter(this, COMPUTE_MAXS);
-		node.accept(writer);
-		byte[] classData = writer.toByteArray();
-		File cls = new File(debugOutput, node.name + ".class");
-		cls.getParentFile().mkdirs();
 		try {
+			File cls = new File(debugOutput, node.name + ".class");
+			cls.getParentFile().mkdirs();
+			// TraceClassVisitor trace = new TraceClassVisitor(new PrintWriter(new File(debugOutput, node.name + ".dump")));
+			// node.accept(trace);
+			ClassWriter writer = new SafeClassWriter(this, COMPUTE_MAXS);
+			node.accept(writer);
+			byte[] classData = writer.toByteArray();
 			FileOutputStream fos = new FileOutputStream(cls);
 			fos.write(classData);
 			fos.close();
@@ -189,10 +188,12 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 	}
 
 	protected Class<?> redefineClass(String name) throws ClassNotFoundException {
-		ClassNode classNode = getClass(name);
-		if(classNode != null && tweak != null && tweak.tweakClass(classNode)) {
-			saveDebugClass(classNode);
-			return redefineClass(classNode);
+		if(tweak != null) {
+			ClassNode classNode = getClass(name);
+			if(classNode != null && tweak.tweakClass(classNode)) {
+				saveDebugClass(classNode);
+				return redefineClass(classNode);
+			}
 		}
 		try {
 			InputStream is = getClassAsStream(name);
