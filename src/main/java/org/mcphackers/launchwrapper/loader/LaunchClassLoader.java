@@ -35,7 +35,8 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 	private ClassLoaderTweak tweak;
 	private Map<String, Class<?>> exceptions = new HashMap<String, Class<?>>();
 	/** Keys should contain dots */
-	private Map<String, ClassNode> overridenClasses = new HashMap<String, ClassNode>();
+	Map<String, ClassNode> overridenClasses = new HashMap<String, ClassNode>();
+	Map<String, byte[]> overridenResources = new HashMap<String, byte[]>(); //TODO
 	/** Keys should contain slashes */
 	private Map<String, ClassNode> classNodeCache = new HashMap<String, ClassNode>();
 	private File debugOutput;
@@ -60,15 +61,35 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
     }
 
 	public URL findResource(String name) {
-		URL url = super.findResource(name);
+		URL url = getOverridenResourceURL(name);
 		if(url != null) {
 			return url;
 		}
-		return parent.getResource(name);
+		url = super.findResource(name);
+		return url == null ? parent.getResource(name) : url;
 	}
 
 	public URL getResource(String name) {
-		return super.getResource(name);
+		URL url = getOverridenResourceURL(name);
+		if(url != null) {
+			return url;
+		}
+		url = super.getResource(name);
+		return url == null ? parent.getResource(name) : url;
+	}
+
+	private URL getOverridenResourceURL(String name) {
+		if(overridenResources.get(name) != null) {
+			//TODO
+		}
+		try {
+			if(overridenClasses.get(classNameFromResource(name)) != null) {
+				URL url = new URL("jar", "", -1, classNameFromResource(name), new ClassLoaderURLHandler(this));
+				return url;
+			}
+		} catch (MalformedURLException e) {
+		}
+		return null;
 	}
 
 	public Enumeration<URL> findResources(String name) throws IOException {
@@ -150,7 +171,7 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 			cls.getParentFile().mkdirs();
 			// TraceClassVisitor trace = new TraceClassVisitor(new PrintWriter(new File(debugOutput, node.name + ".dump")));
 			// node.accept(trace);
-			ClassWriter writer = new SafeClassWriter(this, COMPUTE_MAXS);
+			ClassWriter writer = new SafeClassWriter(this, COMPUTE_MAXS | COMPUTE_FRAMES);
 			node.accept(writer);
 			byte[] classData = writer.toByteArray();
 			FileOutputStream fos = new FileOutputStream(cls);
@@ -228,6 +249,13 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 
 	private static String classResourceName(String name) {
 		return name.replace('.', '/') + ".class";
+	}
+
+	private static String classNameFromResource(String resource) {
+		if(resource.endsWith(".class")) {
+			return resource.substring(resource.length() - 7);
+		}
+		return resource;
 	}
 
 	private InputStream getClassAsStream(String name) {

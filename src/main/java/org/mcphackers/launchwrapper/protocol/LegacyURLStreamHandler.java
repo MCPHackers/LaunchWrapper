@@ -5,15 +5,16 @@ import java.net.URL;
 import java.net.URLConnection;
 
 import org.mcphackers.launchwrapper.Launch;
+import org.mcphackers.launchwrapper.LaunchConfig;
 
 public class LegacyURLStreamHandler extends URLStreamHandlerProxy {
 
-	private SkinType skins;
-	private int port;
+	private LaunchConfig config;
+	private AssetRequests assets;
 
-	public LegacyURLStreamHandler(SkinType skins, int port) {
-		this.skins = skins;
-		this.port = port;
+	public LegacyURLStreamHandler(LaunchConfig config) {
+		this.config = config;
+		this.assets = new AssetRequests(config.assetsDir.get(), config.assetIndex.get());
 	}
 
 	@Override
@@ -40,9 +41,9 @@ public class LegacyURLStreamHandler extends URLStreamHandlerProxy {
 			if(path.equals("/listmaps.jsp"))
 				return new ListLevelsURLConnection(url);
 			if(path.startsWith("/MinecraftResources/") || path.startsWith("/resources/"))
-				return new ResourceIndexURLConnection(url, port);
+				return new AssetURLConnection(url, assets);
 			if(path.startsWith("/MinecraftSkins/") || path.startsWith("/skin/") || path.startsWith("/MinecraftCloaks/") || path.startsWith("/cloak/"))
-				return new SkinURLConnection(url, skins);
+				return new SkinURLConnection(url, config.skinProxy.get());
 			if(host.equals("assets.minecraft.net") && path.equals("/1_6_has_been_released.flag"))
 				if(Launch.getConfig().oneSixFlag.get())
 					return new BasicResponseURLConnection(url, "https://web.archive.org/web/20130702232237if_/https://mojang.com/2013/07/minecraft-the-horse-update/");

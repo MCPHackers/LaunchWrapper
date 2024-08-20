@@ -149,8 +149,8 @@ public class LegacyTweak extends Tweak {
 		}
 		downloadServer();
 		enableLegacyMergeSort();
-		URLStreamHandlerProxy.setURLStreamHandler("http", new LegacyURLStreamHandler(skinType, port));
-		URLStreamHandlerProxy.setURLStreamHandler("https", new LegacyURLStreamHandler(skinType, port));
+		URLStreamHandlerProxy.setURLStreamHandler("http", new LegacyURLStreamHandler(launch));
+		URLStreamHandlerProxy.setURLStreamHandler("https", new LegacyURLStreamHandler(launch));
 		MainLaunchTarget target = new MainLaunchTarget(minecraft.name);
 		target.args = new String[] { launch.username.get(), launch.session.get() };
 		return target;
@@ -318,10 +318,6 @@ public class LegacyTweak extends Tweak {
 	}
 
 	private void removeCanvas(MethodNode method) {
-		if(!launch.lwjglFrame.get()) {
-			return;
-		}
-		
 		AbstractInsnNode insn1 = method.instructions.getFirst();
 		while(insn1 != null) {
 			AbstractInsnNode[] insns = fill(insn1, 6);
@@ -356,8 +352,26 @@ public class LegacyTweak extends Tweak {
 				insn1 = invoke;
 				tweakInfo("Replaced canvas getHeight");
 			}
+			// 72: aload_0
+			// 73: getfield      #53                 // Field parent:Ljava/awt/Canvas;
+			// 76: ifnonnull     89
+			// 79: invokestatic  #338                // Method org/lwjgl/opengl/Display.isCloseRequested:()Z
+			// 82: ifeq          89
+			
+			if(compareInsn(insns[0], ALOAD)
+			&& compareInsn(insns[1], GETFIELD, minecraft.name, null, "Ljava/awt/Canvas;")
+			&& compareInsn(insns[2], IFNONNULL)
+			&& compareInsn(insns[3], INVOKESTATIC, "org/lwjgl/opengl/Display", "isCloseRequested", "()Z")
+			&& compareInsn(insns[4], IFEQ)) {
+				method.instructions.remove(insns[0]);
+				method.instructions.remove(insns[1]);
+				method.instructions.remove(insns[2]);
+				insn1 = insns[3];
+				tweakInfo("Display.isCloseRequested");
+			}
 			insn1 = nextInsn(insn1);
 		}
+		// TODO figure out why this is a separate loop
 		insn1 = method.instructions.getFirst();
 		while(insn1 != null) {
 			AbstractInsnNode[] insns = fill(insn1, 6);
@@ -1697,35 +1711,6 @@ public class LegacyTweak extends Tweak {
 		if(launch.skinProxy.get() != null) {
 			skinType = launch.skinProxy.get();
 		}
-		if(launch.resourcesProxyPort.get() != null) {
-			port = launch.resourcesProxyPort.get();
-		} else {
-			port = getProxyPortFromVersion(launch.version.get());
-			System.out.println("[LaunchWrapper] Auto-detected proxy port: " + port);
-		}
-	}
-
-	private int getProxyPortFromVersion(String version) {
-		if(version == null) {
-			return -1;
-		}
-		if(version.startsWith("c") && version.compareTo("c0.0.22a") > 0) {
-			return 11702; // 11701 is identical in terms of sound assets
-		}
-		if(version.equals("a1.0.8")) {
-			return 11703; // cow sounds
-		}
-		if(version.startsWith("in-") || version.startsWith("inf-") || (version.compareTo("a1.2") < 0 && version.compareTo("a1.0.0") >= 0)) {
-			return 11702;
-		}
-		if(version.compareTo("a1.2") >= 0 && version.compareTo("b1.9") < 0) {
-			return 11705; // 11706 only changes skin
-		}
-		if(version.compareTo("1.5.2") <= 0) {
-			return 11707;
-		}
-
-		return -1;
 	}
 
 	public ClassNode getApplet() {

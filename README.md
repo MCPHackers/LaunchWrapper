@@ -8,9 +8,10 @@ LaunchWrapper is bundled in [BetterJSONs](https://github.com/MCPHackers/BetterJS
 ## Features
 - Strips game window from Java **AWT** (**Abstract Window Toolkit**) and lets the game use internal **LWJGL** frame
 - BitDepthFix for versions before Beta 1.8
+- LaunchWrapper works with Risugami's Modloader so long as you're using Java 8
 - Allows changing assets directory in 1.6 snapshots (the game didn't have a parameter to do that yet)
 - Allows changing game directory in versions before 1.6
-- Replaces mouse input code with **LWJGL** calls
+- Replaces mouse input code with **LWJGL** calls (Fixes any mouse input issues in classic, indev and infdev)
 - Fixes TimSort crash when using Java 8+
 - Adds ability to customize built-in **LWJGL** frame
 	- Changing display title
@@ -45,7 +46,7 @@ Arguments are formatted the same way as in Mojang launch wrapper. <br>
 For example: `--username DemoUser --width 1280 --height 720 --title "Minecraft Demo" --demo`
 
 Arguments may be as follows:
-- `awtFrame` - disable LWJGL frame patch and use AWT
+- `awtFrame` - disable LWJGL frame patch and use AWT (Not recommended)
 - `isom` - Launch IsomPreviewApplet
 - `forceVsync` - Launch the game with VSync enabled
 - `forceResizable` - Early Indev and Classic don't properly update viewport, so the wrapper disables frame resizing. To enable it anyway use this argument
@@ -55,11 +56,14 @@ Arguments may be as follows:
 	- **pre-b1.9-pre4** - flip bottom textures and crop to 64x32
 	- **pre-1.8** - crop to 64x32
 	- **default** - do nothing with requested skin
-- `resourcesProxyPort` - Betacraft proxy port for sound resources
+- `assetsDir` - Will be used by LaunchWrapper to locate custom index.json
+- `assetIndex` - Name of the `assetsDir`/indexes/index.json without .json extension which will be used
+- `title` - The display title
+- `icon` - List of paths of icon PNGs separated by `;`
+- `applet` - Makes the game think you're running an applet which:
+	- Removes quit button in versions between Beta 1.0 and release 1.5.2
+	- Changes mouse input code in classic
+- `oneSixFlag` - Toggles notice about the release of 1.6 in 1.5.2
 - `serverSHA1` - Compare minecraft_server.jar in .minecraft/server against this hash
 - `serverURL` - URL to download the server from if the hash is mismatched or the jar is missing
-- `icon` - List of paths of icon PNGs separated by `;`
-- `title` - The display title
-- `applet` - Makes the game think you're running an applet (Which removes quit button for example)
-- `oneSixFlag` - Toggles notice about the release of 1.6 in 1.5.2
 - \+ any [Minecraft launch arguments](https://wiki.vg/Launching_the_game#Game_Arguments) or applet parameters

@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import org.mcphackers.launchwrapper.Launch;
 import org.mcphackers.launchwrapper.LaunchConfig;
 import org.mcphackers.launchwrapper.LaunchTarget;
 import org.mcphackers.launchwrapper.loader.LaunchClassLoader;
@@ -44,14 +43,21 @@ public abstract class Tweak {
 		}
 		return tweak;
 	}
+
+	private static Tweak wrapTweak(ClassNodeSource source, Tweak baseTweak, LaunchConfig launch) {
+		if(source.getClass(FabricLoaderTweak.FABRIC_KNOT_CLIENT) != null) {
+			return new FabricLoaderTweak(baseTweak, launch);
+		}
+		return baseTweak;
+	}
 	
 	private static Tweak getTweak(LaunchClassLoader classLoader, LaunchConfig launch) {
 		if(launch.tweakClass.get() != null) {
 			try {
 				// Instantiate custom tweak if it's present on classpath;
-				return (Tweak)Class.forName(launch.tweakClass.get())
+				return wrapTweak(classLoader, (Tweak)Class.forName(launch.tweakClass.get())
 						.getConstructor(ClassNodeSource.class, LaunchConfig.class)
-						.newInstance(classLoader, launch);
+						.newInstance(classLoader, launch), launch);
 			} catch (ClassNotFoundException e) {
 				return null;
 			} catch (Exception e) {
@@ -60,19 +66,19 @@ public abstract class Tweak {
 			}
 		}
 		if(launch.isom.get()) {
-			return new IsomTweak(classLoader, launch);
+			return wrapTweak(classLoader, new IsomTweak(classLoader, launch), launch);
 		}
 		if(classLoader.getClass(VanillaTweak.MAIN_CLASS) != null) {
-			return new VanillaTweak(classLoader, launch);
+			return wrapTweak(classLoader, new VanillaTweak(classLoader, launch), launch);
 		}
 		for(String cls : LegacyTweak.MAIN_CLASSES) {
 			if(classLoader.getClass(cls) != null) {
-				return new LegacyTweak(classLoader, launch);
+				return wrapTweak(classLoader, new LegacyTweak(classLoader, launch), launch);
 			}
 		}
 		for(String cls : LegacyTweak.MAIN_APPLETS) {
 			if(classLoader.getClass(cls) != null) {
-				return new LegacyTweak(classLoader, launch);
+				return wrapTweak(classLoader, new LegacyTweak(classLoader, launch), launch);
 			}
 		}
 		return null; // Tweak not found

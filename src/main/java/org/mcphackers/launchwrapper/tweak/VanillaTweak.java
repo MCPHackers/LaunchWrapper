@@ -193,8 +193,8 @@ public class VanillaTweak extends Tweak {
 	}
 
 	public LaunchTarget getLaunchTarget() {
-		URLStreamHandlerProxy.setURLStreamHandler("http", new LegacyURLStreamHandler(launch.skinProxy.get(), 11707));
-		URLStreamHandlerProxy.setURLStreamHandler("https", new LegacyURLStreamHandler(launch.skinProxy.get(), 11707));
+		URLStreamHandlerProxy.setURLStreamHandler("http", new LegacyURLStreamHandler(launch));
+		URLStreamHandlerProxy.setURLStreamHandler("https", new LegacyURLStreamHandler(launch));
 		MainLaunchTarget target = new MainLaunchTarget(MAIN_CLASS);
 		target.args = launch.getArgs();
 		return target;

@@ -67,6 +67,7 @@ public class SaveLevelURLConnection extends HttpURLConnection {
 				levelNamesStream.close();
 			}
 			lvlNames[levelId] = levelName;
+			// Since minecraft doesn't have a delete button on levels, just save a new one with this name and it'll get deleted
 			if(levelName.equals("---")) {
 				level.delete();
 				lvlNames[levelId] = EMPTY_LEVEL;
