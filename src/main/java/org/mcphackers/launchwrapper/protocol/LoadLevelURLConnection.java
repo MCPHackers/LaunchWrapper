@@ -14,15 +14,16 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Map;
 
-import org.mcphackers.launchwrapper.Launch;
 import org.mcphackers.launchwrapper.util.Util;
 
 public class LoadLevelURLConnection extends HttpURLConnection {
 
 	Exception exception;
+	private File gameDir;
 
-	public LoadLevelURLConnection(URL url) {
+	public LoadLevelURLConnection(URL url, File gameDir) {
 		super(url);
+		this.gameDir = gameDir;
 	}
 
 	@Override
@@ -48,7 +49,7 @@ public class LoadLevelURLConnection extends HttpURLConnection {
 				throw new MalformedURLException("Query is missing \"id\" parameter");
 			}
 			int levelId = Integer.parseInt(query.get("id"));
-			File levels = new File(Launch.getConfig().gameDir.get(), "levels");
+			File levels = new File(gameDir, "levels");
 			File level = new File(levels, "level" + levelId + ".dat");
 			if(!level.exists()) {
 				throw new FileNotFoundException("Level doesn't exist");

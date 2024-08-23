@@ -1,35 +1,76 @@
-plugins {
-    id 'java'
-    id 'maven-publish'
-}
+allprojects {
+    apply plugin: 'java'
+    apply plugin: 'maven-publish'
+    
+    version = '1.0-SNAPSHOT'
 
-repositories {
-    flatDir {
-        dirs "libs"
+    repositories {
+        flatDir {
+            dirs "libs"
+        }
+        maven {
+            url "https://mcphackers.github.io/libraries/"
+        }
+        maven {
+            url "https://libraries.minecraft.net/"
+        }
+        mavenCentral()
     }
-    maven {
-        url "https://mcphackers.github.io/libraries/"
+
+    task sourcesJar(type: Jar) {
+        archiveClassifier = 'sources'
+        from sourceSets.main.allSource
     }
-    maven {
-        url "https://libraries.minecraft.net/"
+
+    artifacts {
+        archives jar
+        archives sourcesJar
     }
-    mavenCentral()
+
+    publishing {
+        publications {
+            mavenJava(MavenPublication) {
+                artifactId = archivesBaseName
+            
+                artifact jar
+                artifact sourcesJar
+            }
+        }
+
+        repositories {
+            mavenLocal()
+            
+            def ENV = System.getenv()
+            if (ENV.MAVEN_URL) {
+                maven {
+                    url ENV.MAVEN_URL
+                    if (ENV.MAVEN_USERNAME) {
+                        credentials {
+                            username ENV.MAVEN_USERNAME
+                            password ENV.MAVEN_PASSWORD
+                        }
+                    }
+                }
+            }
+        }
+    }
+
 }
 
 group = 'org.mcphackers'
 archivesBaseName = 'launchwrapper'
-version = '1.0-SNAPSHOT'
-sourceCompatibility = 1.5
-targetCompatibility = 1.5
+sourceCompatibility = JavaVersion.VERSION_1_8
+targetCompatibility = JavaVersion.VERSION_1_8
+
+project.ext.asm_version = 9.6
 
 dependencies {
     implementation 'org.mcphackers.rdi:rdi:1.0'
-    implementation 'org.ow2.asm:asm:9.3'
-    implementation 'org.ow2.asm:asm-tree:9.3'
+    implementation "org.ow2.asm:asm:${project.asm_version}"
+    implementation "org.ow2.asm:asm-tree:${project.asm_version}"
     implementation 'org.json:json:20230311'
     // I'll bring discord RPC support later, when I have an environment to compile natives
 
-    // testImplementation 'junit:junit:4.12'
     testRuntimeOnly('org.junit.platform:junit-platform-launcher:1.5.2')
     testImplementation 'org.junit.jupiter:junit-jupiter-engine:5.0.0'
 }
@@ -41,42 +82,4 @@ test {
         events = ["passed", "failed", "skipped"]
         showStandardStreams = true
     }
-}
-
-task sourcesJar(type: Jar) {
-    archiveClassifier = 'sources'
-    from sourceSets.main.allSource
-}
-
-artifacts {
-    archives jar
-    archives sourcesJar
-}
-
-publishing {
-    publications {
-        mavenJava(MavenPublication) {
-			artifactId = archivesBaseName
-		
-			artifact jar
-			artifact sourcesJar
-        }
-    }
-
-	repositories {
-		mavenLocal()
-		
-		def ENV = System.getenv()
-		if (ENV.MAVEN_URL) {
-			maven {
-				url ENV.MAVEN_URL
-				if (ENV.MAVEN_USERNAME) {
-					credentials {
-						username ENV.MAVEN_USERNAME
-						password ENV.MAVEN_PASSWORD
-					}
-				}
-			}
-		}
-	}
 }

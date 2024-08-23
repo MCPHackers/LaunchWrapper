@@ -1,13 +1,14 @@
 package org.mcphackers.launchwrapper.loader;
 
+import org.mcphackers.launchwrapper.util.ClassNodeProvider;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.ClassNode;
 
 public class SafeClassWriter extends ClassWriter {
-	protected LaunchClassLoader classLoader;
+	protected ClassNodeProvider classLoader;
 	
-	public SafeClassWriter(LaunchClassLoader classLoader, int flags) {
+	public SafeClassWriter(ClassNodeProvider classLoader, int flags) {
 		super(flags);
 		this.classLoader = classLoader;
 	}

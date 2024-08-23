@@ -35,14 +35,18 @@ public class ClassLoaderURLHandler extends URLStreamHandler {
         @Override
         public InputStream getInputStream() throws IOException {
             String path = url.getPath();
+            byte[] data = classLoader.overridenResources.get(LaunchClassLoader.classNameFromResource(path));
+            if(data != null) {
+                return new ByteArrayInputStream(data);
+            }
             ClassNode node = classLoader.overridenClasses.get(path);
             if(node == null) {
                 throw new FileNotFoundException();
             }
 			ClassWriter writer = new SafeClassWriter(classLoader, COMPUTE_MAXS | COMPUTE_FRAMES);
 			node.accept(writer);
-			byte[] classData = writer.toByteArray();
-            return new ByteArrayInputStream(classData);
+			data = writer.toByteArray();
+            return new ByteArrayInputStream(data);
         }
 
     }

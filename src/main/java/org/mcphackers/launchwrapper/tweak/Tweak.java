@@ -6,14 +6,15 @@ import java.util.List;
 
 import org.mcphackers.launchwrapper.LaunchConfig;
 import org.mcphackers.launchwrapper.LaunchTarget;
-import org.mcphackers.launchwrapper.loader.LaunchClassLoader;
 import org.mcphackers.launchwrapper.util.ClassNodeSource;
 
 public abstract class Tweak {
+	private static final boolean LOG_TWEAKS = Boolean.parseBoolean(System.getProperty("launchwrapper.log", "false"));
 
 	protected ClassNodeSource source;
 	protected LaunchConfig launch;
     private List<FeatureInfo> features = new ArrayList<FeatureInfo>();
+	private boolean clean = true;
 
 	/**
 	 * Every tweak must implement this constructor
@@ -30,34 +31,27 @@ public abstract class Tweak {
 	 * This method does return true even if some of the changes weren't applied, even when they should've been
 	 * @return true if given ClassNodeSource was modified without fatal errors
 	 */
-	public abstract boolean transform();
+	protected abstract boolean transform();
+	
+	public boolean performTransform() {
+		if(!clean) {
+			throw new RuntimeException("Calling tweak transform twice is not allowed. Create a new instance");
+		}
+		clean = false;
+		return transform();
+	}
 
 	public abstract ClassLoaderTweak getLoaderTweak();
 
 	public abstract LaunchTarget getLaunchTarget();
-
-	public static Tweak get(LaunchClassLoader classLoader, LaunchConfig launch) {
-		Tweak tweak = getTweak(classLoader, launch);
-		if(tweak != null) {
-			classLoader.setLoaderTweak(tweak.getLoaderTweak());
-		}
-		return tweak;
-	}
-
-	private static Tweak wrapTweak(ClassNodeSource source, Tweak baseTweak, LaunchConfig launch) {
-		if(source.getClass(FabricLoaderTweak.FABRIC_KNOT_CLIENT) != null) {
-			return new FabricLoaderTweak(baseTweak, launch);
-		}
-		return baseTweak;
-	}
 	
-	private static Tweak getTweak(LaunchClassLoader classLoader, LaunchConfig launch) {
+	public static Tweak get(ClassNodeSource classLoader, LaunchConfig launch) {
 		if(launch.tweakClass.get() != null) {
 			try {
 				// Instantiate custom tweak if it's present on classpath;
-				return wrapTweak(classLoader, (Tweak)Class.forName(launch.tweakClass.get())
+				return (Tweak)Class.forName(launch.tweakClass.get())
 						.getConstructor(ClassNodeSource.class, LaunchConfig.class)
-						.newInstance(classLoader, launch), launch);
+						.newInstance(classLoader, launch);
 			} catch (ClassNotFoundException e) {
 				return null;
 			} catch (Exception e) {
@@ -66,19 +60,19 @@ public abstract class Tweak {
 			}
 		}
 		if(launch.isom.get()) {
-			return wrapTweak(classLoader, new IsomTweak(classLoader, launch), launch);
+			return new IsomTweak(classLoader, launch);
 		}
 		if(classLoader.getClass(VanillaTweak.MAIN_CLASS) != null) {
-			return wrapTweak(classLoader, new VanillaTweak(classLoader, launch), launch);
+			return new VanillaTweak(classLoader, launch);
 		}
 		for(String cls : LegacyTweak.MAIN_CLASSES) {
 			if(classLoader.getClass(cls) != null) {
-				return wrapTweak(classLoader, new LegacyTweak(classLoader, launch), launch);
+				return new LegacyTweak(classLoader, launch);
 			}
 		}
 		for(String cls : LegacyTweak.MAIN_APPLETS) {
 			if(classLoader.getClass(cls) != null) {
-				return wrapTweak(classLoader, new LegacyTweak(classLoader, launch), launch);
+				return new LegacyTweak(classLoader, launch);
 			}
 		}
 		return null; // Tweak not found
@@ -90,6 +84,12 @@ public abstract class Tweak {
 
 	protected void tweakInfo(String name, String... extra) {
 		features.add(new FeatureInfo(name));
-		System.out.println("[LaunchWrapper] Applying tweak: " + name + " " + String.join(" ", extra));
+		StringBuilder other = new StringBuilder();
+		for(String s : extra) {
+			other.append(" ").append(s);
+		}
+		if(LOG_TWEAKS) {
+			System.out.println("[LaunchWrapper] Applying tweak: " + name + other);
+		}
 	}
 }

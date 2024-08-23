@@ -256,9 +256,8 @@ public class SkinRequests {
 	}
 
 	public static void alexToSteve(ImageUtils imgu) {
-		imgu.setArea(48, 16, imgu.crop(47, 16, 7, 16).getImage());
-		imgu.setArea(47, 16, imgu.crop(45, 16, 1, 16).getImage());
-		imgu.setArea(55, 20, imgu.crop(53, 20, 1, 12).getImage());
-		imgu.setArea(51, 16, imgu.crop(49, 16, 1, 4).getImage());
+		imgu.setArea(46, 16, imgu.crop(45, 16, 9, 16).getImage());
+		imgu.setArea(50, 16, imgu.crop(49, 16, 2, 4).getImage());
+		imgu.setArea(54, 20, imgu.crop(53, 20, 2, 12).getImage());
 	}
 }

@@ -15,8 +15,8 @@ nbproject
 .*.sw[a-p]
 
 # various other potential build files
-/build/
-/out
+build/
+out
 
 # Mac filesystem dust
 .DS_Store
@@ -28,5 +28,5 @@ nbproject
 .idea/
 
 # generated
-/repo/
-/bin/
+repo/
+bin/

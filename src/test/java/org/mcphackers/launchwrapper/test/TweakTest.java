@@ -30,7 +30,7 @@ public abstract class TweakTest {
             FileClassNodeSource classNodeSource = new FileClassNodeSource(gameJar);
             LaunchConfig config = getDefaultConfig(testDir);
             Tweak tweak = getTweak(classNodeSource, config);
-            assertTrue(tweak.transform());
+            assertTrue(tweak.performTransform());
             // for (FeatureInfo info : tweak.getTweakInfo()) {
             //     System.out.println(info.feature);
             // }

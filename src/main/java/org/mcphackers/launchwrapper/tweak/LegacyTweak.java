@@ -15,7 +15,6 @@ import org.mcphackers.launchwrapper.LaunchConfig;
 import org.mcphackers.launchwrapper.LaunchTarget;
 import org.mcphackers.launchwrapper.MainLaunchTarget;
 import org.mcphackers.launchwrapper.protocol.LegacyURLStreamHandler;
-import org.mcphackers.launchwrapper.protocol.SkinType;
 import org.mcphackers.launchwrapper.protocol.URLStreamHandlerProxy;
 import org.mcphackers.launchwrapper.util.ClassNodeSource;
 import org.mcphackers.launchwrapper.util.UnsafeUtils;
@@ -53,8 +52,6 @@ public class LegacyTweak extends Tweak {
 			"com/mojang/minecraft/MinecraftApplet"
 	};
 
-	public static final boolean EXPERIMENTAL_INDEV_SAVING = true;
-
 	protected ClassNode minecraft;
 	protected ClassNode minecraftApplet;
 	/** Field that determines if Minecraft should exit */
@@ -74,7 +71,6 @@ public class LegacyTweak extends Tweak {
 	private boolean supportsResizing;
 	/** public static main(String[]) */
 	protected MethodNode main;
-	protected SkinType skinType = null;
 	protected int port = -1;
 
 	public LegacyTweak(ClassNodeSource source, LaunchConfig launch) {
@@ -157,9 +153,6 @@ public class LegacyTweak extends Tweak {
 	}
 
 	private void addIndevSaving() {
-		if(!EXPERIMENTAL_INDEV_SAVING) {
-			return;
-		}
 		ClassNode saveLevelMenu = null;
 		ClassNode loadLevelMenu = null;
 		methods:
@@ -1707,9 +1700,6 @@ public class LegacyTweak extends Tweak {
 		}
 		if(launch.forceResizable.get()) {
 			supportsResizing = true;
-		}
-		if(launch.skinProxy.get() != null) {
-			skinType = launch.skinProxy.get();
 		}
 	}
 

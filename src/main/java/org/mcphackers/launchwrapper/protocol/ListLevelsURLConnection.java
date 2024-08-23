@@ -9,15 +9,16 @@ import java.io.InputStream;
 import java.net.URL;
 import java.net.URLConnection;
 
-import org.mcphackers.launchwrapper.Launch;
 import org.mcphackers.launchwrapper.util.Util;
 
 public class ListLevelsURLConnection extends URLConnection {
 
 	public static final String EMPTY_LEVEL = "-";
+	private File gameDir;
 
-	public ListLevelsURLConnection(URL url) {
+	public ListLevelsURLConnection(URL url, File gameDir) {
 		super(url);
+		this.gameDir = gameDir;
 	}
 
 	@Override
@@ -25,7 +26,7 @@ public class ListLevelsURLConnection extends URLConnection {
 	}
 
 	public InputStream getInputStream() throws IOException {
-		File levels = new File(Launch.getConfig().gameDir.get(), "levels");
+		File levels = new File(gameDir, "levels");
 		if(!levels.exists())
 			levels.mkdirs();
 		File levelNames = new File(levels, "levels.txt");

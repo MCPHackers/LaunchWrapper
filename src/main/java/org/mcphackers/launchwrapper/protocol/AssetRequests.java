@@ -41,13 +41,16 @@ public class AssetRequests {
 				}
 				String hash = entry.optString("hash");
 				long size = entry.optLong("size");
-				if(hash == null) {
+				// Only resources in a folder are valid
+				if(!s.contains("/") || hash == null) {
 					System.out.println("[LaunchWrapper] Invalid resource: " + s);
 					continue;
 				}
 				File object = new File(assetsDir, "objects/" + hash.substring(0, 2) + "/" + hash);
 				if(!object.exists() || object.length() != size) {
-					System.out.println("[LaunchWrapper] Invalid resource: " + s);
+					// Download if missing?
+					// Some sounds in betacraft indexes are downloaded from custom url which isn't handled by other launchers
+					System.out.println("[LaunchWrapper] Missing resource: " + s);
 					continue;
 				}
 				// A little slow and probably pointless

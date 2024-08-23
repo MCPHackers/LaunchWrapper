@@ -30,14 +30,14 @@ public final class Inject {
 	}
 
 	public static AppletWrapper getApplet() {
-		return new AppletWrapper(Launch.getConfig().getArgsAsMap());
+		return new AppletWrapper(Launch.getInstance().config.getArgsAsMap());
 	}
 
 	/**
 	 * Indev load level injection
 	 */
 	public static File getLevelFile(int index) {
-		return new File(Launch.getConfig().gameDir.get(), "levels/level" + index + ".dat");
+		return new File(Launch.getInstance().config.gameDir.get(), "levels/level" + index + ".dat");
 	}
 
 	/**
@@ -45,7 +45,7 @@ public final class Inject {
 	 */
 	public static File saveLevel(int index, String levelName) {
 		final int maxLevels = 5;
-		File levels = new File(Launch.getConfig().gameDir.get(), "levels");
+		File levels = new File(Launch.getInstance().config.gameDir.get(), "levels");
 		File level = new File(levels, "level" + index + ".dat");
 		File levelNames = new File(levels, "levels.txt");
 		String[] lvlNames = new String[maxLevels];
@@ -99,7 +99,7 @@ public final class Inject {
 	}
 
 	public static ByteBuffer[] loadIcon(boolean favIcon) {
-		File[] iconPaths = Launch.getConfig().icon.get();
+		File[] iconPaths = Launch.getInstance().config.icon.get();
 		if(iconPaths != null && hasIcon(iconPaths)) {
 			List<ByteBuffer> processedIcons = new ArrayList<ByteBuffer>();
 			for(File icon : iconPaths) {
@@ -139,7 +139,7 @@ public final class Inject {
 	}
 
 	public static BufferedImage getIcon(boolean favIcon) {
-		File[] iconPaths = Launch.getConfig().icon.get();
+		File[] iconPaths = Launch.getInstance().config.icon.get();
 		if(iconPaths != null && hasIcon(iconPaths)) {
 			for(File icon : iconPaths) {
 				if(!icon.exists()) {

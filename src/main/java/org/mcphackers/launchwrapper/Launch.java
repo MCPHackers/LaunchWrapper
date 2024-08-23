@@ -8,24 +8,20 @@ public class Launch {
 	/**
 	 * Class loader where overwritten classes will be stored
 	 */
+	public static final String VERSION = "1.0";
 	public static final LaunchClassLoader CLASS_LOADER = LaunchClassLoader.instantiate();
 	static {
-		CLASS_LOADER.addException(Launch.class);
-		CLASS_LOADER.addException(LaunchConfig.class);
-		CLASS_LOADER.addException(LaunchConfig.LaunchParameter.class);
-		CLASS_LOADER.addException(LaunchConfig.LaunchParameterEnum.class);
-		CLASS_LOADER.addException(LaunchConfig.LaunchParameterFile.class);
-		CLASS_LOADER.addException(LaunchConfig.LaunchParameterFileList.class);
-		CLASS_LOADER.addException(LaunchConfig.LaunchParameterNumber.class);
-		CLASS_LOADER.addException(LaunchConfig.LaunchParameterString.class);
-		CLASS_LOADER.addException(LaunchConfig.LaunchParameterSwitch.class);
+		CLASS_LOADER.addException("org.mcphackers.launchwrapper");
+		CLASS_LOADER.addException("org.objectweb.asm");
+		CLASS_LOADER.removeException("org.mcphackers.launchwrapper.inject");
 	}
-	private static Launch INSTANCE;
+	protected static Launch INSTANCE;
 	
 	public final LaunchConfig config;
 
-	private Launch(LaunchConfig config) {
+	protected Launch(LaunchConfig config) {
 		this.config = config;
+		INSTANCE = this;
 	}
 
 	public static void main(String[] args) {
@@ -34,34 +30,36 @@ public class Launch {
 	}
 
 	public void launch() {
-		Tweak mainTweak = Tweak.get(CLASS_LOADER, config);
+		Tweak mainTweak = getTweak();
 		if(mainTweak == null) {
 			System.err.println("Could not find launch target");
 			return;
 		}
-		if(mainTweak.transform()) {
+		if(mainTweak.performTransform()) {
 			if(config.discordRPC.get()) {
 				setupDiscordRPC();
 			}
+			CLASS_LOADER.setLoaderTweak(mainTweak.getLoaderTweak());
 			mainTweak.getLaunchTarget().launch(CLASS_LOADER);
 		} else {
 			System.err.println("Tweak could not be applied");
 		}
 	}
+
+	protected Tweak getTweak() {
+		return Tweak.get(CLASS_LOADER, config);
+	}
 	
 	protected void setupDiscordRPC() {
 		// TODO
 	}
-
+	
+	@Deprecated
 	public static Launch getInstance() {
 		return INSTANCE;
 	}
-	
-	public static LaunchConfig getConfig() {
-		return INSTANCE.config;
-	}
 
 	public static Launch create(LaunchConfig config) {
-		return INSTANCE = new Launch(config);
+		return new Launch(config);
 	}
 }

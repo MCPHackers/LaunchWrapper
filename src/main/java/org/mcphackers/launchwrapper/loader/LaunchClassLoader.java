@@ -16,7 +16,9 @@ import java.security.ProtectionDomain;
 import java.security.cert.Certificate;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import org.mcphackers.launchwrapper.tweak.ClassLoaderTweak;
 import org.mcphackers.launchwrapper.util.ClassNodeSource;
@@ -33,10 +35,12 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 
 	private ClassLoader parent;
 	private ClassLoaderTweak tweak;
-	private Map<String, Class<?>> exceptions = new HashMap<String, Class<?>>();
+	private Set<String> exceptions = new HashSet<String>();
+	private Set<String> ignoreExceptions = new HashSet<String>();
 	/** Keys should contain dots */
 	Map<String, ClassNode> overridenClasses = new HashMap<String, ClassNode>();
-	Map<String, byte[]> overridenResources = new HashMap<String, byte[]>(); //TODO
+	Map<String, byte[]> overridenResources = new HashMap<String, byte[]>();
+	Map<String, String> overridenSource = new HashMap<String, String>();
 	/** Keys should contain slashes */
 	private Map<String, ClassNode> classNodeCache = new HashMap<String, ClassNode>();
 	private File debugOutput;
@@ -79,12 +83,10 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 	}
 
 	private URL getOverridenResourceURL(String name) {
-		if(overridenResources.get(name) != null) {
-			//TODO
-		}
 		try {
-			if(overridenClasses.get(classNameFromResource(name)) != null) {
-				URL url = new URL("jar", "", -1, classNameFromResource(name), new ClassLoaderURLHandler(this));
+			if(overridenResources.get(name) != null
+			|| overridenClasses.get(classNameFromResource(name)) != null) {
+				URL url = new URL("jar", "", -1, name, new ClassLoaderURLHandler(this));
 				return url;
 			}
 		} catch (MalformedURLException e) {
@@ -97,14 +99,28 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 	}
 
 	public Class<?> findClass(String name) throws ClassNotFoundException {
+		name = className(name);
 		if(name.startsWith("java.")) {
 			return parent.loadClass(name);
 		}
-		name = className(name);
-		Class<?> cls;
-		cls = exceptions.get(name);
-		if(cls != null) {
-			return cls;
+		Class<?> cls = null;
+
+		if(overridenSource.get(name) != null) {
+			return transformedClass(name);
+		}
+		outer:
+		for(String pkg : exceptions) {
+			for(String pkg2 : ignoreExceptions) {
+				if(name.startsWith(pkg2)) {
+					continue outer;
+				}
+			}
+			if(name.startsWith(pkg)) {
+				cls = parent.loadClass(name);
+				if(cls != null) {
+					return cls;
+				}
+			}
 		}
 		cls = transformedClass(name);
 		if(cls != null) {
@@ -127,6 +143,18 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 		}
 	}
 
+	public void addException(String pkg) {
+		exceptions.add(pkg + ".");
+	}
+
+	public void removeException(String pkg) {
+		ignoreExceptions.add(pkg + ".");
+	}
+
+	public void overrideClassSource(String name, String f) {
+		overridenSource.put(className(name), f);
+	}
+
 	private ProtectionDomain getProtectionDomain(String name) {
 		final URL resource = getResource(classResourceName(name));
 		if(resource == null) {
@@ -141,6 +169,9 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 				if(i != -1) {
 					path = path.substring(0, i);
 				}
+			}
+			if(overridenSource.get(name) != null) {
+				path = overridenSource.get(name);
 			}
 			try {
 				URL newResource = new URL("file", "", path);
@@ -251,9 +282,9 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 		return name.replace('.', '/') + ".class";
 	}
 
-	private static String classNameFromResource(String resource) {
+	static String classNameFromResource(String resource) {
 		if(resource.endsWith(".class")) {
-			return resource.substring(resource.length() - 7);
+			return resource.substring(0, resource.length() - 6);
 		}
 		return resource;
 	}
@@ -276,10 +307,6 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 			return redefineClass(transformed);
 		}
 		return redefineClass(name);
-	}
-
-	public void addException(Class<?> cls) {
-		exceptions.put(cls.getName(), cls);
 	}
 
 	public void setLoaderTweak(ClassLoaderTweak classLoaderTweak) {

@@ -1,5 +1,7 @@
 package org.mcphackers.launchwrapper.protocol;
 
+import static org.mcphackers.launchwrapper.protocol.ListLevelsURLConnection.EMPTY_LEVEL;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
@@ -12,17 +14,16 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
-import org.mcphackers.launchwrapper.Launch;
 import org.mcphackers.launchwrapper.util.Util;
-
-import static org.mcphackers.launchwrapper.protocol.ListLevelsURLConnection.EMPTY_LEVEL;
 
 public class SaveLevelURLConnection extends HttpURLConnection {
 
 	ByteArrayOutputStream levelOutput = new ByteArrayOutputStream();
+	private File gameDir;
 
-	public SaveLevelURLConnection(URL url) {
+	public SaveLevelURLConnection(URL url, File gameDir) {
 		super(url);
+		this.gameDir = gameDir;
 	}
 
 	@Override
@@ -43,7 +44,7 @@ public class SaveLevelURLConnection extends HttpURLConnection {
 	public InputStream getInputStream() throws IOException {
 		Exception exception = null;
 		try {
-			File levels = new File(Launch.getConfig().gameDir.get(), "levels");
+			File levels = new File(gameDir, "levels");
 			byte[] data = levelOutput.toByteArray();
 			DataInputStream in = new DataInputStream(new ByteArrayInputStream(data));
 			String username = in.readUTF();
