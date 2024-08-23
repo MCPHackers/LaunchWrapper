@@ -8,7 +8,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.mcphackers.launchwrapper.protocol.SkinOption;
 import org.mcphackers.launchwrapper.protocol.SkinType;
 import org.mcphackers.launchwrapper.util.OS;
 

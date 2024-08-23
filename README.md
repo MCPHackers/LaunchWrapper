@@ -36,6 +36,7 @@ LaunchWrapper is bundled in [BetterJSONs](https://github.com/MCPHackers/BetterJS
 
 - If you are using MultiMC, [follow this guide](MultiMC.md).<br>
 - If you are using Official Launcher (or any other launcher which follows the same versions folder structure), use [BetterJSONs](https://github.com/MCPHackers/BetterJSONs) and rename the JSONs if they are conflicting with any vanilla JSONs
+- If you need to use these fixes with fabric read [this guide](launchwrapper-fabric/README.md)
 
 ### Setting up manually
 
