@@ -1,7 +1,8 @@
 Currently LaunchWrapper for Fabric is only supported in MultiMC derivatives.
 
 ## Instructions
-- Obtain a [Babric PrismLauncher instance](https://github.com/babric/prism-instance)
+- For Babric: obtain a [Babric PrismLauncher instance](https://github.com/babric/prism-instance)
+- For OrnitheMC: use [Ornithe installer](https://maven.ornithemc.net/api/maven/latest/file/releases/net/ornithemc/ornithe-installer) and generate instance zip for preferred version
 - Perform the same steps from [MultiMC guide](../MultiMC.md) for this instance
 - Create another component with the following JSON:
     <details>
