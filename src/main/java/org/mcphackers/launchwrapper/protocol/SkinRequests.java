@@ -2,10 +2,15 @@ package org.mcphackers.launchwrapper.protocol;
 
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.HashMap;
+import java.util.List;
 
 import org.json.JSONObject;
 import org.mcphackers.launchwrapper.util.Base64;
@@ -16,6 +21,7 @@ public class SkinRequests {
 	// name->uuid requests have a rate limit, so here's cache
 	private static HashMap<String, String> nameToUUID = new HashMap<String, String>();
 
+	// No skins and capes for you. Sorry guys
 	private static final String[] BLACKLISTED_NAMES = {"Player", "DemoUser"}; 
 
 	public static String getUUIDfromName(String username) {
@@ -110,12 +116,62 @@ public class SkinRequests {
 		}
 	}
 
-	public static byte[] getCape(String name, SkinType skinType) {
-		String uuid = getUUIDfromName(name);
-		if(uuid == null) {
+	private SkinType skinType;
+	private List<SkinOption> skinOptions;
+	private File localSkinDirectory;
+
+	public SkinRequests(File dir, List<SkinOption> options, SkinType type) {
+		localSkinDirectory = dir;
+		skinOptions = options;
+		skinType = type;
+	}
+
+	public SkinData getLocalSkin(String name) {
+		byte[] skin = null;
+		byte[] cape = null;
+		boolean slim = false;
+		
+		File skinFile = new File(localSkinDirectory, name + ".png");
+		if(skinFile.exists()) {
+			try {
+				skin = Util.readStream(new FileInputStream(skinFile));
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+		
+		skinFile = new File(localSkinDirectory, name + ".slim.png");
+		if(skinFile.exists() && skin == null) {
+			try {
+				skin = Util.readStream(new FileInputStream(skinFile));
+				slim = true;
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+		File capeFile = new File(localSkinDirectory, "cape/" + name + ".png");
+		if(capeFile.exists()) {
+			try {
+				cape = Util.readStream(new FileInputStream(capeFile));
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+		return new SkinData(skin, cape, slim);
+	}
+
+	public byte[] getCape(String name) {
+		SkinData skindata = getLocalSkin(name);
+		if(skindata.cape == null) {
+			String uuid = getUUIDfromName(name);
+			if(uuid == null) {
+				return null;
+			}
+			skindata = fetchSkin(uuid);
+		}
+		if(skindata == null) {
 			return null;
 		}
-		SkinData skindata = fetchSkin(uuid);
 
 		byte[] cape = null;
 		try {
@@ -125,6 +181,7 @@ public class SkinRequests {
 					case CLASSIC:
 					case PRE_B1_9:
 					case PRE_1_8:
+					case PRE_1_9:
 						ByteArrayInputStream bis = new ByteArrayInputStream(skindata.cape);
 
 						ImageUtils imgu = new ImageUtils(bis);
@@ -142,43 +199,129 @@ public class SkinRequests {
 		return cape;
 	}
 
-	public static byte[] getSkin(String name, SkinType skinType) {
-		String uuid = getUUIDfromName(name);
-		if(uuid == null) {
+	public byte[] getSkin(String name) {
+		SkinData skindata = getLocalSkin(name);
+		if(skindata.skin == null) {
+			String uuid = getUUIDfromName(name);
+			if(uuid == null) {
+				return null;
+			}
+			skindata = fetchSkin(uuid);
+		}
+		if(skindata == null) {
 			return null;
 		}
-		SkinData skindata = fetchSkin(uuid);
 
 		byte[] skin = null;
 		try {
 			if(skindata.skin != null) {
 				ByteArrayInputStream bis = new ByteArrayInputStream(skindata.skin);
 				ImageUtils imgu = new ImageUtils(bis);
+				switch(skinType) {
+					case PRE_19A:
+					case CLASSIC:
+					case PRE_B1_9:
+					case PRE_1_8:
+					case PRE_1_9:
+						if(skinOptions.contains(SkinOption.REMOVE_HAT))
+							imgu.clearArea(32, 0, 32, 16);
+						if(!skinOptions.contains(SkinOption.IGNORE_LAYERS))
+							fixLayerAlpha(imgu);
+						break;
+					case DEFAULT:
+						if(skinOptions.contains(SkinOption.REMOVE_HAT))
+							imgu.clearArea(32, 0, 32, 16);
+						break;
+				}
 
 				switch(skinType) {
 					case PRE_19A:
 					case CLASSIC:
-						overlayHeadLayer(imgu);
+						if(!skinOptions.contains(SkinOption.IGNORE_LAYERS))
+							overlayHeadLayer(imgu);
 					case PRE_B1_9:
 					case PRE_1_8:
-						if(imgu.getImage().getHeight() == 64)
-							overlay64to32(imgu);
-						if(skindata.slim)
+						if(skinOptions.contains(SkinOption.USE_LEFT_ARM))
+							useLeftArm(imgu, true);
+						if(skinOptions.contains(SkinOption.USE_LEFT_LEG))
+							useLeftLeg(imgu, true);
+						if(imgu.getImage().getHeight() == 64 && !skinOptions.contains(SkinOption.IGNORE_LAYERS))
+							overlayBodyLayers(imgu);
+						if(skindata.slim && !skinOptions.contains(SkinOption.IGNORE_ALEX))
 							alexToSteve(imgu);
 						if(skinType == SkinType.PRE_B1_9 || skinType == SkinType.CLASSIC || skinType == SkinType.PRE_19A)
 							rotateBottomTX(imgu);
 						if(skinType == SkinType.PRE_19A)
 							flipSkin(imgu);
 						imgu = imgu.crop(0, 0, 64, 32);
+					case PRE_1_9:
 					case DEFAULT:
 						break;
 				}
 				skin = imgu.getInByteForm();
+				FileOutputStream fos = new FileOutputStream(new File("/home/lassebq/skin.png"));
+				fos.write(skin);
+				fos.close();
 			}
 		} catch (Throwable t) {
 			t.printStackTrace();
 		}
 		return skin;
+	}
+
+	private static void fixLayerAlpha(ImageUtils imgu) {
+		BufferedImage img = imgu.getImage();
+		// Head
+		for(int i = 0; i < 32; i++) {
+			for(int j = 0; j < 16; j++) {
+				int color1 = img.getRGB(i, j);
+				int color2 = img.getRGB(i+32, j);
+				int alpha = color2 >> 24;
+				if(alpha != -1 && alpha != 0x00) {
+					img.setRGB(i, j, ImageUtils.mergeColor(color1, color2));
+					img.setRGB(i+32, j, 0);
+				}
+			}
+		}
+		if(img.getHeight() <= 32) {
+			return;
+		}
+		// Body
+		for(int i = 0; i < 56; i++) {
+			for(int j = 16; j < 32; j++) {
+				int color1 = img.getRGB(i, j);
+				int color2 = img.getRGB(i, j+16);
+				int alpha = color2 >> 24;
+				if(alpha != -1 && alpha != 0x00) {
+					img.setRGB(i, j, ImageUtils.mergeColor(color1, color2));
+					img.setRGB(i, j+16, 0);
+				}
+			}
+		}
+		// Left leg
+		for(int i = 0; i < 16; i++) {
+			for(int j = 48; j < 64; j++) {
+				int color1 = img.getRGB(i+16, j);
+				int color2 = img.getRGB(i, j);
+				int alpha = color2 >> 24;
+				if(alpha != -1 && alpha != 0x00) {
+					img.setRGB(i+16, j, ImageUtils.mergeColor(color1, color2));
+					img.setRGB(i, j, 0);
+				}
+			}
+		}
+		// Left arm
+		for(int i = 0; i < 16; i++) {
+			for(int j = 48; j < 64; j++) {
+				int color1 = img.getRGB(i+16, j);
+				int color2 = img.getRGB(i, j);
+				int alpha = color2 >> 24;
+				if(alpha != -1 && alpha != 0x00) {
+					img.setRGB(i+16, j, ImageUtils.mergeColor(color1, color2));
+					img.setRGB(i, j, 0);
+				}
+			}
+		}
 	}
 
 	private static void flipSkin(ImageUtils imgu) {
@@ -232,27 +375,45 @@ public class SkinRequests {
 		imgu.setArea(28, 16, imgu.crop(28, 16, 8, 4).flip(false, true).getImage());
 	}
 
-	public static void overlay64to32(ImageUtils imgu) {
+	public static void overlayBodyLayers(ImageUtils imgu) {
 		// 32-64 body
 		imgu.setArea(0, 16, imgu.crop(0, 32, 56, 16).getImage(), false);
+		imgu.clearArea(0, 32, 56, 16);
 	}
 
 	public static void overlayHeadLayer(ImageUtils imgu) {
 		imgu.setArea(0, 0, imgu.crop(32, 0, 32, 16).getImage(), false);
+		imgu.clearArea(32, 0, 32, 16);
 	}
 
-	public static void useLeftLeg(ImageUtils imgu) {
+	public static void useLeftLeg(ImageUtils imgu, boolean flipped) {
 		// leg layer
-		imgu.setArea(16, 48, imgu.crop(0, 48, 16, 16).getImage(), false);
-		// overlay on the 0-32 part
-		imgu.setArea(0, 16, imgu.crop(16, 48, 16, 16).getImage());
+		imgu.setArea(0, 32, imgu.crop(0, 48, 16, 16).flip(false, false).getImage());
+		// leg
+
+		imgu.setArea(0, 16, imgu.crop(16, 48, 16, 16).flip(false, false).getImage());
+		imgu.setArea(4, 16, imgu.crop(4, 16, 4, 16).flip(true, false).getImage());
+		imgu.setArea(8, 16, imgu.crop(8, 16, 4, 4).flip(true, false).getImage());
+		imgu.setArea(12, 20, imgu.crop(12, 20, 4, 12).flip(true, false).getImage());
+		BufferedImage sideLeft = imgu.crop(0, 20, 4, 12).flip(true, false).getImage();
+		BufferedImage sideRight = imgu.crop(8, 20, 4, 12).flip(true, false).getImage();
+		imgu.setArea(8, 20, sideLeft);
+		imgu.setArea(0, 20, sideRight);
 	}
 
-	public static void useLeftArm(ImageUtils imgu) {
-		// leg layer
-		imgu.setArea(32, 48, imgu.crop(48, 48, 16, 16).getImage(), false);
-		// overlay on the 0-32 part
-		imgu.setArea(40, 16, imgu.crop(32, 48, 16, 16).getImage());
+	public static void useLeftArm(ImageUtils imgu, boolean flipped) {
+		// arm layer
+		imgu.setArea(40, 16, imgu.crop(32, 48, 16, 16).flip(false, false).getImage());
+		// arm
+		
+		imgu.setArea(40, 32, imgu.crop(48, 48, 16, 16).flip(false, false).getImage());
+		imgu.setArea(44, 16, imgu.crop(44, 16, 4, 16).flip(true, false).getImage());
+		imgu.setArea(48, 16, imgu.crop(48, 16, 4, 4).flip(true, false).getImage());
+		imgu.setArea(52, 20, imgu.crop(52, 20, 4, 12).flip(true, false).getImage());
+		BufferedImage sideLeft = imgu.crop(40, 20, 4, 12).flip(true, false).getImage();
+		BufferedImage sideRight = imgu.crop(48, 20, 4, 12).flip(true, false).getImage();
+		imgu.setArea(48, 20, sideLeft);
+		imgu.setArea(40, 20, sideRight);
 	}
 
 	public static void alexToSteve(ImageUtils imgu) {

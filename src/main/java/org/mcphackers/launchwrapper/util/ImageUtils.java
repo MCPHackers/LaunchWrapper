@@ -43,6 +43,29 @@ public class ImageUtils {
 		return this.setArea(x, y, img, true);
 	}
 
+	public static int mergeColor(int source, int target) {
+		double alpha = Byte.toUnsignedInt((byte)(target >> 24)) / 255D;
+		int r = Byte.toUnsignedInt((byte)((source >> 16) & 0xFF));
+		int g = Byte.toUnsignedInt((byte)((source >> 8) & 0xFF));
+		int b = Byte.toUnsignedInt((byte)(source & 0xFF));
+		int rx = Byte.toUnsignedInt((byte)((target >> 16) & 0xFF));
+		int gx = Byte.toUnsignedInt((byte)((target >> 8) & 0xFF));
+		int bx = Byte.toUnsignedInt((byte)(target & 0xFF));
+		int out_r = (int)(r + (rx - r)*alpha);
+		int out_g = (int)(g + (gx - g)*alpha);
+		int out_b = (int)(b + (bx - b)*alpha);
+		return 0xFF << 24 | out_r << 16 | out_g << 8 | out_b << 0;
+	}
+
+	public ImageUtils clearArea(int x, int y, int w, int h) {
+		for(int i = 0; i < w; i++) {
+			for(int j = 0; j < h; j++) {
+				this.bufImg.setRGB(x+i, y+j, 0);
+			}
+		}
+		return this;
+	}
+
 	public ImageUtils setArea(int x, int y, BufferedImage img, boolean forceTransparent) {
 		int width = this.bufImg.getWidth();
 		int height = this.bufImg.getHeight();
@@ -55,7 +78,7 @@ public class ImageUtils {
 					int toset = img.getRGB(i - x, j - y);
 					if(!forceTransparent) {
 						if((toset >> 24) != 0x00) {
-							pixel = toset;
+							pixel = mergeColor(pixel, toset);
 						}
 					} else {
 						pixel = toset;

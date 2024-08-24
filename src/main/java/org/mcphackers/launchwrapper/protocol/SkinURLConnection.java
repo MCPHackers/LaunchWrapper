@@ -14,13 +14,13 @@ public class SkinURLConnection extends HttpURLConnection {
 	private static final String[] CLOAKS = { "/cloak/", "/MinecraftCloaks/" };
 	private static final String[] SKINS = { "/skin/", "/MinecraftSkins/" };
 
-	protected SkinType skinType;
+	protected SkinRequests skinRequests;
 	protected InputStream inputStream;
 
-	public SkinURLConnection(URL url, SkinType skin) {
+	public SkinURLConnection(URL url, SkinRequests skinRequests) {
 		super(url);
 		responseCode = 200;
-		skinType = skin == null ? SkinType.DEFAULT : skin;
+		this.skinRequests = skinRequests;
 	}
 
 	@Override
@@ -42,7 +42,7 @@ public class SkinURLConnection extends HttpURLConnection {
 			if(path.startsWith(template)) {
 				if(username == null)
 					username = path.substring(template.length()).replace(".png", "");
-				byte[] skinData = SkinRequests.getCape(username, skinType);
+				byte[] skinData = skinRequests.getCape(username);
 				if(skinData != null) {
 					inputStream = new ByteArrayInputStream(skinData);
 					return;
@@ -54,7 +54,7 @@ public class SkinURLConnection extends HttpURLConnection {
 			if(path.startsWith(template)) {
 				if(username == null)
 					username = path.substring(template.length()).replace(".png", "");
-				byte[] skinData = SkinRequests.getSkin(username, skinType);
+				byte[] skinData = skinRequests.getSkin(username);
 				if(skinData != null) {
 					inputStream = new ByteArrayInputStream(skinData);
 					return;

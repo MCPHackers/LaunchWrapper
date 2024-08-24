@@ -1,5 +1,6 @@
 package org.mcphackers.launchwrapper.protocol;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.net.URLConnection;
@@ -10,10 +11,12 @@ public class LegacyURLStreamHandler extends URLStreamHandlerProxy {
 
 	private LaunchConfig config;
 	private AssetRequests assets;
+	private SkinRequests skins;
 
 	public LegacyURLStreamHandler(LaunchConfig config) {
 		this.config = config;
 		this.assets = new AssetRequests(config.assetsDir.get(), config.assetIndex.get());
+		this.skins = new SkinRequests(new File(config.gameDir.get(), "skin"), config.skinOptions.get(), config.skinProxy.get());
 	}
 
 	@Override
@@ -31,6 +34,8 @@ public class LegacyURLStreamHandler extends URLStreamHandlerProxy {
 				return new BasicResponseURLConnection(url, "ok");
 			if(path.equals("/game/"))
 				return new BasicResponseURLConnection(url, "42069");
+			if(path.equals("/client"))
+				return new BasicResponseURLConnection(url, "idk");
 			if(path.equals("/haspaid.jsp"))
 				return new BasicResponseURLConnection(url, "true");
 			if(path.contains("/level/save.html"))
@@ -42,14 +47,32 @@ public class LegacyURLStreamHandler extends URLStreamHandlerProxy {
 			if(path.startsWith("/MinecraftResources/") || path.startsWith("/resources/"))
 				return new AssetURLConnection(url, assets);
 			if(path.startsWith("/MinecraftSkins/") || path.startsWith("/skin/") || path.startsWith("/MinecraftCloaks/") || path.startsWith("/cloak/"))
-				return new SkinURLConnection(url, config.skinProxy.get());
+				return new SkinURLConnection(url, skins);
 			if(host.equals("assets.minecraft.net") && path.equals("/1_6_has_been_released.flag"))
 				if(config.oneSixFlag.get())
 					return new BasicResponseURLConnection(url, "https://web.archive.org/web/20130702232237if_/https://mojang.com/2013/07/minecraft-the-horse-update/");
 				else
 					return new BasicResponseURLConnection(url, "");
-			if(host.equals("mcoapi.minecraft.net") && path.equals("/mco/available"))
-				return new BasicResponseURLConnection(url, "true");
+			
+			// TODO redirect to something actually useful. Like a local self hosted realm
+			if(host.equals("mcoapi.minecraft.net")) {
+				if(path.equals("/mco/available"))
+					return new BasicResponseURLConnection(url, "true");
+				if(path.equals("/mco/client/outdated"))
+					return new BasicResponseURLConnection(url, "false");
+				if(path.equals("/payments/unused"))
+					return new BasicResponseURLConnection(url, "0");
+				// if(path.equals("/invites/count/pending"))
+				// 	return new BasicResponseURLConnection(url, "0");
+				// if(path.equals("/invites/pending"))
+				// 	return new BasicResponseURLConnection(url, "{}");
+				// if(path.equals("/worlds"))
+				// 	return new BasicResponseURLConnection(url, "");
+				// if(path.equals("/worlds/templates"))
+				// 	return new BasicResponseURLConnection(url, "");
+				// if(path.equals("/worlds/test/$LOCATION_ID"))
+				// 	return new BasicResponseURLConnection(url, "1");
+			}
 		}
 		return super.openConnection(url);
 	}

@@ -57,10 +57,16 @@ Arguments may be as follows:
 	- **pre-b1.9-pre4** - flip bottom textures and crop to 64x32
 	- **pre-1.8** - crop to 64x32
 	- **default** - do nothing with requested skin
+- `skinOptions` - list of optional skin convertion steps separated by ","
+	- **ignoreAlex** - will not fill arm texture for slim models
+	- **ignoreLayers** - will not flatten any body or hat layers
+	- **removeHat** - removes head overlay
+	- **useLeftArm** - left arm texture will be used when converting to 64x32 skin
+	- **useLeftLeg** - left leg texture will be used when converting to 64x32 skin
 - `assetsDir` - Will be used by LaunchWrapper to locate custom index.json
 - `assetIndex` - Name of the `assetsDir`/indexes/index.json without .json extension which will be used
 - `title` - The display title
-- `icon` - List of paths of icon PNGs separated by `;`
+- `icon` - List of paths of icon PNGs separated by file system path separator (";" on windows, ":" on unix)
 - `applet` - Makes the game think you're running an applet which:
 	- Removes quit button in versions between Beta 1.0 and release 1.5.2
 	- Changes mouse input code in classic

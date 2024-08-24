@@ -4,10 +4,13 @@ import java.io.File;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 
+import org.mcphackers.launchwrapper.protocol.SkinOption;
 import org.mcphackers.launchwrapper.protocol.SkinType;
 import org.mcphackers.launchwrapper.util.OS;
 
@@ -29,7 +32,7 @@ public class LaunchConfig {
 	public LaunchParameterString proxyUser 			= new LaunchParameterString("proxyUser");
 	public LaunchParameterString proxyPass 			= new LaunchParameterString("proxyPass");
 	public LaunchParameterString username 			= new LaunchParameterString("username", "Player" + System.currentTimeMillis() % 1000L);
-	public LaunchParameterString session 			= new LaunchParameterString("session", null).altName("sessionid");
+	public LaunchParameterString session 			= new LaunchParameterString("session", "-").altName("sessionid");
 	public LaunchParameterString password 			= new LaunchParameterString("password");
 	public LaunchParameterString uuid 				= new LaunchParameterString("uuid");
 	public LaunchParameterString accessToken 		= new LaunchParameterString("accessToken");
@@ -51,6 +54,7 @@ public class LaunchConfig {
 	public LaunchParameterSwitch forceVsync 		= new LaunchParameterSwitch("forceVsync", false, true);
 	public LaunchParameterSwitch forceResizable 	= new LaunchParameterSwitch("forceResizable", false, true);
 	public LaunchParameterEnum<SkinType> skinProxy 	= new LaunchParameterEnum<SkinType>("skinProxy", SkinType.DEFAULT, true);
+	public LaunchParameterSkinOptions skinOptions	= new LaunchParameterSkinOptions("skinOptions");
 	public LaunchParameterString serverURL 			= new LaunchParameterString("serverURL", null, true);
 	public LaunchParameterString serverSHA1 		= new LaunchParameterString("serverSHA1", null, true);
 	public LaunchParameterFileList icon 			= new LaunchParameterFileList("icon", null, true);
@@ -275,7 +279,8 @@ public class LaunchConfig {
 		}
 
 		public LaunchParameterFileList altName(String altName) {
-			return (LaunchParameterFileList)super.altName(altName);
+			super.altName(altName);
+			return this;
 		}
 
 		@Override
@@ -285,7 +290,7 @@ public class LaunchConfig {
 			String s = "";
 			for(int i = 0; i < value.length; i++) {
 				if(i != 0) {
-					s += ";";
+					s += File.pathSeparator;
 				}
 				s += value[i].getAbsolutePath();
 			}
@@ -294,7 +299,7 @@ public class LaunchConfig {
 
 		@Override
 		public void setString(String argument) {
-			String[] paths = argument.split(";");
+			String[] paths = argument.split(Pattern.quote(File.pathSeparator));
 			File[] newValue = new File[paths.length];
 			for(int i = 0; i < paths.length; i++) {
 				newValue[i] = new File(paths[i]);
@@ -334,7 +339,8 @@ public class LaunchConfig {
 		}
 
 		public LaunchParameterSwitch altName(String altName) {
-			return (LaunchParameterSwitch)super.altName(altName);
+			super.altName(altName);
+			return this;
 		}
 
 		public boolean isSwitch() {
@@ -388,7 +394,8 @@ public class LaunchConfig {
 		}
 
 		public LaunchParameterString altName(String altName) {
-			return (LaunchParameterString)super.altName(altName);
+			super.altName(altName);
+			return this;
 		}
 
 		@Override
@@ -446,6 +453,53 @@ public class LaunchConfig {
 
 		@Override
 		public void set(Integer value) {
+			this.value = value;
+		}
+	}
+
+	public class LaunchParameterSkinOptions extends LaunchParameter<List<SkinOption>> {
+		private List<SkinOption> value = Collections.emptyList();
+
+		public LaunchParameterSkinOptions(String name) {
+			super(name, true);
+		}
+
+		@Override
+		public String getString() {
+			if(value == null)
+				return null;
+			String s = "";
+			int i = 0;
+			for(SkinOption option : value) {
+				if(i != 0) {
+					s += ',';
+				}
+				s += option.name;
+				i++;
+			}
+			return s;
+		}
+
+		@Override
+		public void setString(String argument) {
+			String[] optionStrings = argument.split(Pattern.quote(","));
+			ArrayList<SkinOption> newValue = new ArrayList<SkinOption>();
+			for(int i = 0; i < optionStrings.length; i++) {
+				SkinOption opt = SkinOption.getEnum(optionStrings[i]);
+				if(opt != null) {
+					newValue.add(opt);
+				}
+			}
+			this.value = newValue;
+		}
+
+		@Override
+		public List<SkinOption> get() {
+			return this.value;
+		}
+
+		@Override
+		public void set(List<SkinOption> value) {
 			this.value = value;
 		}
 	}

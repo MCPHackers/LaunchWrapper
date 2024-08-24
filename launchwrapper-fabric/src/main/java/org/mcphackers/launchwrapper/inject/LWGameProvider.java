@@ -5,6 +5,8 @@ import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.security.CodeSource;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -81,6 +83,22 @@ public class LWGameProvider implements GameProvider {
 		}
 	}
 
+	private Path getLaunchwrapperSource() {
+		CodeSource source = Launch.class.getProtectionDomain().getCodeSource();
+		if(source != null) {
+			String path = source.getLocation().getPath();
+			if(path.startsWith("file:")) {
+				path = path.substring("file:".length());
+				int i = path.lastIndexOf('!');
+				if(i != -1) {
+					path = path.substring(0, i);
+				}
+			}
+			return Paths.get(path);
+		}
+		return null;
+	}
+
 	@Override
 	public boolean locateGame(FabricLauncher launcher, String[] args) {
 		this.envType = launcher.getEnvironmentType();
@@ -92,6 +110,9 @@ public class LWGameProvider implements GameProvider {
 			if (envGameJar != null) {
 				classifier.process(envGameJar);
 			}
+			for(Path p : launcher.getClassPath()) {
+				System.out.println(p.toAbsolutePath());
+			}
 
 			classifier.process(launcher.getClassPath());
 
@@ -100,6 +121,9 @@ public class LWGameProvider implements GameProvider {
 
 			gameJar = envGameJar;
 			launchwrapperJar = classifier.getOrigin(LWLib.LAUNCHWRAPPER);
+			if(launchwrapperJar == null) {
+				launchwrapperJar = getLaunchwrapperSource();
+			}
 			if(classifier.has(LWLib.LWJGL)) {
 				lwjglJars.add(classifier.getOrigin(LWLib.LWJGL));
 			}
@@ -109,7 +133,7 @@ public class LWGameProvider implements GameProvider {
 			hasModLoader = classifier.has(LWLib.MODLOADER);
 			miscGameLibraries.addAll(lwjglJars);
 			miscGameLibraries.addAll(classifier.getUnmatchedOrigins());
-			if(launchwrapperJar != null) { // Java 8 in dev env doesn't detect LW for some reason
+			if(launchwrapperJar != null) {
 				validParentClassPath.add(launchwrapperJar);
 			}
 			validParentClassPath.addAll(classifier.getSystemLibraries());
