@@ -6,6 +6,7 @@ import java.util.List;
 
 import org.mcphackers.launchwrapper.LaunchConfig;
 import org.mcphackers.launchwrapper.LaunchTarget;
+import org.mcphackers.launchwrapper.loader.LaunchClassLoader;
 import org.mcphackers.launchwrapper.tweak.injection.Injection;
 import org.mcphackers.launchwrapper.util.ClassNodeSource;
 import org.mcphackers.launchwrapper.util.ResourceSource;
@@ -34,6 +35,10 @@ public abstract class Tweak {
 	public abstract List<Injection> getInjections();
 	
 	public void transformResources(ResourceSource source) {
+	}
+
+	// Any classpath changes required for transformers can be set here
+	public void prepare(LaunchClassLoader loader) {
 	}
 	
 	public final boolean transform(ClassNodeSource source) {

@@ -231,9 +231,10 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 	 */
 	// FIXME require name to contain slashes
 	public ClassNode getClass(String name) {
-		if(classNodeName(name).startsWith("java/")) {
-			return null;
-		}
+		// TODO Breaks SafeClassWriter?
+		// if(classNodeName(name).startsWith("java/")) {
+		// 	return null;
+		// }
 		ClassNode node = classNodeCache.get(classNodeName(name));
 		if(node != null) {
 			return node;
@@ -317,8 +318,10 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 		ClassNode transformed = overridenClasses.get(name);
 		if(transformed != null) {
 			if(tweak != null) {
-				tweak.tweakClass(this, classNodeName(name));
-				transformed = overridenClasses.get(name);
+				if(tweak.tweakClass(this, classNodeName(name))) {
+					transformed = overridenClasses.get(name);
+					saveDebugClass(transformed);
+				}
 			}
 			return redefineClass(transformed);
 		}

@@ -9,8 +9,7 @@ public class Launch {
 	 * Class loader where overwritten classes will be stored
 	 */
 	public static final String VERSION = "1.0";
-	@Deprecated
-	public static final LaunchClassLoader CLASS_LOADER = LaunchClassLoader.instantiate();
+	private static final LaunchClassLoader CLASS_LOADER = LaunchClassLoader.instantiate();
 	static {
 		CLASS_LOADER.addException("org.mcphackers.launchwrapper");
 		CLASS_LOADER.addException("org.objectweb.asm");
@@ -31,19 +30,20 @@ public class Launch {
 	}
 
 	public void launch() {
-		CLASS_LOADER.setDebugOutput(new java.io.File(config.gameDir.get(), "debug"));
+		LaunchClassLoader loader = getLoader();
 		Tweak mainTweak = getTweak();
 		if(mainTweak == null) {
 			System.err.println("Could not find launch target");
 			return;
 		}
-		if(mainTweak.transform(CLASS_LOADER)) {
-			mainTweak.transformResources(CLASS_LOADER);
+		mainTweak.prepare(loader);
+		if(mainTweak.transform(loader)) {
+			mainTweak.transformResources(loader);
 			if(config.discordRPC.get()) {
 				setupDiscordRPC();
 			}
-			CLASS_LOADER.setLoaderTweak(mainTweak.getLoaderTweak());
-			mainTweak.getLaunchTarget().launch(CLASS_LOADER);
+			loader.setLoaderTweak(mainTweak.getLoaderTweak());
+			mainTweak.getLaunchTarget().launch(loader);
 		} else {
 			System.err.println("Tweak could not be applied");
 		}
