@@ -1,9 +1,8 @@
 package org.mcphackers.launchwrapper.test;
 
 import org.mcphackers.launchwrapper.LaunchConfig;
-import org.mcphackers.launchwrapper.tweak.LegacyTweak;
+import org.mcphackers.launchwrapper.tweak.BTATweak;
 import org.mcphackers.launchwrapper.tweak.Tweak;
-import org.mcphackers.launchwrapper.util.ClassNodeSource;
 
 public class BTATest extends TweakTest {
 
@@ -18,14 +17,14 @@ public class BTATest extends TweakTest {
     }
 
     @Override
-    public Tweak getTweak(ClassNodeSource source, LaunchConfig config) {
-        return new LegacyTweak(source, config);
+    public Tweak getTweak(LaunchConfig config) {
+        return new BTATweak(config);
     }
 
     @Override
     public TestFeatureBuilder getTests() {
         return new TestFeatureBuilder()
-                .tweakInfoList("Shutdown patch", "Replaced gameDir", "Set initial width", "Set initial height");
+            .tweakInfoList("LegacyTweak init", "Fix Shutdown", "Replace game directory");
     }
 
 }

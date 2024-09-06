@@ -3,7 +3,6 @@ package org.mcphackers.launchwrapper.test;
 import org.mcphackers.launchwrapper.LaunchConfig;
 import org.mcphackers.launchwrapper.tweak.LegacyTweak;
 import org.mcphackers.launchwrapper.tweak.Tweak;
-import org.mcphackers.launchwrapper.util.ClassNodeSource;
 
 public class IndevTest extends TweakTest {
 
@@ -18,18 +17,14 @@ public class IndevTest extends TweakTest {
     }
 
     @Override
-    public Tweak getTweak(ClassNodeSource source, LaunchConfig config) {
-        return new LegacyTweak(source, config);
+    public Tweak getTweak(LaunchConfig config) {
+        return new LegacyTweak(config);
     }
 
     @Override
     public TestFeatureBuilder getTests() {
         return new TestFeatureBuilder()
-                .tweakInfoList("Indev save patch", "Set default width and height",
-                        "Fullscreen init patch", "Replaced icon", "Replaced fullscreen", "Replaced width",
-                        "Replaced height", "Shutdown patch", "Options load fix",
-                        "Replaced title", "Replaced gameDir", "Removed canvas null check",
-                        "Set fullscreen", "Added main");
+            .tweakInfoList("LegacyTweak init", "Fix Shutdown", "Indev save patch", "LWJGL Patch", "Replace game directory", "Options load fix", "Add main");
     }
 
 }

@@ -5,7 +5,7 @@ import org.mcphackers.launchwrapper.loader.LaunchClassLoader;
 /**
  * Different types of entry point (main method, applet, etc)
  */
-public abstract class LaunchTarget {
+public interface LaunchTarget {
 
-	public abstract void launch(LaunchClassLoader classLoader);
+	void launch(LaunchClassLoader classLoader);
 }

@@ -4,7 +4,6 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
@@ -259,9 +258,6 @@ public class SkinRequests {
 						break;
 				}
 				skin = imgu.getInByteForm();
-				FileOutputStream fos = new FileOutputStream(new File("/home/lassebq/skin.png"));
-				fos.write(skin);
-				fos.close();
 			}
 		} catch (Throwable t) {
 			t.printStackTrace();

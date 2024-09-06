@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.regex.Pattern;
 
 import org.mcphackers.launchwrapper.protocol.SkinOption;
+import org.mcphackers.launchwrapper.protocol.SkinRequests;
 import org.mcphackers.launchwrapper.protocol.SkinType;
 import org.mcphackers.launchwrapper.util.OS;
 
@@ -62,6 +63,7 @@ public class LaunchConfig {
 	public LaunchParameterSwitch oneSixFlag 		= new LaunchParameterSwitch("oneSixFlag", false, true);
 	public LaunchParameterString tweakClass 		= new LaunchParameterString("tweakClass", null, true);
 	public LaunchParameterSwitch discordRPC 		= new LaunchParameterSwitch("discordRPC", false, true);
+	public LaunchParameterString brand				= new LaunchParameterString("brand", "launchwrapper", true);
 
 	private static File getDefaultGameDir() {
 		String game = "minecraft";
@@ -128,6 +130,10 @@ public class LaunchConfig {
 					}
 				}
 			}
+		}
+		if(uuid.get() == null && username.get() != null) {
+			// Purely cosmetic change. Makes skins in modern versions when only provided with username
+			uuid.set(SkinRequests.getUUIDfromName(username.get()));
 		}
 	}
 

@@ -6,39 +6,53 @@ import java.util.List;
 
 import org.mcphackers.launchwrapper.LaunchConfig;
 import org.mcphackers.launchwrapper.LaunchTarget;
+import org.mcphackers.launchwrapper.tweak.injection.Injection;
 import org.mcphackers.launchwrapper.util.ClassNodeSource;
+import org.mcphackers.launchwrapper.util.ResourceSource;
 
 public abstract class Tweak {
 	private static final boolean LOG_TWEAKS = Boolean.parseBoolean(System.getProperty("launchwrapper.log", "false"));
 
 	protected ClassNodeSource source;
-	protected LaunchConfig launch;
+	protected LaunchConfig config;
     private List<FeatureInfo> features = new ArrayList<FeatureInfo>();
 	private boolean clean = true;
 
 	/**
 	 * Every tweak must implement this constructor
-	 * Overloads are not supported!!!
-	 * @param source
-	 * @param launch
+	 * Overloads are not supported, except (LaunchConfig, Tweak), where tweak parameter is the default tweak which would've been chosen otherwise 
+	 * @param config
 	 */
-	public Tweak(ClassNodeSource source, LaunchConfig launch) {
-		this.source = source;
-		this.launch = launch;
+	public Tweak(LaunchConfig config) {
+		this.config = config;
 	}
 
 	/**
-	 * This method does return true even if some of the changes weren't applied, even when they should've been
-	 * @return true if given ClassNodeSource was modified without fatal errors
+	 * Order of injections in returned list matters!
+	 * @return list of injections to apply via current tweak class.
 	 */
-	protected abstract boolean transform();
+	public abstract List<Injection> getInjections();
 	
-	public boolean performTransform() {
+	public void transformResources(ResourceSource source) {
+	}
+	
+	public final boolean transform(ClassNodeSource source) {
 		if(!clean) {
 			throw new RuntimeException("Calling tweak transform twice is not allowed. Create a new instance");
 		}
 		clean = false;
-		return transform();
+		for(Injection injection : getInjections()) {
+			boolean applied = injection.apply(source, config);
+			if(applied) {
+				if(injection.name() != null) {
+					tweakInfo(injection.name()); // TODO extra info
+				}
+			}
+			if(!applied && injection.required()) {
+				return false;
+			}
+		}
+		return true;
 	}
 
 	public abstract ClassLoaderTweak getLoaderTweak();
@@ -48,10 +62,16 @@ public abstract class Tweak {
 	public static Tweak get(ClassNodeSource classLoader, LaunchConfig launch) {
 		if(launch.tweakClass.get() != null) {
 			try {
+				try {
 				// Instantiate custom tweak if it's present on classpath;
 				return (Tweak)Class.forName(launch.tweakClass.get())
-						.getConstructor(ClassNodeSource.class, LaunchConfig.class)
-						.newInstance(classLoader, launch);
+						.getConstructor(LaunchConfig.class, Tweak.class)
+						.newInstance(launch, getDefault(classLoader, launch));
+				} catch (NoSuchMethodException e) {
+					return (Tweak)Class.forName(launch.tweakClass.get())
+							.getConstructor(LaunchConfig.class)
+							.newInstance(launch);
+				}
 			} catch (ClassNotFoundException e) {
 				return null;
 			} catch (Exception e) {
@@ -59,20 +79,23 @@ public abstract class Tweak {
 				return null;
 			}
 		}
+		return getDefault(classLoader, launch);
+	}
+	public static Tweak getDefault(ClassNodeSource classLoader, LaunchConfig launch) {
 		if(launch.isom.get()) {
-			return new IsomTweak(classLoader, launch);
+			return new IsomTweak(launch);
 		}
 		if(classLoader.getClass(VanillaTweak.MAIN_CLASS) != null) {
-			return new VanillaTweak(classLoader, launch);
+			return new VanillaTweak(launch);
 		}
 		for(String cls : LegacyTweak.MAIN_CLASSES) {
 			if(classLoader.getClass(cls) != null) {
-				return new LegacyTweak(classLoader, launch);
+				return new LegacyTweak(launch);
 			}
 		}
 		for(String cls : LegacyTweak.MAIN_APPLETS) {
 			if(classLoader.getClass(cls) != null) {
-				return new LegacyTweak(classLoader, launch);
+				return new LegacyTweak(launch);
 			}
 		}
 		return null; // Tweak not found

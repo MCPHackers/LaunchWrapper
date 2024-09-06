@@ -20,11 +20,12 @@ import org.mcphackers.launchwrapper.util.Util;
 /**
  * DO NOT use this class under any circumstances. This class is meant to be
  * initialized in the context of LaunchClassLoader
- * This class contains methods which are used in different game classes, sort of like mixins
+ * This class contains methods which are used in different game classes
  * 
  * @author Lassebq
  *
  */
+@SuppressWarnings("deprecation")
 public final class Inject {
 	private Inject() {
 	}

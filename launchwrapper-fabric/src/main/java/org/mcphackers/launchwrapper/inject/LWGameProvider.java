@@ -64,7 +64,7 @@ public class LWGameProvider implements GameProvider {
     
     @Override
 	public void launch(ClassLoader loader) {
-        String targetClass = target.targetClass.replace("/", ".");
+        String targetClass = target.targetClass;
         String[] arguments = target.args;
 
 		MethodHandle invoker;
@@ -109,9 +109,6 @@ public class LWGameProvider implements GameProvider {
 			Path envGameJar = GameProviderHelper.getEnvGameJar(envType);
 			if (envGameJar != null) {
 				classifier.process(envGameJar);
-			}
-			for(Path p : launcher.getClassPath()) {
-				System.out.println(p.toAbsolutePath());
 			}
 
 			classifier.process(launcher.getClassPath());

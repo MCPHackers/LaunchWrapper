@@ -1,7 +1,37 @@
+plugins {
+    id 'java-library'
+    id 'maven-publish'
+}
+
+archivesBaseName = 'launchwrapper'
+
+project.ext.asm_version = 9.7
+
+dependencies {
+    implementation 'org.mcphackers.rdi:rdi:1.0'
+    implementation "org.ow2.asm:asm:${project.asm_version}"
+    implementation "org.ow2.asm:asm-tree:${project.asm_version}"
+    implementation 'org.json:json:20230311'
+    // I'll bring discord RPC support later, when I have an environment to compile natives
+
+    testRuntimeOnly('org.junit.platform:junit-platform-launcher:1.5.2')
+    testImplementation 'org.junit.jupiter:junit-jupiter-engine:5.0.0'
+}
+
+test {
+    useJUnitPlatform()
+    testLogging {
+        exceptionFormat = 'full'
+        events = ["passed", "failed", "skipped"]
+        showStandardStreams = true
+    }
+}
+
 allprojects {
     apply plugin: 'java'
     apply plugin: 'maven-publish'
-    
+
+    group = 'org.mcphackers'
     version = '1.0-SNAPSHOT'
 
     repositories {
@@ -9,10 +39,13 @@ allprojects {
             dirs "libs"
         }
         maven {
-            url "https://mcphackers.github.io/libraries/"
+            url "https://libraries.minecraft.net/"
         }
         maven {
-            url "https://libraries.minecraft.net/"
+            url "https://maven.glass-launcher.net/releases"
+        }
+        maven {
+            url "https://mcphackers.github.io/libraries/"
         }
         mavenCentral()
     }
@@ -27,10 +60,36 @@ allprojects {
         archives sourcesJar
     }
 
+    tasks.withType(JavaCompile).configureEach {
+        it.options.encoding = "UTF-8"
+
+        // Not possible due to unsafe usage
+        // if (JavaVersion.current().isJava9Compatible()) {
+        // 	it.options.release.set(8)
+        // }
+    }
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
+
+    compileJava {
+        // Minecraft is mostly compatible with java 5 up until the version we support, so why not?
+        if (JavaVersion.current().ordinal() <= JavaVersion.VERSION_1_8.ordinal()) {
+            sourceCompatibility = JavaVersion.VERSION_1_5
+            targetCompatibility = JavaVersion.VERSION_1_5
+        }
+    }
+
+    compileTestJava {
+        sourceCompatibility = JavaVersion.VERSION_1_8
+        targetCompatibility = JavaVersion.VERSION_1_8
+    }
+
     publishing {
         publications {
             mavenJava(MavenPublication) {
-                artifactId = archivesBaseName
+				groupId = "${project.group}"
+				artifactId = "${project.archivesBaseName}"
+				version = "${project.version}"
             
                 artifact jar
                 artifact sourcesJar
@@ -53,33 +112,5 @@ allprojects {
                 }
             }
         }
-    }
-
-}
-
-group = 'org.mcphackers'
-archivesBaseName = 'launchwrapper'
-sourceCompatibility = JavaVersion.VERSION_1_8
-targetCompatibility = JavaVersion.VERSION_1_8
-
-project.ext.asm_version = 9.6
-
-dependencies {
-    implementation 'org.mcphackers.rdi:rdi:1.0'
-    implementation "org.ow2.asm:asm:${project.asm_version}"
-    implementation "org.ow2.asm:asm-tree:${project.asm_version}"
-    implementation 'org.json:json:20230311'
-    // I'll bring discord RPC support later, when I have an environment to compile natives
-
-    testRuntimeOnly('org.junit.platform:junit-platform-launcher:1.5.2')
-    testImplementation 'org.junit.jupiter:junit-jupiter-engine:5.0.0'
-}
-
-test {
-    useJUnitPlatform()
-    testLogging {
-        exceptionFormat = 'full'
-        events = ["passed", "failed", "skipped"]
-        showStandardStreams = true
     }
 }

@@ -15,12 +15,14 @@ public class AssetRequests {
 		public String path;
 		public String hash;
 		public long size;
+		public String url;
 
-		public AssetObject(File f, String name, String sha1, long s) {
+		public AssetObject(File f, String name, String sha1, long s, String urlString) {
 			file = f;
             path = name;
 			hash = sha1;
 			size = s;
+			url = urlString;
 		}
 	}
 
@@ -46,19 +48,19 @@ public class AssetRequests {
 					System.out.println("[LaunchWrapper] Invalid resource: " + s);
 					continue;
 				}
+				String url = null;
 				File object = new File(assetsDir, "objects/" + hash.substring(0, 2) + "/" + hash);
-				if(!object.exists() || object.length() != size) {
-					// Download if missing?
+				if(!object.exists() || object.length() != size /*|| !hash.equals(Util.getSHA1(new FileInputStream(object)))*/) {
+					// Download if missing
 					// Some sounds in betacraft indexes are downloaded from custom url which isn't handled by other launchers
-					System.out.println("[LaunchWrapper] Missing resource: " + s);
-					continue;
+
+					if(entry.has("custom_url")) {
+						url = entry.getString("custom_url");
+					} else {
+						url = "https://resources.download.minecraft.net/" + hash.substring(0, 2) + "/" + hash;
+					}
 				}
-				// A little slow and probably pointless
-				// String sha1 = Util.getSHA1(new FileInputStream(new File(assetsDir, "objects/" + hash.substring(0, 2) + "/" + hash)));
-				// if(!sha1.equals(hash)) {
-				// 	continue;
-				// }
-				AssetObject obj = new AssetObject(object, s, hash, size);
+				AssetObject obj = new AssetObject(object, s, hash, size, url);
 				mappedAssets.put(s, obj);
 				
 			}

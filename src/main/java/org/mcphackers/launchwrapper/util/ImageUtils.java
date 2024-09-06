@@ -44,13 +44,13 @@ public class ImageUtils {
 	}
 
 	public static int mergeColor(int source, int target) {
-		double alpha = Byte.toUnsignedInt((byte)(target >> 24)) / 255D;
-		int r = Byte.toUnsignedInt((byte)((source >> 16) & 0xFF));
-		int g = Byte.toUnsignedInt((byte)((source >> 8) & 0xFF));
-		int b = Byte.toUnsignedInt((byte)(source & 0xFF));
-		int rx = Byte.toUnsignedInt((byte)((target >> 16) & 0xFF));
-		int gx = Byte.toUnsignedInt((byte)((target >> 8) & 0xFF));
-		int bx = Byte.toUnsignedInt((byte)(target & 0xFF));
+		double alpha = ((byte)(target >> 24) & 0xFF) / 255D;
+		int r = (byte)(source >> 16) & 0xFF;
+		int g = (byte)(source >> 8) & 0xFF;
+		int b = (byte)(source) & 0xFF;
+		int rx = (byte)(target >> 16) & 0xFF;
+		int gx = (byte)(target >> 8) & 0xFF;
+		int bx = (byte)(target) & 0xFF;
 		int out_r = (int)(r + (rx - r)*alpha);
 		int out_g = (int)(g + (gx - g)*alpha);
 		int out_b = (int)(b + (bx - b)*alpha);

@@ -1,7 +1,7 @@
 package org.mcphackers.launchwrapper.tweak;
 
 /**
- * Info about features applied by a tweak
+ * Info about features applied by an injection
  * Useful for tests
  */
 public class FeatureInfo {

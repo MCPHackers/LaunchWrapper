@@ -1,6 +1,6 @@
 package org.mcphackers.launchwrapper.inject;
 
-import static org.objectweb.asm.ClassWriter.COMPUTE_MAXS;
+import static org.objectweb.asm.ClassWriter.*;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -70,7 +70,7 @@ public class LWGameTransformer extends GameTransformer implements ClassNodeSourc
 			};
 
             Tweak tweak = gameProvider.getTweak(this);
-			tweak.performTransform();
+			tweak.transform(this);
 			gameProvider.target = (MainLaunchTarget)tweak.getLaunchTarget();
 			
 		} catch (IOException e) {
@@ -82,7 +82,7 @@ public class LWGameTransformer extends GameTransformer implements ClassNodeSourc
 	}
 
 	public ClassNode getClass(String name) {
-		return classSource.apply(name);
+		return classSource.apply(name.replace("/", "."));
 	}
 
 	public void overrideClass(ClassNode node) {

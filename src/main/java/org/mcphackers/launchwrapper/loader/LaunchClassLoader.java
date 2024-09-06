@@ -1,7 +1,6 @@
 package org.mcphackers.launchwrapper.loader;
 
-import static org.objectweb.asm.ClassWriter.COMPUTE_FRAMES;
-import static org.objectweb.asm.ClassWriter.COMPUTE_MAXS;
+import static org.objectweb.asm.ClassWriter.*;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -22,13 +21,14 @@ import java.util.Set;
 
 import org.mcphackers.launchwrapper.tweak.ClassLoaderTweak;
 import org.mcphackers.launchwrapper.util.ClassNodeSource;
+import org.mcphackers.launchwrapper.util.ResourceSource;
 import org.mcphackers.launchwrapper.util.Util;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.tree.ClassNode;
 
 // URLClassLoader is required to support ModLoader loading mods from mod folder
-public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource {
+public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource, ResourceSource {
 
 	public static final int CLASS_VERSION = getSupportedClassVersion();
 	private static LaunchClassLoader INSTANCE;
@@ -130,7 +130,7 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 	}
 
 	public void invokeMain(String launchTarget, String... args) {
-		classNodeCache.clear();
+		// classNodeCache.clear();
 		try {
 			Class<?> mainClass = loadClass(launchTarget);
 			mainClass.getDeclaredMethod("main", String[].class).invoke(null, (Object) args);
@@ -153,6 +153,18 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 
 	public void overrideClassSource(String name, String f) {
 		overridenSource.put(className(name), f);
+	}
+
+	public void overrideResource(String name, byte[] data) {
+		overridenResources.put(name, data);
+	}
+
+	public byte[] getResourceData(String path) {
+		try {
+			return Util.readStream(this.getResourceAsStream(path));
+		} catch(IOException e) {
+			return null;
+		}
 	}
 
 	private ProtectionDomain getProtectionDomain(String name) {
@@ -193,14 +205,14 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 		classNodeCache.put(node.name, node);
 	}
 
-	private void saveDebugClass(ClassNode node) {
+	public void saveDebugClass(ClassNode node) {
 		if(debugOutput == null) {
 			return;
 		}
 		try {
 			File cls = new File(debugOutput, node.name + ".class");
 			cls.getParentFile().mkdirs();
-			// TraceClassVisitor trace = new TraceClassVisitor(new PrintWriter(new File(debugOutput, node.name + ".dump")));
+			// TraceClassVisitor trace = new TraceClassVisitor(new java.io.PrintWriter(new File(debugOutput, node.name + ".dump")));
 			// node.accept(trace);
 			ClassWriter writer = new SafeClassWriter(this, COMPUTE_MAXS | COMPUTE_FRAMES);
 			node.accept(writer);
@@ -214,12 +226,14 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 	}
 
 	/**
-	 * @param name
-	 *            can be specified either as net.minecraft.client.Minecraft or as
-	 *            net/minecraft/client/Minecraft
+	 * @param name name with slash separator
 	 * @return parsed ClassNode
 	 */
+	// FIXME require name to contain slashes
 	public ClassNode getClass(String name) {
+		if(classNodeName(name).startsWith("java/")) {
+			return null;
+		}
 		ClassNode node = classNodeCache.get(classNodeName(name));
 		if(node != null) {
 			return node;
@@ -240,11 +254,12 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 	}
 
 	protected Class<?> redefineClass(String name) throws ClassNotFoundException {
+		String nodeName = classNodeName(name);
 		if(tweak != null) {
-			ClassNode classNode = getClass(name);
-			if(classNode != null && tweak.tweakClass(classNode)) {
-				saveDebugClass(classNode);
-				return redefineClass(classNode);
+			if(tweak.tweakClass(this, nodeName)) {
+				ClassNode tweakedNode = getClass(nodeName);
+				saveDebugClass(tweakedNode);
+				return redefineClass(tweakedNode);
 			}
 		}
 		try {
@@ -302,7 +317,8 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 		ClassNode transformed = overridenClasses.get(name);
 		if(transformed != null) {
 			if(tweak != null) {
-				tweak.tweakClass(transformed);
+				tweak.tweakClass(this, classNodeName(name));
+				transformed = overridenClasses.get(name);
 			}
 			return redefineClass(transformed);
 		}

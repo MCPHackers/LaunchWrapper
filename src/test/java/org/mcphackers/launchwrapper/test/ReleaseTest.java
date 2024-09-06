@@ -3,7 +3,6 @@ package org.mcphackers.launchwrapper.test;
 import org.mcphackers.launchwrapper.LaunchConfig;
 import org.mcphackers.launchwrapper.tweak.Tweak;
 import org.mcphackers.launchwrapper.tweak.VanillaTweak;
-import org.mcphackers.launchwrapper.util.ClassNodeSource;
 
 public class ReleaseTest extends TweakTest {
 
@@ -18,13 +17,13 @@ public class ReleaseTest extends TweakTest {
     }
 
     @Override
-    public Tweak getTweak(ClassNodeSource source, LaunchConfig config) {
-        return new VanillaTweak(source, config);
+    public Tweak getTweak(LaunchConfig config) {
+        return new VanillaTweak(config);
     }
 
     @Override
     public TestFeatureBuilder getTests() {
         return new TestFeatureBuilder()
-                .tweakInfoList("Minecraft.run()", "Replaced title", "Replaced icon");
+                .tweakInfoList("VanillaTweak init", "Changed brand");
     }
 }

@@ -4,6 +4,7 @@ import java.security.CodeSource;
 
 import org.mcphackers.launchwrapper.Launch;
 import org.mcphackers.launchwrapper.LaunchConfig;
+import org.mcphackers.launchwrapper.loader.LaunchClassLoader;
 
 public class FabricBridge extends Launch {
     private static final String FABRIC_KNOT_CLIENT = "net/fabricmc/loader/impl/launch/knot/KnotClient";
@@ -32,9 +33,10 @@ public class FabricBridge extends Launch {
     }
 
     public void launch() {
-        CLASS_LOADER.overrideClassSource(FABRIC_KNOT, gameProdiverSource());
-        CLASS_LOADER.overrideClassSource(FABRIC_KNOT_CLIENT, gameProdiverSource());
-        CLASS_LOADER.invokeMain(FABRIC_KNOT_CLIENT, config.getArgs());
+        LaunchClassLoader loader = getLoader();
+        loader.overrideClassSource(FABRIC_KNOT, gameProdiverSource());
+        loader.overrideClassSource(FABRIC_KNOT_CLIENT, gameProdiverSource());
+        loader.invokeMain(FABRIC_KNOT_CLIENT, config.getArgs());
     }
 
     public static FabricBridge getInstance() {

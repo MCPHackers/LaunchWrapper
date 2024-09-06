@@ -15,6 +15,8 @@ import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.mcphackers.launchwrapper.Launch;
+
 public final class Util {
 
 	public static void closeSilently(Closeable closeable) {
@@ -25,6 +27,14 @@ public final class Util {
 			}
 		}
 	}
+
+	public static byte[] getResource(String path) {
+		try {
+			return Util.readStream(Launch.class.getResourceAsStream(path));
+		} catch (IOException e) {
+			return null;
+		}
+	} 
 
 	public static byte[] readStream(InputStream stream) throws IOException {
 		ByteArrayOutputStream buffer = new ByteArrayOutputStream();
@@ -47,6 +57,7 @@ public final class Util {
 			stream2.write(data, 0, nRead);
 		}
 		stream1.close();
+		stream2.close();
 	}
 
 	public static URL replaceHost(URL url, String hostName, int port) {

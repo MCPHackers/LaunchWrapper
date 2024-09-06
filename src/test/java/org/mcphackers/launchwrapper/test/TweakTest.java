@@ -5,7 +5,6 @@ import static org.junit.jupiter.api.Assertions.*;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
@@ -14,7 +13,6 @@ import org.junit.jupiter.api.Test;
 import org.mcphackers.launchwrapper.LaunchConfig;
 import org.mcphackers.launchwrapper.tweak.FeatureInfo;
 import org.mcphackers.launchwrapper.tweak.Tweak;
-import org.mcphackers.launchwrapper.util.ClassNodeSource;
 import org.mcphackers.launchwrapper.util.Util;
 
 public abstract class TweakTest {
@@ -29,11 +27,12 @@ public abstract class TweakTest {
                     gameJar);
             FileClassNodeSource classNodeSource = new FileClassNodeSource(gameJar);
             LaunchConfig config = getDefaultConfig(testDir);
-            Tweak tweak = getTweak(classNodeSource, config);
-            assertTrue(tweak.performTransform());
-            // for (FeatureInfo info : tweak.getTweakInfo()) {
-            //     System.out.println(info.feature);
-            // }
+            Tweak tweak = getTweak(config);
+            assertTrue(tweak.transform(classNodeSource));
+            System.out.println(tweak.getClass().toString());
+            for (FeatureInfo info : tweak.getTweakInfo()) {
+                System.out.println(info.feature);
+            }
             featureTest(tweak, getTests());
         } catch (Throwable e) {
             fail(e);
@@ -44,7 +43,7 @@ public abstract class TweakTest {
 
     protected abstract String jarUrl();
 
-    public abstract Tweak getTweak(ClassNodeSource source, LaunchConfig config);
+    public abstract Tweak getTweak(LaunchConfig config);
 
     public abstract TestFeatureBuilder getTests();
 
@@ -53,11 +52,7 @@ public abstract class TweakTest {
             return;
         }
         outFile.getParentFile().mkdirs();
-        InputStream is = new URL(url).openStream();
-        FileOutputStream fos = new FileOutputStream(outFile);
-        Util.copyStream(is, fos);
-        is.close();
-        fos.close();
+        Util.copyStream(new URL(url).openStream(), new FileOutputStream(outFile));
     }
 
     protected static final LaunchConfig getDefaultConfig(File testDir) {

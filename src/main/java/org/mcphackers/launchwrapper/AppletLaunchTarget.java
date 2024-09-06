@@ -10,7 +10,7 @@ import org.mcphackers.launchwrapper.tweak.AppletWrapper;
  * Runs an applet
  * (For example net.minecraft.client.MinecraftApplet)
  */
-public class AppletLaunchTarget extends LaunchTarget {
+public class AppletLaunchTarget implements LaunchTarget {
 
 	private final String targetClass;
 	private String title;
@@ -22,17 +22,20 @@ public class AppletLaunchTarget extends LaunchTarget {
 		title = classTarget;
 	}
 
-	public void setTitle(String title) {
+	public AppletLaunchTarget setTitle(String title) {
 		this.title = title;
+		return this;
 	}
 
-	public void setResolution(int w, int h) {
+	public AppletLaunchTarget setResolution(int w, int h) {
 		width = w;
 		height = h;
+		return this;
 	}
 
-	public void setIcon(Image img) {
+	public AppletLaunchTarget setIcon(Image img) {
 		icon = img;
+		return this;
 	}
 
 	public void launch(LaunchClassLoader classLoader) {

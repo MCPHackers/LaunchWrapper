@@ -5,6 +5,7 @@ import static org.mcphackers.rdi.util.InsnHelper.*;
 import static org.objectweb.asm.Opcodes.*;
 
 import org.mcphackers.launchwrapper.loader.LaunchClassLoader;
+import org.mcphackers.launchwrapper.util.ClassNodeSource;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.InsnList;
@@ -17,9 +18,10 @@ import org.objectweb.asm.tree.MethodNode;
  * Compatibility fixes for Java 5
  * Replaces most of Java 6 API used by Minecraft with Java 5 alternative
  */
-public class LegacyClassLoaderTweak extends ClassLoaderTweak {
+public class LegacyClassLoaderTweak implements ClassLoaderTweak {
 
-	public boolean tweakClass(ClassNode node) {
+	public boolean tweakClass(ClassNodeSource source, String name) {
+		ClassNode node = source.getClass(name);
 		boolean changed = false;
 		// Decrease class version
 		if(node.version > LaunchClassLoader.CLASS_VERSION) {

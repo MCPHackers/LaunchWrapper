@@ -1,1 +1,2 @@
 include 'launchwrapper-fabric'
+include 'launchwrapper-micromixin'

@@ -5,30 +5,36 @@
 
 LaunchWrapper is bundled in [BetterJSONs](https://github.com/MCPHackers/BetterJSONs) which are meant for official Minecraft Launcher.
 
+## Supported versions
+- All versions from rd-132211 to 1.12.2
+- [Better Than Adventure](https://www.betterthanadventure.net/)
+- Babric and OrnitheMC instances
+
 ## Features
+- Does not depend on any hard-coded obfuscated names and is mostly compatible with every Minecraft version
+	- This also includes modded versions
 - Strips game window from Java **AWT** (**Abstract Window Toolkit**) and lets the game use internal **LWJGL** frame
-- BitDepthFix for versions before Beta 1.8
+- BitDepthFix
+- Online mode authentication fix
 - LaunchWrapper works with Risugami's Modloader so long as you're using Java 8
-- Allows changing assets directory in 1.6 snapshots (the game didn't have a parameter to do that yet)
-- Allows changing game directory in versions before 1.6
+- Built-in [Modloader Fix](https://github.com/coffeenotfound/ModloaderFix-b1.7.3)
 - Replaces mouse input code with **LWJGL** calls (Fixes any mouse input issues in classic, indev and infdev)
+- Allows changing game directory in versions before 1.6
+- Makes save slots in classic and indev functional and saves to `.minecraft/levels` directory
+- Adds ability to launch classic and pre-classic at custom resolution or in fullscreen
 - Fixes TimSort crash when using Java 8+
+- Proxies all requests from old skin servers to the current skin API and converts skins to required format
+	- Skins don't work in Java versions before 8u181, due to the requrement of TLS 1.2 support
 - Adds ability to customize built-in **LWJGL** frame
 	- Changing display title
 	- Setting icon
-- Proxies all requests from old skin servers to the current skin API and converts skins to required format
-	- Skins don't work in Java versions before 8u181, due to the requrement of TLS 1.2 support
-- Uses Betacraft proxy to download sounds for versions before 1.6
-- Adds ability to launch classic and pre-classic at custom resolution and fullscreen
-- Makes save slots in classic and indev functional and saves to `.minecraft/levels` directory
-- A launcher for isometric level viewer (IsomPreviewApplet)
-- A VSync toggle (Used to prevent extreme framerate in early versions which causes **coil whine**)
-- Does not depend on any hard-coded obfuscated names and is mostly compatible with every Minecraft version
-	- This also includes modded versions
-- A parameter to automatically download `minecraft_server.jar` for snapshots: `12w18a`, `12w19a`, `12w21a`
+- Fixes sounds by using sounds from `.minecraft/assets`
+- Enabling VSync for versions without that option
 - The wrapper is fully compatible with Java 5+ if the game is vanilla
 	- The wrapper also fixes Beta 1.3, Pre-classic and Classic compatibility with Java 5
-- Built-in [Modloader Fix](https://github.com/coffeenotfound/ModloaderFix-b1.7.3)
+- Added parameter to automatically download `minecraft_server.jar` for snapshots: `12w18a`, `12w19a`, `12w21a`
+- A launcher for isometric level viewer (IsomPreviewApplet)
+- Allows changing assets directory in 1.6 snapshots (the game didn't have a parameter to do that yet)
 
 ## How to use
 ***There will be an installer eventually.***<br>
