@@ -102,7 +102,8 @@ public class LWGameProvider implements GameProvider {
 	@Override
 	public boolean locateGame(FabricLauncher launcher, String[] args) {
 		this.envType = launcher.getEnvironmentType();
-
+		
+		String entrypoint = null;
 		try {
 			LibClassifier<LWLib> classifier = new LibClassifier<>(LWLib.class, envType, this);
 			LWLib envGameLib = envType == EnvType.CLIENT ? LWLib.MC_CLIENT : LWLib.MC_SERVER;
@@ -115,6 +116,9 @@ public class LWGameProvider implements GameProvider {
 
 			envGameJar = classifier.getOrigin(envGameLib);
 			if (envGameJar == null) return false;
+			
+			entrypoint = classifier.getClassName(envGameLib);
+			if(entrypoint == null) return false;
 
 			gameJar = envGameJar;
 			launchwrapperJar = classifier.getOrigin(LWLib.LAUNCHWRAPPER);
@@ -142,7 +146,7 @@ public class LWGameProvider implements GameProvider {
 		share.put("fabric-loader:inputGameJar", gameJar); // deprecated
 		share.put("fabric-loader:inputGameJars", Collections.singleton(gameJar));
 
-		versionData = McVersionLookup.getVersion(Collections.singletonList(gameJar), "net.minecraft.client.Minecraft", config.version.get());
+		versionData = McVersionLookup.getVersion(Collections.singletonList(gameJar), entrypoint, config.version.get());
 		return true;
 	}
 
