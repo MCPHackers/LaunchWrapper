@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import org.mcphackers.launchwrapper.Launch;
 import org.mcphackers.launchwrapper.LaunchConfig;
 import org.mcphackers.launchwrapper.LaunchTarget;
 import org.mcphackers.launchwrapper.loader.LaunchClassLoader;
@@ -12,8 +13,6 @@ import org.mcphackers.launchwrapper.util.ClassNodeSource;
 import org.mcphackers.launchwrapper.util.ResourceSource;
 
 public abstract class Tweak {
-	private static final boolean LOG_TWEAKS = Boolean.parseBoolean(System.getProperty("launchwrapper.log", "false"));
-
 	protected ClassNodeSource source;
 	protected LaunchConfig config;
     private List<FeatureInfo> features = new ArrayList<FeatureInfo>();
@@ -116,8 +115,6 @@ public abstract class Tweak {
 		for(String s : extra) {
 			other.append(" ").append(s);
 		}
-		if(LOG_TWEAKS) {
-			System.out.println("[LaunchWrapper] Applying tweak: " + name + other);
-		}
+		Launch.LOGGER.logDebug("Applying tweak: " + name + other);
 	}
 }

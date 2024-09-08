@@ -9,6 +9,7 @@ import java.io.InputStream;
 import java.net.URL;
 import java.net.URLConnection;
 
+import org.mcphackers.launchwrapper.Launch;
 import org.mcphackers.launchwrapper.protocol.AssetRequests.AssetObject;
 import org.mcphackers.launchwrapper.util.Util;
 
@@ -58,7 +59,7 @@ public class AssetURLConnection extends URLConnection {
 		AssetObject object = assets.get(key);
 		if(object != null) {
 			if(object.url != null) { // url is only set when the resource is requested to be re-downloaded
-				System.out.println("[LaunchWrapper] Downloading resource: " + object.path);
+				Launch.LOGGER.log("Downloading resource: " + object.path);
 				object.file.getParentFile().mkdirs();
 				Util.copyStream(new URL(object.url).openStream(), new FileOutputStream(object.file));
 			}

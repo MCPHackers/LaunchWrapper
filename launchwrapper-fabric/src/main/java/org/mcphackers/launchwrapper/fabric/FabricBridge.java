@@ -23,7 +23,7 @@ public class FabricBridge extends Launch {
         if(resource == null) {
             return null;
         }
-        System.out.println("[LaunchWrapper] Fabric compat jar: " + resource.getLocation().getPath());
+        Launch.LOGGER.logDebug("Fabric compat jar: " + resource.getLocation().getPath());
         return resource.getLocation().getPath();
     }
 

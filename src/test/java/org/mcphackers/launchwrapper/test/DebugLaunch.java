@@ -14,6 +14,7 @@ public class DebugLaunch {
         if(System.getProperty("java.library.path") == null) {
             System.setProperty("java.library.path", new File(config.gameDir.get(), "natives").getAbsolutePath());
         }
+        System.setProperty("launchwrapper.log", "true");
         config.session.set("-");
         config.accessToken.set("-");
         Launch launch = Launch.create(config);

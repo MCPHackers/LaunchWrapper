@@ -14,16 +14,14 @@ public class SafeClassWriter extends ClassWriter {
 	}
 	
 	protected ClassNode getClass(String name) {
+        if("java/lang/Object".equals(name)) {
+            return null;
+        }
 		return classLoader.getClass(name);
 	}
 	
 	protected String getCommonSuperClass(final String type1, final String type2) {
-		ClassNode class1 = this.getClass(type1);
-		ClassNode class2 = this.getClass(type2);
-		if(class1 == null || class2 == null) {
-			return "java/lang/Object";
-		}
-		return this.getCommonSuperClass(class1, class2).name;
+		return this.getCommonSuperClass(this.getClass(type1), this.getClass(type2));
 	}
 
     public boolean canAssign(ClassNode superType, ClassNode subType) {
@@ -45,11 +43,10 @@ public class SafeClassWriter extends ClassWriter {
     }
 
     public boolean isImplementingInterface(ClassNode clazz, String itf) {
-        if (clazz.name.equals("java/lang/Object")) {
+        if (clazz == null) {
             return false;
         }
-        ClassNode superClass = getClass(clazz.superName);
-        for (String interfaceName : superClass.interfaces) {
+        for (String interfaceName : clazz.interfaces) {
             if (interfaceName.equals(itf)) {
                 return true;
             } else {
@@ -64,22 +61,19 @@ public class SafeClassWriter extends ClassWriter {
         return isImplementingInterface(getClass(clazz.superName), itf);
     }
 
-    public ClassNode getCommonSuperClass(ClassNode class1, ClassNode class2) {
-        if (class1.name.equals("java/lang/Object")) {
-            return class1;
+    public String getCommonSuperClass(ClassNode superType, ClassNode subType) {
+		if(superType == null || subType == null) {
+			return "java/lang/Object";
+		}
+        if (canAssign(superType, subType)) {
+            return superType.name;
         }
-        if (class2.name.equals("java/lang/Object")) {
-            return class2;
+        if (canAssign(subType, superType)) {
+            return subType.name;
         }
-        if (canAssign(class1, class2)) {
-            return class1;
+        if ((superType.access & Opcodes.ACC_INTERFACE) != 0 || (subType.access & Opcodes.ACC_INTERFACE) != 0) {
+            return "java/lang/Object";
         }
-        if (canAssign(class2, class1)) {
-            return class2;
-        }
-        if ((class1.access & Opcodes.ACC_INTERFACE) != 0 || (class2.access & Opcodes.ACC_INTERFACE) != 0) {
-            return getClass("java/lang/Object");
-        }
-        return getCommonSuperClass(class1, getClass(class2.superName));
+        return getCommonSuperClass(superType, getClass(subType.superName));
     }
 }

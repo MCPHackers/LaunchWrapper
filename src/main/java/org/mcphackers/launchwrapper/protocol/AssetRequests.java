@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.json.JSONObject;
+import org.mcphackers.launchwrapper.Launch;
 import org.mcphackers.launchwrapper.util.Util;
 
 public class AssetRequests {
@@ -45,7 +46,7 @@ public class AssetRequests {
 				long size = entry.optLong("size");
 				// Only resources in a folder are valid
 				if(!s.contains("/") || hash == null) {
-					System.out.println("[LaunchWrapper] Invalid resource: " + s);
+					Launch.LOGGER.logDebug("Invalid resource: " + s);
 					continue;
 				}
 				String url = null;

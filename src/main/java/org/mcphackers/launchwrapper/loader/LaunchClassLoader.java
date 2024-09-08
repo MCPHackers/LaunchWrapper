@@ -26,6 +26,7 @@ import org.mcphackers.launchwrapper.util.Util;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.tree.ClassNode;
+import org.objectweb.asm.util.TraceClassVisitor;
 
 // URLClassLoader is required to support ModLoader loading mods from mod folder
 public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource, ResourceSource {
@@ -99,7 +100,7 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 	}
 
 	public Class<?> findClass(String name) throws ClassNotFoundException {
-		name = className(name);
+		assert name.contains(".");
 		if(name.startsWith("java.")) {
 			return parent.loadClass(name);
 		}
@@ -130,7 +131,6 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 	}
 
 	public void invokeMain(String launchTarget, String... args) {
-		// classNodeCache.clear();
 		try {
 			Class<?> mainClass = loadClass(launchTarget);
 			mainClass.getDeclaredMethod("main", String[].class).invoke(null, (Object) args);
@@ -212,8 +212,8 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 		try {
 			File cls = new File(debugOutput, node.name + ".class");
 			cls.getParentFile().mkdirs();
-			// TraceClassVisitor trace = new TraceClassVisitor(new java.io.PrintWriter(new File(debugOutput, node.name + ".dump")));
-			// node.accept(trace);
+			TraceClassVisitor trace = new TraceClassVisitor(new java.io.PrintWriter(new File(debugOutput, node.name + ".dump")));
+			node.accept(trace);
 			ClassWriter writer = new SafeClassWriter(this, COMPUTE_MAXS | COMPUTE_FRAMES);
 			node.accept(writer);
 			byte[] classData = writer.toByteArray();
@@ -229,13 +229,12 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 	 * @param name name with slash separator
 	 * @return parsed ClassNode
 	 */
-	// FIXME require name to contain slashes
 	public ClassNode getClass(String name) {
-		// TODO Breaks SafeClassWriter?
-		// if(classNodeName(name).startsWith("java/")) {
-		// 	return null;
-		// }
-		ClassNode node = classNodeCache.get(classNodeName(name));
+		assert !name.contains(".");
+		if(name.startsWith("java/")) {
+			return null;
+		}
+		ClassNode node = classNodeCache.get(name);
 		if(node != null) {
 			return node;
 		}
@@ -255,6 +254,7 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 	}
 
 	protected Class<?> redefineClass(String name) throws ClassNotFoundException {
+		assert name.contains(".");
 		String nodeName = classNodeName(name);
 		if(tweak != null) {
 			if(tweak.tweakClass(this, nodeName)) {
@@ -282,8 +282,7 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 		ClassWriter writer = new SafeClassWriter(this, COMPUTE_MAXS | COMPUTE_FRAMES);
 		node.accept(writer);
 		byte[] classData = writer.toByteArray();
-		String name = className(node.name);
-		return defineClass(name, classData);
+		return defineClass(className(node.name), classData);
 	}
 
 	private static String className(String nameWithSlashes) {
@@ -295,7 +294,7 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 	}
 
 	private static String classResourceName(String name) {
-		return name.replace('.', '/') + ".class";
+		return classNodeName(name) + ".class";
 	}
 
 	static String classNameFromResource(String resource) {
@@ -315,6 +314,7 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 	}
 
 	private Class<?> transformedClass(String name) throws ClassNotFoundException {
+		assert name.contains(".");
 		ClassNode transformed = overridenClasses.get(name);
 		if(transformed != null) {
 			if(tweak != null) {
