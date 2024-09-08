@@ -22,6 +22,9 @@ public class LegacyClassLoaderTweak implements ClassLoaderTweak {
 
 	public boolean tweakClass(ClassNodeSource source, String name) {
 		ClassNode node = source.getClass(name);
+		if(node == null) {
+			return false;
+		}
 		boolean changed = false;
 		// Decrease class version
 		if(node.version > LaunchClassLoader.CLASS_VERSION) {
