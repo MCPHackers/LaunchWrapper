@@ -11,7 +11,6 @@ dependencies {
     implementation 'org.mcphackers.rdi:rdi:1.0'
     implementation "org.ow2.asm:asm:${project.asm_version}"
     implementation "org.ow2.asm:asm-tree:${project.asm_version}"
-    implementation "org.ow2.asm:asm-util:${project.asm_version}"
     implementation 'org.json:json:20230311'
     // I'll bring discord RPC support later, when I have an environment to compile natives
 

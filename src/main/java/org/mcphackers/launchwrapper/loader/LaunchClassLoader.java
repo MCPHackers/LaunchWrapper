@@ -26,7 +26,6 @@ import org.mcphackers.launchwrapper.util.Util;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.tree.ClassNode;
-import org.objectweb.asm.util.TraceClassVisitor;
 
 // URLClassLoader is required to support ModLoader loading mods from mod folder
 public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource, ResourceSource {
@@ -212,8 +211,8 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 		try {
 			File cls = new File(debugOutput, node.name + ".class");
 			cls.getParentFile().mkdirs();
-			TraceClassVisitor trace = new TraceClassVisitor(new java.io.PrintWriter(new File(debugOutput, node.name + ".dump")));
-			node.accept(trace);
+			// TraceClassVisitor trace = new TraceClassVisitor(new java.io.PrintWriter(new File(debugOutput, node.name + ".dump")));
+			// node.accept(trace);
 			ClassWriter writer = new SafeClassWriter(this, COMPUTE_MAXS | COMPUTE_FRAMES);
 			node.accept(writer);
 			byte[] classData = writer.toByteArray();
