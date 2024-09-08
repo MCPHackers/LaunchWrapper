@@ -36,7 +36,7 @@ public class FabricBridge extends Launch {
         LaunchClassLoader loader = getLoader();
         loader.overrideClassSource(FABRIC_KNOT, gameProdiverSource());
         loader.overrideClassSource(FABRIC_KNOT_CLIENT, gameProdiverSource());
-        loader.invokeMain(FABRIC_KNOT_CLIENT, config.getArgs());
+        loader.invokeMain(FABRIC_KNOT_CLIENT.replace('/', '.'), config.getArgs());
     }
 
     public static FabricBridge getInstance() {
