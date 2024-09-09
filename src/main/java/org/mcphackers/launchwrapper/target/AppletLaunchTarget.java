@@ -1,4 +1,4 @@
-package org.mcphackers.launchwrapper;
+package org.mcphackers.launchwrapper.target;
 
 import java.applet.Applet;
 import java.awt.Image;

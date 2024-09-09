@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.mcphackers.launchwrapper.LaunchConfig;
-import org.mcphackers.launchwrapper.LaunchTarget;
+import org.mcphackers.launchwrapper.target.LaunchTarget;
 import org.mcphackers.launchwrapper.tweak.injection.Injection;
 import org.mcphackers.launchwrapper.tweak.injection.fabric.FabricHook;
 

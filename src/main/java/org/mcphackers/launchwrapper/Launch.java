@@ -17,7 +17,7 @@ public class Launch {
 		CLASS_LOADER.addException("org.objectweb.asm");
 		CLASS_LOADER.removeException("org.mcphackers.launchwrapper.inject");
 	}
-	public static Launch INSTANCE;
+	private static Launch INSTANCE;
 	
 	public final LaunchConfig config;
 

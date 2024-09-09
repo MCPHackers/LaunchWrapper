@@ -1,6 +1,6 @@
 package org.mcphackers.launchwrapper.tweak.injection.legacy;
 
-import static org.mcphackers.launchwrapper.util.InsnHelper.*;
+import static org.mcphackers.rdi.util.InsnHelper.*;
 import static org.objectweb.asm.Opcodes.*;
 
 import org.mcphackers.launchwrapper.LaunchConfig;

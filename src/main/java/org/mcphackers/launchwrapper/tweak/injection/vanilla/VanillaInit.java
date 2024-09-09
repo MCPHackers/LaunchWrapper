@@ -1,14 +1,13 @@
 package org.mcphackers.launchwrapper.tweak.injection.vanilla;
 
-import static org.mcphackers.launchwrapper.util.InsnHelper.*;
 import static org.mcphackers.rdi.util.InsnHelper.*;
 import static org.objectweb.asm.Opcodes.*;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.mcphackers.launchwrapper.LaunchConfig;
-import org.mcphackers.launchwrapper.LaunchConfig.LaunchParameter;
 import org.mcphackers.launchwrapper.tweak.VanillaTweak;
 import org.mcphackers.launchwrapper.tweak.injection.InjectionWithContext;
 import org.mcphackers.launchwrapper.util.ClassNodeSource;
@@ -68,17 +67,24 @@ public class VanillaInit extends InjectionWithContext<VanillaTweakContext> {
 				}
 			}
 		}
-		List<LaunchParameter<?>> params = config.getParamsAsList();
-		for(LaunchParameter<?> param : params) {
-			if(!context.availableParameters.contains(param.name)) {
-				param.set(null);
+		String[] params = config.getArgs();
+		List<String> newArgs = new ArrayList<String>();
+		for(int i = 0; i < params.length; i++) {
+			if(!params[i].startsWith("--")) {
+				continue;
+			}
+			if(!context.availableParameters.contains(params[i].substring(2))) {
+				continue;
+			}
+			newArgs.add(params[i]);
+			if(i+1 < params.length && !params[i+1].startsWith("--")) {
+				newArgs.add(params[i+1]);
+				i++;
 			}
 		}
-		for(String key : config.unknownParameters.keySet()) {
-			if(!context.availableParameters.contains(key)) {
-				config.unknownParameters.remove(key);
-			}
-		}
+		String[] arr = new String[newArgs.size()];
+		context.args = newArgs.toArray(arr);
+
 		MethodNode init = getInit(run);
 		boolean fixedTitle = replaceTitle(init, config);
 		boolean fixedIcon = replaceIcon(init, config);

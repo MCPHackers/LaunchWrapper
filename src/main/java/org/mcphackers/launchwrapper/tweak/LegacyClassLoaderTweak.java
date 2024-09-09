@@ -1,6 +1,5 @@
 package org.mcphackers.launchwrapper.tweak;
 
-import static org.mcphackers.launchwrapper.util.InsnHelper.compareInsn;
 import static org.mcphackers.rdi.util.InsnHelper.*;
 import static org.objectweb.asm.Opcodes.*;
 

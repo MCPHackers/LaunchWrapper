@@ -1,6 +1,5 @@
 package org.mcphackers.launchwrapper.tweak.injection.legacy;
 
-import static org.mcphackers.launchwrapper.util.InsnHelper.*;
 import static org.mcphackers.rdi.util.InsnHelper.*;
 import static org.objectweb.asm.Opcodes.*;
 
@@ -55,6 +54,31 @@ public class IndevSaving extends InjectionWithContext<LegacyTweakContext> {
 				ClassNode pauseMenu = source.getClass(((TypeInsnNode) insns[5]).desc);
 				if(pauseMenu == null) {
 					return false;
+				}
+				for(MethodNode m2 : pauseMenu.methods) {
+					if(!m2.desc.equals("()V")) {
+						continue;
+					}
+					int found = 0;
+					AbstractInsnNode insn = m2.instructions.getFirst();
+					AbstractInsnNode[] insns2 = fill(insn, 3);
+					for(;insn != null; insn = nextInsn(insn)) {
+						insns2 = fill(insn, 7);
+						if(compareInsn(insns2[0], ALOAD)
+						&& compareInsn(insns2[1], GETFIELD, null, null, "Ljava/util/List;")
+						&& (compareInsn(insns2[2], ICONST_2) || compareInsn(insns2[2], ICONST_3))
+						&& compareInsn(insns2[3], INVOKEINTERFACE, "java/util/List", "get", "(I)Ljava/lang/Object;")
+						&& compareInsn(insns2[4], CHECKCAST)
+						&& compareInsn(insns2[5], ICONST_0)
+						&& compareInsn(insns2[6], PUTFIELD, null, null, "Z")) {
+							m2.instructions.set(insns2[5], booleanInsn(true));
+							found = intValue(insns2[2]);
+						}
+						if(found == 3) {
+							source.overrideClass(pauseMenu);
+							break;
+						}
+					}
 				}
 				for(MethodNode m2 : pauseMenu.methods) {
 					AbstractInsnNode insn = m2.instructions.getFirst();

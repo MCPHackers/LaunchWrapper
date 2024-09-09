@@ -4,10 +4,10 @@ import java.io.IOException;
 
 import javax.imageio.ImageIO;
 
-import org.mcphackers.launchwrapper.AppletLaunchTarget;
 import org.mcphackers.launchwrapper.Launch;
 import org.mcphackers.launchwrapper.LaunchConfig;
-import org.mcphackers.launchwrapper.LaunchTarget;
+import org.mcphackers.launchwrapper.target.AppletLaunchTarget;
+import org.mcphackers.launchwrapper.target.LaunchTarget;
 
 public class IsomTweak extends LegacyTweak {
 	public static final String MAIN_ISOM = "net/minecraft/isom/IsomPreviewApplet";

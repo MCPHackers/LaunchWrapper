@@ -4,10 +4,10 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.mcphackers.launchwrapper.LaunchConfig;
-import org.mcphackers.launchwrapper.LaunchTarget;
-import org.mcphackers.launchwrapper.MainLaunchTarget;
 import org.mcphackers.launchwrapper.protocol.LegacyURLStreamHandler;
 import org.mcphackers.launchwrapper.protocol.URLStreamHandlerProxy;
+import org.mcphackers.launchwrapper.target.LaunchTarget;
+import org.mcphackers.launchwrapper.target.MainLaunchTarget;
 import org.mcphackers.launchwrapper.tweak.injection.Injection;
 import org.mcphackers.launchwrapper.tweak.injection.vanilla.ChangeBrand;
 import org.mcphackers.launchwrapper.tweak.injection.vanilla.OneSixAssetsFix;
@@ -35,7 +35,7 @@ public class VanillaTweak extends Tweak {
 		URLStreamHandlerProxy.setURLStreamHandler("http", new LegacyURLStreamHandler(config));
 		URLStreamHandlerProxy.setURLStreamHandler("https", new LegacyURLStreamHandler(config));
 		MainLaunchTarget target = new MainLaunchTarget(MAIN_CLASS);
-		target.args = config.getArgs();
+		target.args = context.args;
 		return target;
 	}
 

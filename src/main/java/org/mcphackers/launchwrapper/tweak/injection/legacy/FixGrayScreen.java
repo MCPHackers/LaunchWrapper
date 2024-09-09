@@ -1,6 +1,5 @@
 package org.mcphackers.launchwrapper.tweak.injection.legacy;
 
-import static org.mcphackers.launchwrapper.util.InsnHelper.*;
 import static org.mcphackers.rdi.util.InsnHelper.*;
 import static org.objectweb.asm.Opcodes.*;
 
@@ -29,7 +28,7 @@ public class FixGrayScreen extends InjectionWithContext<LegacyTweakContext> {
 
     @Override
     public boolean apply(ClassNodeSource source, LaunchConfig config) {
-        
+		next:
 		for(MethodNode m : context.minecraft.methods) {
 			if(m.desc.equals("()V")) {
 				AbstractInsnNode insn = m.instructions.getFirst();
@@ -45,15 +44,13 @@ public class FixGrayScreen extends InjectionWithContext<LegacyTweakContext> {
 						}
 					}
 					if(insn.getOpcode() == INVOKESTATIC) {
-						return false;
+						continue next;
 					}
 					insn = nextInsn(insn);
 				}
 			}
 		}
         return false;
-
     }
-    
     
 }

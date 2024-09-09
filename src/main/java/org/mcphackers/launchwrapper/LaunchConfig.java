@@ -18,7 +18,7 @@ import org.mcphackers.launchwrapper.util.OS;
 public class LaunchConfig {
 	private static final File defaultGameDir = getDefaultGameDir();
 	private Map<String, LaunchParameter<?>> parameters = new HashMap<String, LaunchParameter<?>>();
-	public Map<String, Object> unknownParameters = new HashMap<String, Object>();
+	private Map<String, Object> unknownParameters = new HashMap<String, Object>();
 
 	public LaunchParameterSwitch demo 				= new LaunchParameterSwitch("demo", false);
 	public LaunchParameterSwitch fullscreen 		= new LaunchParameterSwitch("fullscreen", false);
@@ -32,7 +32,7 @@ public class LaunchConfig {
 	public LaunchParameterNumber proxyPort 			= new LaunchParameterNumber("proxyPort", 8080);
 	public LaunchParameterString proxyUser 			= new LaunchParameterString("proxyUser");
 	public LaunchParameterString proxyPass 			= new LaunchParameterString("proxyPass");
-	public LaunchParameterString username 			= new LaunchParameterString("username", "Player" + System.currentTimeMillis() % 1000L);
+	public LaunchParameterString username 			= new LaunchParameterString("username", "Player");
 	public LaunchParameterString session 			= new LaunchParameterString("session", "-").altName("sessionid");
 	public LaunchParameterString password 			= new LaunchParameterString("password");
 	public LaunchParameterString uuid 				= new LaunchParameterString("uuid");
@@ -193,22 +193,30 @@ public class LaunchConfig {
 	public abstract class LaunchParameter<T> {
 		public final String name;
 		public final boolean wrapperOnly;
+		protected final T defaultValue;
+		protected T value;
 
 		protected LaunchParameter(String name) {
-			this(name, false);
+			this(name, null, false);
 		}
 
-		protected LaunchParameter(String name, boolean wrapper) {
+		protected LaunchParameter(String name, T defaultValue) {
+			this(name, defaultValue, false);
+		}
+
+		protected LaunchParameter(String name, T defaultValue, boolean wrapper) {
+			this.defaultValue = defaultValue;
+			this.value = defaultValue;
 			this.name = name;
 			this.wrapperOnly = wrapper;
-			// do not toLowerCase. Parameters names are case sensitive
+			// Parameters names are case sensitive
 			parameters.put(name, this);
 		}
 
 		public LaunchParameter<T> altName(String altName) {
 			parameters.put(altName, this);
 			return this;
-		} 
+		}
 
 		public boolean isSwitch() {
 			return false;
@@ -218,31 +226,32 @@ public class LaunchConfig {
 
 		public abstract void setString(String argument);
 
-		public abstract T get();
+		public T get() {
+			return this.value;
+		}
 
-		public abstract void set(T value);
+		public void set(T value) {
+			this.value = value;
+		}
 	}
 
 	public class LaunchParameterFile extends LaunchParameter<File> {
-		private File value;
-
 		public LaunchParameterFile(String name) {
 			super(name);
 		}
 
 		public LaunchParameterFile(String name, File defaultValue) {
-			super(name);
-			value = defaultValue;
+			super(name, defaultValue);
 		}
 
 		public LaunchParameterFile(String name, File defaultValue, boolean wrapper) {
-			super(name, wrapper);
-			value = defaultValue;
+			super(name, defaultValue, wrapper);
 		}
 
 		public LaunchParameterFile altName(String altName) {
-			return (LaunchParameterFile)super.altName(altName);
-		}
+			super.altName(altName);
+			return this;
+		} 
 
 		@Override
 		public String getString() {
@@ -255,38 +264,19 @@ public class LaunchConfig {
 		public void setString(String argument) {
 			this.value = new File(argument);
 		}
-
-		@Override
-		public File get() {
-			return this.value;
-		}
-
-		@Override
-		public void set(File value) {
-			this.value = value;
-		}
 	}
 
 	public class LaunchParameterFileList extends LaunchParameter<File[]> {
-		private File[] value;
-
 		public LaunchParameterFileList(String name) {
 			super(name);
 		}
 
 		public LaunchParameterFileList(String name, File[] defaultValue) {
-			super(name);
-			value = defaultValue;
+			super(name, defaultValue);
 		}
 
 		public LaunchParameterFileList(String name, File[] defaultValue, boolean wrapper) {
-			super(name, wrapper);
-			value = defaultValue;
-		}
-
-		public LaunchParameterFileList altName(String altName) {
-			super.altName(altName);
-			return this;
+			super(name, defaultValue, wrapper);
 		}
 
 		@Override
@@ -312,41 +302,19 @@ public class LaunchConfig {
 			}
 			this.value = newValue;
 		}
-
-		@Override
-		public File[] get() {
-			return this.value;
-		}
-
-		@Override
-		public void set(File[] value) {
-			this.value = value;
-		}
 	}
 
 	public class LaunchParameterSwitch extends LaunchParameter<Boolean> {
-		private boolean value;
-		private boolean defaultValue;
-
 		public LaunchParameterSwitch(String name) {
-			super(name);
+			super(name, false);
 		}
 
 		public LaunchParameterSwitch(String name, Boolean defaultVal) {
-			super(name);
-			defaultValue = defaultVal;
-			value = defaultVal;
+			super(name, defaultVal);
 		}
 
 		public LaunchParameterSwitch(String name, Boolean defaultVal, boolean wrapper) {
-			super(name, wrapper);
-			defaultValue = defaultVal;
-			value = defaultVal;
-		}
-
-		public LaunchParameterSwitch altName(String altName) {
-			super.altName(altName);
-			return this;
+			super(name, defaultVal, wrapper);
 		}
 
 		public boolean isSwitch() {
@@ -363,16 +331,6 @@ public class LaunchConfig {
 			this.value = "true".equalsIgnoreCase(argument);
 		}
 
-		@Override
-		public Boolean get() {
-			return this.value;
-		}
-
-		@Override
-		public void set(Boolean value) {
-			this.value = value == null ? false : value;
-		}
-
 		public void setFlag() {
 			this.value = !defaultValue;
 		}
@@ -383,20 +341,16 @@ public class LaunchConfig {
 	}
 
 	public class LaunchParameterString extends LaunchParameter<String> {
-		private String value;
-
 		public LaunchParameterString(String name) {
 			super(name);
 		}
 
 		public LaunchParameterString(String name, String defaultValue) {
-			super(name);
-			value = defaultValue;
+			super(name, defaultValue);
 		}
 
 		public LaunchParameterString(String name, String defaultValue, boolean wrapper) {
-			super(name, wrapper);
-			value = defaultValue;
+			super(name, defaultValue, wrapper);
 		}
 
 		public LaunchParameterString altName(String altName) {
@@ -413,33 +367,19 @@ public class LaunchConfig {
 		public void setString(String argument) {
 			this.value = argument;
 		}
-
-		@Override
-		public String get() {
-			return this.value;
-		}
-
-		@Override
-		public void set(String value) {
-			this.value = value;
-		}
 	}
 
 	public class LaunchParameterNumber extends LaunchParameter<Integer> {
-		private Integer value;
-
 		public LaunchParameterNumber(String name) {
 			super(name);
 		}
 
 		public LaunchParameterNumber(String name, Integer defaultValue) {
-			super(name);
-			value = defaultValue;
+			super(name, defaultValue);
 		}
 
 		public LaunchParameterNumber(String name, Integer defaultValue, boolean wrapper) {
-			super(name, wrapper);
-			value = defaultValue;
+			super(name, defaultValue, wrapper);
 		}
 
 		@Override
@@ -451,23 +391,11 @@ public class LaunchConfig {
 		public void setString(String argument) {
 			this.value = Integer.parseInt(argument);
 		}
-
-		@Override
-		public Integer get() {
-			return this.value;
-		}
-
-		@Override
-		public void set(Integer value) {
-			this.value = value;
-		}
 	}
 
 	public class LaunchParameterSkinOptions extends LaunchParameter<List<SkinOption>> {
-		private List<SkinOption> value = Collections.emptyList();
-
 		public LaunchParameterSkinOptions(String name) {
-			super(name, true);
+			super(name, Collections.<SkinOption>emptyList(), true);
 		}
 
 		@Override
@@ -498,34 +426,21 @@ public class LaunchConfig {
 			}
 			this.value = newValue;
 		}
-
-		@Override
-		public List<SkinOption> get() {
-			return this.value;
-		}
-
-		@Override
-		public void set(List<SkinOption> value) {
-			this.value = value;
-		}
 	}
 
 	public class LaunchParameterEnum<T extends Enum<T>> extends LaunchParameter<T> {
-		private T value;
 		private Class<T> enumType;
 
 		@SuppressWarnings("unchecked")
 		public LaunchParameterEnum(String name, Enum<T> defaultValue) {
-			super(name);
+			super(name, (T)defaultValue);
 			enumType = defaultValue.getDeclaringClass();
-			value = (T)defaultValue;
 		}
 
 		@SuppressWarnings("unchecked")
 		public LaunchParameterEnum(String name, Enum<T> defaultValue, boolean wrapper) {
-			super(name, wrapper);
+			super(name, (T)defaultValue, wrapper);
 			enumType = defaultValue.getDeclaringClass();
-			value = (T)defaultValue;
 		}
 
 		@Override
@@ -545,16 +460,6 @@ public class LaunchConfig {
 			} catch (Exception e) {
 			}
 			this.value = Enum.valueOf(enumType, argument);
-		}
-
-		@Override
-		public T get() {
-			return this.value;
-		}
-
-		@Override
-		public void set(T value) {
-			this.value = value;
 		}
 	}
 

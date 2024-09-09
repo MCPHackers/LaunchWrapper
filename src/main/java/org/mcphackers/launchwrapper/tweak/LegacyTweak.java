@@ -7,15 +7,19 @@ import java.io.IOException;
 import java.lang.reflect.Field;
 import java.net.URL;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import org.mcphackers.launchwrapper.LaunchConfig;
-import org.mcphackers.launchwrapper.LaunchTarget;
-import org.mcphackers.launchwrapper.MainLaunchTarget;
 import org.mcphackers.launchwrapper.protocol.LegacyURLStreamHandler;
+import org.mcphackers.launchwrapper.protocol.SkinRequests;
+import org.mcphackers.launchwrapper.protocol.SkinType;
 import org.mcphackers.launchwrapper.protocol.URLStreamHandlerProxy;
+import org.mcphackers.launchwrapper.target.LaunchTarget;
+import org.mcphackers.launchwrapper.target.MainLaunchTarget;
 import org.mcphackers.launchwrapper.tweak.injection.Injection;
 import org.mcphackers.launchwrapper.tweak.injection.legacy.AddMain;
+import org.mcphackers.launchwrapper.tweak.injection.legacy.FixClassicSession;
 import org.mcphackers.launchwrapper.tweak.injection.legacy.FixGrayScreen;
 import org.mcphackers.launchwrapper.tweak.injection.legacy.FixShutdown;
 import org.mcphackers.launchwrapper.tweak.injection.legacy.IndevSaving;
@@ -26,6 +30,7 @@ import org.mcphackers.launchwrapper.tweak.injection.legacy.OptionsLoadFix;
 import org.mcphackers.launchwrapper.tweak.injection.legacy.ReplaceGameDir;
 import org.mcphackers.launchwrapper.tweak.injection.legacy.SplashScreenFix;
 import org.mcphackers.launchwrapper.tweak.injection.vanilla.ChangeBrand;
+import org.mcphackers.launchwrapper.util.ResourceSource;
 import org.mcphackers.launchwrapper.util.UnsafeUtils;
 import org.mcphackers.launchwrapper.util.Util;
 
@@ -57,6 +62,7 @@ public class LegacyTweak extends Tweak {
 			new LWJGLPatch(context),
 			new ReplaceGameDir(context),
 			new OptionsLoadFix(context),
+			new FixClassicSession(context),
 			new AddMain(context),
 			new ChangeBrand()
 		);

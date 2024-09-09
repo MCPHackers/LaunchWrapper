@@ -1,4 +1,4 @@
-package org.mcphackers.launchwrapper;
+package org.mcphackers.launchwrapper.target;
 
 import org.mcphackers.launchwrapper.loader.LaunchClassLoader;
 

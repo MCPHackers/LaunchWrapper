@@ -11,7 +11,7 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.zip.ZipError;
 
-import org.mcphackers.launchwrapper.MainLaunchTarget;
+import org.mcphackers.launchwrapper.target.MainLaunchTarget;
 import org.mcphackers.launchwrapper.tweak.Tweak;
 import org.mcphackers.launchwrapper.util.ClassNodeSource;
 import org.objectweb.asm.ClassReader;

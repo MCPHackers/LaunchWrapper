@@ -160,28 +160,46 @@ public class SkinRequests {
 	}
 
 	public byte[] getCape(String name) {
-		SkinData skindata = getLocalSkin(name);
-		if(skindata.cape == null) {
+		SkinData skinData = getLocalSkin(name);
+		if(skinData.cape == null) {
 			String uuid = getUUIDfromName(name);
 			if(uuid == null) {
 				return null;
 			}
-			skindata = fetchSkin(uuid);
+			skinData = fetchSkin(uuid);
 		}
-		if(skindata == null) {
+		if(skinData == null) {
 			return null;
 		}
+		return convertCape(skinData, skinType);
+	}
 
+	public byte[] getSkin(String name) {
+		SkinData skinData = getLocalSkin(name);
+		if(skinData.skin == null) {
+			String uuid = getUUIDfromName(name);
+			if(uuid == null) {
+				return null;
+			}
+			skinData = fetchSkin(uuid);
+		}
+		if(skinData == null) {
+			return null;
+		}
+		return convertSkin(skinData, skinType, skinOptions);
+	}
+
+	public static byte[] convertCape(SkinData skinData, SkinType skinType) {
 		byte[] cape = null;
 		try {
-			if(skindata.cape != null) {
+			if(skinData.cape != null) {
 				switch(skinType) {
 					case PRE_19A:
 					case CLASSIC:
 					case PRE_B1_9:
 					case PRE_1_8:
 					case PRE_1_9:
-						ByteArrayInputStream bis = new ByteArrayInputStream(skindata.cape);
+						ByteArrayInputStream bis = new ByteArrayInputStream(skinData.cape);
 
 						ImageUtils imgu = new ImageUtils(bis);
 						imgu = imgu.crop(0, 0, 64, 32);
@@ -189,7 +207,7 @@ public class SkinRequests {
 						cape = imgu.getInByteForm();
 						break;
 					case DEFAULT:
-						return skindata.cape;
+						return skinData.cape;
 				}
 			}
 		} catch (Throwable t) {
@@ -198,23 +216,11 @@ public class SkinRequests {
 		return cape;
 	}
 
-	public byte[] getSkin(String name) {
-		SkinData skindata = getLocalSkin(name);
-		if(skindata.skin == null) {
-			String uuid = getUUIDfromName(name);
-			if(uuid == null) {
-				return null;
-			}
-			skindata = fetchSkin(uuid);
-		}
-		if(skindata == null) {
-			return null;
-		}
-
+	public static byte[] convertSkin(SkinData skinData, SkinType skinType, List<SkinOption> skinOptions) {
 		byte[] skin = null;
 		try {
-			if(skindata.skin != null) {
-				ByteArrayInputStream bis = new ByteArrayInputStream(skindata.skin);
+			if(skinData.skin != null) {
+				ByteArrayInputStream bis = new ByteArrayInputStream(skinData.skin);
 				ImageUtils imgu = new ImageUtils(bis);
 				switch(skinType) {
 					case PRE_19A:
@@ -246,7 +252,7 @@ public class SkinRequests {
 							useLeftLeg(imgu, true);
 						if(imgu.getImage().getHeight() == 64 && !skinOptions.contains(SkinOption.IGNORE_LAYERS))
 							overlayBodyLayers(imgu);
-						if(skindata.slim && !skinOptions.contains(SkinOption.IGNORE_ALEX))
+						if(skinData.slim && !skinOptions.contains(SkinOption.IGNORE_ALEX))
 							alexToSteve(imgu);
 						if(skinType == SkinType.PRE_B1_9 || skinType == SkinType.CLASSIC || skinType == SkinType.PRE_19A)
 							rotateBottomTX(imgu);

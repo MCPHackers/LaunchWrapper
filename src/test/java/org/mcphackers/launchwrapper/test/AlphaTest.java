@@ -4,16 +4,16 @@ import org.mcphackers.launchwrapper.LaunchConfig;
 import org.mcphackers.launchwrapper.tweak.LegacyTweak;
 import org.mcphackers.launchwrapper.tweak.Tweak;
 
-public class InfdevTest extends TweakTest {
+public class AlphaTest extends TweakTest {
 
     @Override
     protected String jarName() {
-        return "inf-20100630-2.jar";
+        return "a1.1.1.jar";
     }
 
     @Override
     protected String jarUrl() {
-        return "http://files.betacraft.uk/launcher/assets/versions/inf-20100630-2.jar";
+        return "http://files.betacraft.uk/launcher/assets/versions/a1.1.1.jar";
     }
 
     @Override
@@ -24,6 +24,6 @@ public class InfdevTest extends TweakTest {
     @Override
     public TestFeatureBuilder getTests() {
         return new TestFeatureBuilder()
-                .tweakInfoList("LegacyTweak init", "Fix Shutdown", "LWJGL Patch", "Replace game directory", "Options load fix", "Add main");
+                .tweakInfoList("LegacyTweak init", "Fix Shutdown", "LWJGL Patch", "Splash screen fix", "Replace game directory", "Options load fix", "Fix gray screen", "Add main");
     }
 }

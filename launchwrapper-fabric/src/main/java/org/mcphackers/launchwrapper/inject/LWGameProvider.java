@@ -17,8 +17,8 @@ import java.util.Map;
 
 import org.mcphackers.launchwrapper.Launch;
 import org.mcphackers.launchwrapper.LaunchConfig;
-import org.mcphackers.launchwrapper.MainLaunchTarget;
 import org.mcphackers.launchwrapper.fabric.FabricBridge;
+import org.mcphackers.launchwrapper.target.MainLaunchTarget;
 import org.mcphackers.launchwrapper.tweak.FabricLoaderTweak;
 import org.mcphackers.launchwrapper.tweak.Tweak;
 import org.mcphackers.launchwrapper.util.ClassNodeSource;

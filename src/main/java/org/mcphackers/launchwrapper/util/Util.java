@@ -7,7 +7,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.security.MessageDigest;
@@ -58,15 +57,6 @@ public final class Util {
 		}
 		stream1.close();
 		stream2.close();
-	}
-
-	public static URL replaceHost(URL url, String hostName, int port) {
-		try {
-			return new URL(url.getProtocol(), hostName, port, url.getFile());
-		} catch (MalformedURLException e) {
-			e.printStackTrace();
-			return null;
-		}
 	}
 
 	public static String getSHA1(InputStream is) throws IOException {

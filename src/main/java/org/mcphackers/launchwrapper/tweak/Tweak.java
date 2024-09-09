@@ -6,8 +6,8 @@ import java.util.List;
 
 import org.mcphackers.launchwrapper.Launch;
 import org.mcphackers.launchwrapper.LaunchConfig;
-import org.mcphackers.launchwrapper.LaunchTarget;
 import org.mcphackers.launchwrapper.loader.LaunchClassLoader;
+import org.mcphackers.launchwrapper.target.LaunchTarget;
 import org.mcphackers.launchwrapper.tweak.injection.Injection;
 import org.mcphackers.launchwrapper.util.ClassNodeSource;
 import org.mcphackers.launchwrapper.util.ResourceSource;
