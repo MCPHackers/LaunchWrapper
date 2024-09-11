@@ -24,6 +24,6 @@ public class AlphaTest extends TweakTest {
     @Override
     public TestFeatureBuilder getTests() {
         return new TestFeatureBuilder()
-                .tweakInfoList("LegacyTweak init", "Fix Shutdown", "LWJGL Patch", "Splash screen fix", "Replace game directory", "Options load fix", "Fix gray screen", "Add main");
+                .tweakInfoList("LegacyTweak init", "Classic crash screen", "Fix Shutdown", "LWJGL Patch", "Splash screen fix", "Replace game directory", "Options load fix", "Fix gray screen", "Add main");
     }
 }

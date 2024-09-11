@@ -13,11 +13,11 @@ import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.InsnNode;
-import org.objectweb.asm.tree.IntInsnNode;
 import org.objectweb.asm.tree.LdcInsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.TypeInsnNode;
+import org.objectweb.asm.tree.VarInsnNode;
 
 import net.fabricmc.loader.impl.game.minecraft.Hooks;
 
@@ -46,7 +46,7 @@ public class FabricHook implements Injection {
             if(m.name.equals("<init>")) {
                 InsnList insns = new InsnList();
                 insns.add(getGameDirectory(config));
-                insns.add(new IntInsnNode(ALOAD, 0));
+                insns.add(new VarInsnNode(ALOAD, 0));
                 insns.add(new MethodInsnNode(Opcodes.INVOKESTATIC, Hooks.INTERNAL_NAME, "startClient",
                     "(Ljava/io/File;Ljava/lang/Object;)V", false));
                     m.instructions.insertBefore(getLastReturn(m.instructions.getLast()), insns);

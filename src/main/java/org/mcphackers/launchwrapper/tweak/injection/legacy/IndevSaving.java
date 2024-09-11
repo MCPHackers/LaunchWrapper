@@ -81,31 +81,28 @@ public class IndevSaving extends InjectionWithContext<LegacyTweakContext> {
 					}
 				}
 				for(MethodNode m2 : pauseMenu.methods) {
+					if(m2.desc.equals("()V")) {
+						continue;
+					}
 					AbstractInsnNode insn = m2.instructions.getFirst();
-					AbstractInsnNode[] insns2 = fill(insn, 3);
-					if(compareInsn(insns2[0], ALOAD, 1)
-					&& compareInsn(insns2[1], GETFIELD, null, null, "I")
-					&& compareInsn(insns2[2], IFNE)) {
-						FieldInsnNode idField = (FieldInsnNode) insns2[1];
-						while(insn != null) {
-							insns2 = fill(insn, 4);
-							if(compareInsn(insns2[0], ALOAD, 1)
-							&& compareInsn(insns2[1], GETFIELD, idField.owner, idField.name, idField.desc)
-							&& compareInsn(insns2[3], IF_ICMPNE)) {
-								AbstractInsnNode[] insns3 = fill(nextInsn(insns2[3]), 3);
-								if(compareInsn(insns3[2], NEW)) {
-									if(compareInsn(insns2[2], ICONST_2)) {
-										saveLevelMenu = source.getClass(((TypeInsnNode) insns3[2]).desc);
-									} else if(compareInsn(insns2[2], ICONST_3)) {
-										loadLevelMenu = source.getClass(((TypeInsnNode) insns3[2]).desc);
-									}
+					while(insn != null) {
+						AbstractInsnNode[] insns2 = fill(insn, 4);
+						if(compareInsn(insns2[0], ALOAD, 1)
+						&& compareInsn(insns2[1], GETFIELD, null, null, "I")
+						&& compareInsn(insns2[3], IF_ICMPNE)) {
+							AbstractInsnNode[] insns3 = fill(nextInsn(insns2[3]), 3);
+							if(compareInsn(insns3[2], NEW)) {
+								if(compareInsn(insns2[2], ICONST_2)) { // Button id
+									saveLevelMenu = source.getClass(((TypeInsnNode) insns3[2]).desc);
+								} else if(compareInsn(insns2[2], ICONST_3)) {
+									loadLevelMenu = source.getClass(((TypeInsnNode) insns3[2]).desc);
 								}
 							}
-							if(saveLevelMenu != null && loadLevelMenu != null) {
-								break methods;
-							}
-							insn = nextInsn(insn);
 						}
+						if(saveLevelMenu != null && loadLevelMenu != null) {
+							break methods;
+						}
+						insn = nextInsn(insn);
 					}
 				}
 			}

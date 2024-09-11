@@ -15,6 +15,7 @@ import org.mcphackers.launchwrapper.protocol.SkinRequests;
 import org.mcphackers.launchwrapper.protocol.SkinType;
 import org.mcphackers.launchwrapper.util.OS;
 
+@SuppressWarnings("unused")
 public class LaunchConfig {
 	private static final File defaultGameDir = getDefaultGameDir();
 	private Map<String, LaunchParameter<?>> parameters = new HashMap<String, LaunchParameter<?>>();
@@ -46,11 +47,13 @@ public class LaunchConfig {
 	public LaunchParameterString userType 			= new LaunchParameterString("userType");
 	public LaunchParameterString versionType 		= new LaunchParameterString("versionType");
 	public LaunchParameterSwitch applet 			= new LaunchParameterSwitch("applet", false);
-	public LaunchParameterSwitch haspaid 			= new LaunchParameterSwitch("haspaid", true);
+	public LaunchParameterSwitch haspaid			= new LaunchParameterSwitch("haspaid", true);
+	private LaunchParameterSwitch unlicensedCopy	= new LaunchParameterSwitchReverse("unlicensedCopy", haspaid);
 	public LaunchParameterString loadmap_user 		= new LaunchParameterString("loadmap_user");
 	public LaunchParameterNumber loadmap_id 		= new LaunchParameterNumber("loadmap_id");
 	public LaunchParameterString mppass 			= new LaunchParameterString("mppass", "");
-	public LaunchParameterSwitch lwjglFrame 		= new LaunchParameterSwitch("awtFrame", true, true);
+	public LaunchParameterSwitch lwjglFrame 		= new LaunchParameterSwitch("lwjglFrame", true, true);
+	private LaunchParameterSwitch awtFrame 			= new LaunchParameterSwitchReverse("awtFrame", lwjglFrame);
 	public LaunchParameterSwitch isom 				= new LaunchParameterSwitch("isom", false, true);
 	public LaunchParameterSwitch forceVsync 		= new LaunchParameterSwitch("forceVsync", false, true);
 	public LaunchParameterSwitch forceResizable 	= new LaunchParameterSwitch("forceResizable", false, true);
@@ -133,6 +136,7 @@ public class LaunchConfig {
 		}
 		if(uuid.get() == null && username.get() != null) {
 			// Purely cosmetic change. Makes skins in modern versions when only provided with username
+			// FIXME could hang until connection timeout without running the game
 			uuid.set(SkinRequests.getUUIDfromName(username.get()));
 		}
 	}
@@ -303,6 +307,22 @@ public class LaunchConfig {
 			this.value = newValue;
 		}
 	}
+	public class LaunchParameterSwitchReverse extends LaunchParameterSwitch {
+		LaunchParameterSwitch parent;
+		public LaunchParameterSwitchReverse(String name, LaunchParameterSwitch parent) {
+			super(name, !parent.defaultValue, true);
+			this.parent = parent;
+		}
+
+		public void set(Boolean b) {
+			super.set(b);
+			parent.value = !value;
+		}
+
+		public Boolean get() {
+			return(!parent.value);
+		}
+	}
 
 	public class LaunchParameterSwitch extends LaunchParameter<Boolean> {
 		public LaunchParameterSwitch(String name) {
@@ -332,11 +352,11 @@ public class LaunchConfig {
 		}
 
 		public void setFlag() {
-			this.value = !defaultValue;
+			this.set(true);
 		}
 
 		public void toggle() {
-			this.value = !value;
+			this.set(!value);
 		}
 	}
 

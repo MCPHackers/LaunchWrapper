@@ -63,7 +63,6 @@ public class Launch {
 		// TODO
 	}
 	
-	@Deprecated
 	public static Launch getInstance() {
 		return INSTANCE;
 	}

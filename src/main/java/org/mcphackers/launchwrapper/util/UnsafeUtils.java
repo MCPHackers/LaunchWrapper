@@ -4,6 +4,7 @@ import java.lang.reflect.Field;
 
 import sun.misc.Unsafe;
 
+@SuppressWarnings("sunapi")
 public final class UnsafeUtils {
 	private static final Unsafe theUnsafe = getUnsafe();
 

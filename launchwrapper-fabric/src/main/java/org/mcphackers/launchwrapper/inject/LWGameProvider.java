@@ -42,12 +42,14 @@ import net.fabricmc.loader.impl.metadata.ContactInformationImpl;
 import net.fabricmc.loader.impl.metadata.ModDependencyImpl;
 import net.fabricmc.loader.impl.util.Arguments;
 import net.fabricmc.loader.impl.util.ExceptionUtil;
+import net.fabricmc.loader.impl.util.SystemProperties;
 
 public class LWGameProvider implements GameProvider {
 
     public LaunchConfig config = FabricBridge.getInstance().config;
     public MainLaunchTarget target = null;
 
+	private Arguments arguments;
     private Path gameJar;
     private List<Path> lwjglJars = new ArrayList<>();
     private Path launchwrapperJar;
@@ -102,6 +104,8 @@ public class LWGameProvider implements GameProvider {
 	@Override
 	public boolean locateGame(FabricLauncher launcher, String[] args) {
 		this.envType = launcher.getEnvironmentType();
+		this.arguments = new Arguments();
+		arguments.parse(args);
 		
 		String entrypoint = null;
 		try {
@@ -144,9 +148,11 @@ public class LWGameProvider implements GameProvider {
 		
 		ObjectShare share = FabricLoaderImpl.INSTANCE.getObjectShare();
 		share.put("fabric-loader:inputGameJar", gameJar); // deprecated
-		share.put("fabric-loader:inputGameJars", Collections.singleton(gameJar));
+		share.put("fabric-loader:inputGameJars", Collections.singletonList(gameJar));
 
-		versionData = McVersionLookup.getVersion(Collections.singletonList(gameJar), entrypoint, config.version.get());
+		String version = arguments.remove(Arguments.GAME_VERSION);
+		if (version == null) version = System.getProperty(SystemProperties.GAME_VERSION);
+		versionData = McVersionLookup.getVersion(Collections.singletonList(gameJar), entrypoint, version);
 		return true;
 	}
 

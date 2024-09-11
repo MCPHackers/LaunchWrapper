@@ -4,9 +4,6 @@ repositories {
     maven {
         url "https://maven.fabricmc.net/"
     }
-    maven {
-        url "https://maven.glass-launcher.net/babric/"
-    }
 }
 
 archivesBaseName = 'launchwrapper-fabric'
@@ -17,9 +14,8 @@ compileJava {
 
 dependencies {
 	implementation rootProject
-    implementation name: "rdi-1.0-SNAPSHOT"
-	implementation "babric:fabric-loader:0.14.24-babric.1"
-    // implementation 'org.mcphackers.rdi:rdi:1.0'
+    implementation "org.mcphackers.rdi:rdi:1.0"
+	implementation "net.fabricmc:fabric-loader:0.16.4"
     implementation "org.ow2.asm:asm:${project.asm_version}"
     implementation "org.ow2.asm:asm-tree:${project.asm_version}"
     implementation "org.ow2.asm:asm-util:${project.asm_version}"

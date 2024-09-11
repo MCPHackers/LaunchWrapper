@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.zip.ZipError;
 
+import org.mcphackers.launchwrapper.loader.SafeClassWriter;
 import org.mcphackers.launchwrapper.target.MainLaunchTarget;
 import org.mcphackers.launchwrapper.tweak.Tweak;
 import org.mcphackers.launchwrapper.util.ClassNodeSource;
@@ -96,7 +97,8 @@ public class LWGameTransformer extends GameTransformer implements ClassNodeSourc
         }
         // Fabric's GameTransformer did not compute max stack and local
         // Tweaks rely on writer computing maxes for it
-        ClassWriter writer = new ClassWriter(COMPUTE_MAXS);
+		// Also don't trust existing frames
+        ClassWriter writer = new SafeClassWriter(this, COMPUTE_MAXS | COMPUTE_FRAMES);
         node.accept(writer);
 		return writer.toByteArray();
 	}

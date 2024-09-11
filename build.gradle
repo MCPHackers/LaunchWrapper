@@ -7,12 +7,14 @@ archivesBaseName = 'launchwrapper'
 
 project.ext.asm_version = 9.7
 
+def ENV = System.getenv()
+
 dependencies {
-    // implementation 'org.mcphackers.rdi:rdi:1.0'
-    implementation name: 'rdi-1.0-SNAPSHOT'
+    implementation "org.mcphackers.rdi:rdi:1.0"
     implementation "org.ow2.asm:asm:${project.asm_version}"
+    implementation "org.ow2.asm:asm-util:${project.asm_version}"
     implementation "org.ow2.asm:asm-tree:${project.asm_version}"
-    implementation 'org.json:json:20230311'
+    implementation "org.json:json:20230311"
     // I'll bring discord RPC support later, when I have an environment to compile natives
 
     testRuntimeOnly('org.junit.platform:junit-platform-launcher:1.5.2')
@@ -33,12 +35,13 @@ allprojects {
     apply plugin: 'maven-publish'
 
     group = 'org.mcphackers'
-    version = '1.0-SNAPSHOT'
+    project.version = '1.0'
+    if(!ENV.RELEASE.equals('1')) {
+        project.version += '-SNAPSHOT'
+	}
 
     repositories {
-        flatDir {
-            dirs "libs"
-        }
+        mavenLocal()
         maven {
             url "https://libraries.minecraft.net/"
         }
@@ -61,18 +64,12 @@ allprojects {
         archives sourcesJar
     }
 
-    tasks.withType(JavaCompile).configureEach {
-        it.options.encoding = "UTF-8"
-
-        // Not possible due to unsafe usage
-        // if (JavaVersion.current().isJava9Compatible()) {
-        // 	it.options.release.set(8)
-        // }
-    }
     sourceCompatibility = JavaVersion.VERSION_1_8
     targetCompatibility = JavaVersion.VERSION_1_8
 
     compileJava {
+        options.encoding = "UTF-8"
+
         // Minecraft is mostly compatible with java 5 up until the version we support, so why not?
         if (JavaVersion.current().ordinal() <= JavaVersion.VERSION_1_8.ordinal()) {
             sourceCompatibility = JavaVersion.VERSION_1_5
@@ -85,29 +82,28 @@ allprojects {
         targetCompatibility = JavaVersion.VERSION_1_8
     }
 
-    publishing {
-        publications {
-            mavenJava(MavenPublication) {
-				groupId = "${project.group}"
-				artifactId = "${project.archivesBaseName}"
-				version = "${project.version}"
-            
-                artifact jar
-                artifact sourcesJar
+    afterEvaluate {
+        publishing {
+            publications {
+                mavenJava(MavenPublication) {
+                    artifactId = project.archivesBaseName
+                
+                    artifact jar
+                    artifact sourcesJar
+                }
             }
-        }
 
-        repositories {
-            mavenLocal()
-            
-            def ENV = System.getenv()
-            if (ENV.MAVEN_URL) {
-                maven {
-                    url ENV.MAVEN_URL
-                    if (ENV.MAVEN_USERNAME) {
-                        credentials {
-                            username ENV.MAVEN_USERNAME
-                            password ENV.MAVEN_PASSWORD
+            repositories {
+                mavenLocal()
+                
+                if (ENV.MAVEN_URL) {
+                    maven {
+                        url ENV.MAVEN_URL
+                        if (ENV.MAVEN_USERNAME) {
+                            credentials {
+                                username ENV.MAVEN_USERNAME
+                                password ENV.MAVEN_PASSWORD
+                            }
                         }
                     }
                 }

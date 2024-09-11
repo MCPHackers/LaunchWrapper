@@ -9,11 +9,18 @@ import org.mcphackers.launchwrapper.util.ClassNodeSource;
 import org.mcphackers.rdi.util.NodeHelper;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AbstractInsnNode;
+import org.objectweb.asm.tree.ClassNode;
+import org.objectweb.asm.tree.FieldInsnNode;
+import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.InsnNode;
+import org.objectweb.asm.tree.JumpInsnNode;
+import org.objectweb.asm.tree.LabelNode;
+import org.objectweb.asm.tree.LdcInsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.TryCatchBlockNode;
+import org.objectweb.asm.tree.TypeInsnNode;
 import org.objectweb.asm.tree.VarInsnNode;
 
 public class FixShutdown extends InjectionWithContext<LegacyTweakContext> {
@@ -33,12 +40,8 @@ public class FixShutdown extends InjectionWithContext<LegacyTweakContext> {
 	}
 
     @Override
-    public boolean apply(ClassNodeSource source, LaunchConfig config) {
-        fixShutdown(source);
-        return true;
-    }
-
-    private void fixShutdown(ClassNodeSource source) {
+	public boolean apply(ClassNodeSource source, LaunchConfig config) {
+		boolean b = false;
 		MethodNode destroy = null;
 		if(context.run != null) {
 			AbstractInsnNode insn1 = context.run.instructions.getLast();
@@ -90,6 +93,7 @@ public class FixShutdown extends InjectionWithContext<LegacyTweakContext> {
 							insert.add(new InsnNode(ICONST_0));
 							insert.add(new MethodInsnNode(INVOKESTATIC, "java/lang/System", "exit", "(I)V"));
 							destroy.instructions.insert(insn1, insert);
+							b = true;
 							// tweakInfo("Shutdown patch");
 						}
 					}
@@ -121,6 +125,7 @@ public class FixShutdown extends InjectionWithContext<LegacyTweakContext> {
 						MethodInsnNode invoke = (MethodInsnNode) insns2[2];
 						if(Type.getReturnType(invoke.desc).getSort() == Type.VOID) {
 							addTryCatch(destroy, insns2[0], insns2[2], "java/lang/Throwable");
+							b = true;
 							// tweakInfo("SoundManager shutdown");
 							break;
 						}
@@ -129,6 +134,7 @@ public class FixShutdown extends InjectionWithContext<LegacyTweakContext> {
 				}
 			}
 		}
+		return b;
 	}
     
 }

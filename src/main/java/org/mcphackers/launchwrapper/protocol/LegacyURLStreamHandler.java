@@ -28,16 +28,20 @@ public class LegacyURLStreamHandler extends URLStreamHandlerProxy {
 			if(path.equals("/game/joinserver.jsp"))
 				// TODO: update this to use the "sessionserver.mojang.com" API instead?
 				return super.openConnection(new URL("https", "session.minecraft.net", file));
-			if(path.equals("/login/session.jsp"))
-				return new BasicResponseURLConnection(url, "ok");
-			if(host.equals("login.minecraft.net") && path.equals("/session"))
-				return new BasicResponseURLConnection(url, "ok");
+			if(path.equals("/login/session.jsp") || host.equals("login.minecraft.net") && path.equals("/session")) {
+				// UnlicensedCopyText injection does this instead. (It doesn't fire the check thread fro some reason)
+				if(config.haspaid.get()) {
+					return new BasicResponseURLConnection(url, "ok");
+				} else {
+					return new BasicResponseURLConnection(url, 400, "");
+				}
+			}
 			if(path.equals("/game/"))
 				return new BasicResponseURLConnection(url, "42069");
 			if(path.equals("/client"))
-				return new BasicResponseURLConnection(url, "idk");
+				return new BasicResponseURLConnection(url, "idk"); // TODO figure out what this API endpoint is for
 			if(path.equals("/haspaid.jsp"))
-				return new BasicResponseURLConnection(url, "true");
+				return new BasicResponseURLConnection(url, "true"); // TODO Where is this used?
 			if(path.contains("/level/save.html"))
 				return new SaveLevelURLConnection(url, config.gameDir.get());
 			if(path.contains("/level/load.html"))

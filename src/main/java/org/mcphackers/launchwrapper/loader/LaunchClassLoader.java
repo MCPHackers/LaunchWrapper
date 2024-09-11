@@ -199,7 +199,6 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 	public void overrideClass(ClassNode node) {
 		if(node == null)
 			return;
-		saveDebugClass(node);
 		overridenClasses.put(className(node.name), node);
 		classNodeCache.put(node.name, node);
 	}
@@ -211,7 +210,7 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 		try {
 			File cls = new File(debugOutput, node.name + ".class");
 			cls.getParentFile().mkdirs();
-			// TraceClassVisitor trace = new TraceClassVisitor(new java.io.PrintWriter(new File(debugOutput, node.name + ".dump")));
+			// org.objectweb.asm.util.TraceClassVisitor trace = new org.objectweb.asm.util.TraceClassVisitor(new java.io.PrintWriter(new File(debugOutput, node.name + ".dump")));
 			// node.accept(trace);
 			ClassWriter writer = new SafeClassWriter(this, COMPUTE_MAXS | COMPUTE_FRAMES);
 			node.accept(writer);
@@ -244,7 +243,7 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 			}
 			ClassNode classNode = new ClassNode();
 			ClassReader classReader = new ClassReader(is);
-			classReader.accept(classNode, 0);
+			classReader.accept(classNode, ClassReader.SKIP_FRAMES);
 			classNodeCache.put(classNode.name, classNode);
 			return classNode;
 		} catch (IOException e) {
@@ -319,9 +318,9 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 			if(tweak != null) {
 				if(tweak.tweakClass(this, classNodeName(name))) {
 					transformed = overridenClasses.get(name);
-					saveDebugClass(transformed);
 				}
 			}
+			saveDebugClass(transformed);
 			return redefineClass(transformed);
 		}
 		return redefineClass(name);
@@ -349,7 +348,7 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 		try {
 			ClassNode classNode = new ClassNode();
 			ClassReader classReader = new ClassReader(is);
-			classReader.accept(classNode, 0);
+			classReader.accept(classNode, ClassReader.SKIP_FRAMES);
 			return classNode;
 		} catch (IOException e) {
 			Util.closeSilently(is);
