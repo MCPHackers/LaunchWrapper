@@ -24,20 +24,20 @@ This allows changing the Minecraft version in the instance without re-editing th
                 "name": "org.mcphackers:launchwrapper:1.0-SNAPSHOT"
             },
             {
-                "name": "org.ow2.asm:asm:9.2",
+                "name": "org.ow2.asm:asm:9.7",
                 "url": "https://repo1.maven.org/maven2/"
             },
             {
-                "name": "org.ow2.asm:asm-tree:9.2",
+                "name": "org.ow2.asm:asm-tree:9.7",
                 "url": "https://repo1.maven.org/maven2/"
             },
             {
-                "name": "org.json:json:20230311",
+                "name": "org.json:json:20240303",
                 "url": "https://mcphackers.github.io/libraries/"
             },
             {
-                "name": "org.mcphackers.rdi:rdi:1.0",
-                "url": "https://mcphackers.github.io/libraries/"
+                "name": "org.mcphackers.rdi:rdi:1.0",,
+                "url": "https://maven.glass-launcher.net/releases/"
             }
         ],
         "mainClass": "org.mcphackers.launchwrapper.Launch",
