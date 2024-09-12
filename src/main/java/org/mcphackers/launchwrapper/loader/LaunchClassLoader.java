@@ -94,6 +94,15 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 		return null;
 	}
 
+	@Override
+	public URL[] getURLs() {
+		if(parent instanceof URLClassLoader) {
+			return ((URLClassLoader)parent).getURLs();
+		}
+		//TODO get classpath list on modern java
+		return super.getURLs();
+	}
+
 	public Enumeration<URL> findResources(String name) throws IOException {
 		return parent.getResources(name);
 	}

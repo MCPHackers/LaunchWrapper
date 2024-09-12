@@ -15,8 +15,6 @@ public class DebugLaunch {
             System.setProperty("java.library.path", new File(config.gameDir.get(), "natives").getAbsolutePath());
         }
         System.setProperty("launchwrapper.log", "true");
-        config.session.set("-");
-        config.accessToken.set("-");
         Launch launch = Launch.create(config);
         launch.getLoader().setDebugOutput(new File("./debug"));
         launch.launch();

@@ -49,7 +49,7 @@ public class ClassicCrashScreen extends InjectionWithContext<LegacyTweakContext>
 
 	@Override
 	public boolean apply(ClassNodeSource source, LaunchConfig config) {
-		if (context.run == null) {
+		if(context.run == null) {
 			return false;
 		}
 		AbstractInsnNode insn1 = context.run.instructions.getFirst();
@@ -58,73 +58,70 @@ public class ClassicCrashScreen extends InjectionWithContext<LegacyTweakContext>
 		LabelNode start = null;
 		AbstractInsnNode end = null;
 		TryCatchBlockNode afterCatch = null;
-		while (insn1 != null) {
+		while(insn1 != null) {
 			AbstractInsnNode[] insns1 = fill(insn1, 6);
-			if (compareInsn(insns1[0], ALOAD, 0)
-					&& compareInsn(insns1[1], GETFIELD, context.minecraft.name, context.running.name,
-							context.running.desc)
-					&& compareInsn(insns1[2], IFEQ)
-					&& compareInsn(insns1[3], ALOAD, 0)
-					&& compareInsn(insns1[4], GETFIELD, context.minecraft.name, null,
-							"L" + context.minecraftApplet.name + ";")
-					&& compareInsn(insns1[5], IFNULL)) {
+			if(compareInsn(insns1[0], ALOAD, 0)
+			&& compareInsn(insns1[1], GETFIELD, context.minecraft.name, context.running.name, context.running.desc)
+			&& compareInsn(insns1[2], IFEQ)
+			&& compareInsn(insns1[3], ALOAD, 0)
+			&& compareInsn(insns1[4], GETFIELD, context.minecraft.name, null, "L" + context.minecraftApplet.name + ";")
+			&& compareInsn(insns1[5], IFNULL)) {
 				start = new LabelNode();
 				context.run.instructions.insertBefore(insn1, start);
 				JumpInsnNode jmp = (JumpInsnNode) insns1[2];
 				end = previousInsn(jmp.label); // GOTO outside of loop
 				// end = previousInsn(end); // GOTO to the beggining of loop
-				for (TryCatchBlockNode tryCatch : context.run.tryCatchBlocks) {
-					if (afterCatch == null && tryCatch.type != null && !tryCatch.type.startsWith("java/lang/")) {
+				for(TryCatchBlockNode tryCatch : context.run.tryCatchBlocks) {
+					if(afterCatch == null && tryCatch.type != null && !tryCatch.type.startsWith("java/lang/")) {
 						afterCatch = tryCatch;
 					}
-					// if ("java/lang/Throwable".equals(tryCatch.type)) {
 					AbstractInsnNode testInsn = nextInsn(tryCatch.handler);
-					while (tryCatch.end != testInsn && testInsn != null) {
+					while(tryCatch.end != testInsn && testInsn != null) {
 						testInsn = nextInsn(testInsn);
-						if (compareInsn(testInsn, ACONST_NULL) && compareInsn(nextInsn(testInsn), PUTFIELD)) {
+						if(compareInsn(testInsn, ACONST_NULL)
+						&& compareInsn(nextInsn(testInsn), PUTFIELD)) {
 							FieldInsnNode putfield = (FieldInsnNode) nextInsn(testInsn);
 							fieldName = putfield.name;
 							fieldDesc = putfield.desc;
 						}
 					}
-					// }
 				}
 			}
 			insn1 = nextInsn(insn1);
 		}
-		if (start == null || end == null) {
+		if(start == null || end == null) {
 			return false;
 		}
-		if (fieldDesc == null || fieldName == null) {
+		if(fieldDesc == null || fieldName == null) {
 			return false;
 		}
 		MethodNode setWorld = null;
-		for (MethodNode m : context.minecraft.methods) {
-			if (m.desc.equals("(" + fieldDesc + ")V")) {
+		for(MethodNode m : context.minecraft.methods) {
+			if(m.desc.equals("(" + fieldDesc + ")V")) {
 				setWorld = m;
 				break;
 			}
 		}
-		if (setWorld == null) {
+		if(setWorld == null) {
 			return false;
 		}
 		ClassNode errScreen = null;
 		MethodNode openScreen = null;
-		for (MethodNode m : context.minecraft.methods) {
-			if (m.desc.equals("()V")) {
+		for(MethodNode m : context.minecraft.methods) {
+			if(m.desc.equals("()V")) {
 				AbstractInsnNode insn = m.instructions.getFirst();
-				if (insn != null && insn.getOpcode() == -1) {
+				if(insn != null && insn.getOpcode() == -1) {
 					insn = nextInsn(insn);
 				}
-				if (!compareInsn(insn, INVOKESTATIC, "org/lwjgl/opengl/Display", "isActive", "()Z")) {
+				if(!compareInsn(insn, INVOKESTATIC, "org/lwjgl/opengl/Display", "isActive", "()Z")) {
 					continue;
 				}
 				AbstractInsnNode insn2 = insn;
-				while (insn2 != null) {
+				while(insn2 != null) {
 					AbstractInsnNode[] insns2 = fill(insn2, 3);
-					if (compareInsn(insns2[0], ALOAD, 0)
-							&& compareInsn(insns2[1], ACONST_NULL)
-							&& compareInsn(insns2[2], INVOKEVIRTUAL, context.minecraft.name, null, null)) {
+					if(compareInsn(insns2[0], ALOAD, 0)
+					&& compareInsn(insns2[1], ACONST_NULL)
+					&& compareInsn(insns2[2], INVOKEVIRTUAL, context.minecraft.name, null, null)) {
 						MethodInsnNode invoke = (MethodInsnNode) insns2[2];
 						openScreen = NodeHelper.getMethod(context.minecraft, invoke.name, invoke.desc);
 						break;
@@ -134,40 +131,40 @@ public class ClassicCrashScreen extends InjectionWithContext<LegacyTweakContext>
 				break;
 			}
 		}
-		if (openScreen == null) {
+		if(openScreen == null) {
 			return false;
 		}
 		AbstractInsnNode insn = openScreen.instructions.getFirst();
-		while (insn != null) {
-			if (insn.getOpcode() == INSTANCEOF) {
+		while(insn != null) {
+			if(insn.getOpcode() == INSTANCEOF) {
 				break;
 			}
 			insn = nextInsn(insn);
 		}
-		if (insn == null) {
+		if(insn == null) {
 			return false;
 		}
 		errScreen = source.getClass(((TypeInsnNode) insn).desc);
 
-		if (errScreen == null) {
+		if(errScreen == null) {
 			return false;
 		}
 		MethodNode init = NodeHelper.getMethod(errScreen, "<init>", "(Ljava/lang/String;Ljava/lang/String;)V");
-		if (init == null) {
+		if(init == null) {
 			MethodNode newInit = new MethodNode(ACC_PUBLIC, "<init>", "(Ljava/lang/String;Ljava/lang/String;)V", null,
 					null);
 			InsnList insnList = newInit.instructions;
 			insnList.add(new VarInsnNode(ALOAD, 0));
 			insnList.add(new MethodInsnNode(INVOKESPECIAL, errScreen.superName, "<init>", "()V"));
 			int c = 1;
-			for (FieldNode f : errScreen.fields) {
-				if (!f.desc.equals("Ljava/lang/String;")) {
+			for(FieldNode f : errScreen.fields) {
+				if(!f.desc.equals("Ljava/lang/String;")) {
 					continue;
 				}
 				insnList.add(new VarInsnNode(ALOAD, 0));
 				insnList.add(new VarInsnNode(ALOAD, c));
 				insnList.add(new FieldInsnNode(PUTFIELD, errScreen.name, f.name, f.desc));
-				if (c == 2) {
+				if(c == 2) {
 					break;
 				}
 				c++;

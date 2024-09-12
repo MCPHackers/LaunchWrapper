@@ -62,26 +62,29 @@ public abstract class Tweak {
 	public abstract ClassLoaderTweak getLoaderTweak();
 
 	public abstract LaunchTarget getLaunchTarget();
+
+	public static Tweak forClass(ClassNodeSource source, LaunchConfig launch, String clazz) {
+		try {
+			try {
+				return (Tweak)Class.forName(clazz)
+					.getConstructor(LaunchConfig.class, Tweak.class)
+					.newInstance(launch, getDefault(source, launch));
+			} catch (NoSuchMethodException e) {
+				return (Tweak)Class.forName(clazz)
+						.getConstructor(LaunchConfig.class)
+						.newInstance(launch);
+			}
+		} catch (ClassNotFoundException e) {
+			return null;
+		} catch (Exception e) {
+			e.printStackTrace();
+			return null;
+		}
+	}
 	
 	public static Tweak get(ClassNodeSource classLoader, LaunchConfig launch) {
 		if(launch.tweakClass.get() != null) {
-			try {
-				try {
-				// Instantiate custom tweak if it's present on classpath;
-				return (Tweak)Class.forName(launch.tweakClass.get())
-						.getConstructor(LaunchConfig.class, Tweak.class)
-						.newInstance(launch, getDefault(classLoader, launch));
-				} catch (NoSuchMethodException e) {
-					return (Tweak)Class.forName(launch.tweakClass.get())
-							.getConstructor(LaunchConfig.class)
-							.newInstance(launch);
-				}
-			} catch (ClassNotFoundException e) {
-				return null;
-			} catch (Exception e) {
-				e.printStackTrace();
-				return null;
-			}
+			return forClass(classLoader, launch, launch.tweakClass.get());
 		}
 		return getDefault(classLoader, launch);
 	}

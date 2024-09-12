@@ -1,6 +1,7 @@
 package org.mcphackers.launchwrapper;
 
 import org.mcphackers.launchwrapper.loader.LaunchClassLoader;
+import org.mcphackers.launchwrapper.target.LaunchTarget;
 import org.mcphackers.launchwrapper.tweak.Tweak;
 
 public class Launch {
@@ -35,7 +36,7 @@ public class Launch {
 		LaunchClassLoader loader = getLoader();
 		Tweak mainTweak = getTweak();
 		if(mainTweak == null) {
-			System.err.println("Could not find launch target");
+			LOGGER.logErr("No suitable tweak found. Is Minecraft on classpath?");
 			return;
 		}
 		mainTweak.prepare(loader);
@@ -45,9 +46,14 @@ public class Launch {
 				setupDiscordRPC();
 			}
 			loader.setLoaderTweak(mainTweak.getLoaderTweak());
-			mainTweak.getLaunchTarget().launch(loader);
+			LaunchTarget target = mainTweak.getLaunchTarget();
+			if(target != null) {
+				target.launch(loader);
+			} else {
+				LOGGER.logErr("Could not find launch target");
+			}
 		} else {
-			System.err.println("Tweak could not be applied");
+			LOGGER.logErr("Tweak could not be applied");
 		}
 	}
 
@@ -76,6 +82,10 @@ public class Launch {
 		
 		public void log(String format, Object... args) {
 			System.out.println("[LaunchWrapper] " + String.format(format, args));
+		}
+
+		public void logErr(String format, Object... args) {
+			System.err.println("[LaunchWrapper] " + String.format(format, args));
 		}
 
 		public void logDebug(String format, Object... args) {
