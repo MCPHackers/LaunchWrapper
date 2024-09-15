@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.lang.reflect.Field;
 import java.net.URL;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import org.mcphackers.launchwrapper.LaunchConfig;
@@ -20,13 +21,13 @@ import org.mcphackers.launchwrapper.tweak.injection.legacy.ClassicCrashScreen;
 import org.mcphackers.launchwrapper.tweak.injection.legacy.FixClassicSession;
 import org.mcphackers.launchwrapper.tweak.injection.legacy.FixGrayScreen;
 import org.mcphackers.launchwrapper.tweak.injection.legacy.FixShutdown;
+import org.mcphackers.launchwrapper.tweak.injection.legacy.FixSplashScreen;
 import org.mcphackers.launchwrapper.tweak.injection.legacy.IndevSaving;
 import org.mcphackers.launchwrapper.tweak.injection.legacy.LWJGLPatch;
 import org.mcphackers.launchwrapper.tweak.injection.legacy.LegacyInit;
 import org.mcphackers.launchwrapper.tweak.injection.legacy.LegacyTweakContext;
 import org.mcphackers.launchwrapper.tweak.injection.legacy.OptionsLoadFix;
 import org.mcphackers.launchwrapper.tweak.injection.legacy.ReplaceGameDir;
-import org.mcphackers.launchwrapper.tweak.injection.legacy.FixSplashScreen;
 import org.mcphackers.launchwrapper.tweak.injection.legacy.UnlicensedCopyText;
 import org.mcphackers.launchwrapper.tweak.injection.vanilla.ChangeBrand;
 import org.mcphackers.launchwrapper.util.UnsafeUtils;
@@ -68,8 +69,8 @@ public class LegacyTweak extends Tweak {
 		);
 	}
 
-	public ClassLoaderTweak getLoaderTweak() {
-		return new LegacyClassLoaderTweak();
+	public List<LazyTweaker> getLazyTweakers() {
+		return Collections.<LazyTweaker>singletonList(new Java5LazyTweaker());
 	}
 
 	private void downloadServer() {

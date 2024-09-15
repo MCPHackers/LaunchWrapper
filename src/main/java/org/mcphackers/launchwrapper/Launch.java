@@ -36,7 +36,11 @@ public class Launch {
 		LaunchClassLoader loader = getLoader();
 		Tweak mainTweak = getTweak();
 		if(mainTweak == null) {
-			LOGGER.logErr("No suitable tweak found. Is Minecraft on classpath?");
+			if(config.tweakClass.get() == null) {
+				LOGGER.logErr("No suitable tweak found. Is Minecraft on classpath?");
+			} else {
+				LOGGER.logErr("Specified tweak does not exist.");
+			}
 			return;
 		}
 		mainTweak.prepare(loader);
@@ -45,7 +49,7 @@ public class Launch {
 			if(config.discordRPC.get()) {
 				setupDiscordRPC();
 			}
-			loader.setLoaderTweak(mainTweak.getLoaderTweak());
+			loader.setLoaderTweakers(mainTweak.getLazyTweakers());
 			LaunchTarget target = mainTweak.getLaunchTarget();
 			if(target != null) {
 				target.launch(loader);

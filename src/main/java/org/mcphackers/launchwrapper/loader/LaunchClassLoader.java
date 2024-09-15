@@ -16,10 +16,11 @@ import java.security.cert.Certificate;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.mcphackers.launchwrapper.tweak.ClassLoaderTweak;
+import org.mcphackers.launchwrapper.tweak.LazyTweaker;
 import org.mcphackers.launchwrapper.util.ClassNodeSource;
 import org.mcphackers.launchwrapper.util.ResourceSource;
 import org.mcphackers.launchwrapper.util.Util;
@@ -34,7 +35,7 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 	private static LaunchClassLoader INSTANCE;
 
 	private ClassLoader parent;
-	private ClassLoaderTweak tweak;
+	private List<LazyTweaker> tweaks;
 	private Set<String> exceptions = new HashSet<String>();
 	private Set<String> ignoreExceptions = new HashSet<String>();
 	/** Keys should contain dots */
@@ -115,7 +116,7 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 		Class<?> cls = null;
 
 		if(overridenSource.get(name) != null) {
-			return transformedClass(name);
+			return redefineClass(name);
 		}
 		outer:
 		for(String pkg : exceptions) {
@@ -131,7 +132,7 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 				}
 			}
 		}
-		cls = transformedClass(name);
+		cls = redefineClass(name);
 		if(cls != null) {
 			return cls;
 		}
@@ -263,12 +264,21 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 	protected Class<?> redefineClass(String name) throws ClassNotFoundException {
 		assert name.contains(".");
 		String nodeName = classNodeName(name);
-		if(tweak != null) {
-			if(tweak.tweakClass(this, nodeName)) {
+		if(tweaks != null) {
+			boolean modified = false;
+			for(LazyTweaker tweak : tweaks) {
+				modified |= tweak.tweakClass(this, nodeName);
+			}
+			if(modified) {
 				ClassNode tweakedNode = getClass(nodeName);
 				saveDebugClass(tweakedNode);
 				return redefineClass(tweakedNode);
 			}
+		}
+		ClassNode overridenNode = overridenClasses.get(name);
+		if(overridenNode != null) {
+			saveDebugClass(overridenNode);
+			return redefineClass(overridenNode);
 		}
 		try {
 			InputStream is = getClassAsStream(name);
@@ -320,23 +330,8 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 		return parent.getResourceAsStream(className);
 	}
 
-	private Class<?> transformedClass(String name) throws ClassNotFoundException {
-		assert name.contains(".");
-		ClassNode transformed = overridenClasses.get(name);
-		if(transformed != null) {
-			if(tweak != null) {
-				if(tweak.tweakClass(this, classNodeName(name))) {
-					transformed = overridenClasses.get(name);
-				}
-			}
-			saveDebugClass(transformed);
-			return redefineClass(transformed);
-		}
-		return redefineClass(name);
-	}
-
-	public void setLoaderTweak(ClassLoaderTweak classLoaderTweak) {
-		tweak = classLoaderTweak;
+	public void setLoaderTweakers(List<LazyTweaker> classLoaderTweaks) {
+		tweaks = classLoaderTweaks;
 	}
 
 	private Class<?> defineClass(String name, byte[] classData) {

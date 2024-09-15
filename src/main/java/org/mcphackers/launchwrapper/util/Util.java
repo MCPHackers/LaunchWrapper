@@ -3,6 +3,7 @@ package org.mcphackers.launchwrapper.util;
 import java.io.BufferedInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -25,6 +26,25 @@ public final class Util {
 			} catch (IOException ignored) {
 			}
 		}
+	}
+	
+	public static File getSource(URL resource, String resPath) {
+		if(resource.getProtocol().equals("jar")) {
+			String path = resource.getPath();
+			if(path.startsWith("file:")) {
+				path = path.substring("file:".length());
+				int i = path.lastIndexOf('!');
+				if(i != -1) {
+					path = path.substring(0, i);
+				}
+			}
+			return new File(path);
+			
+		}
+		if(resource.getPath().endsWith(resPath)) {
+			return new File(resource.getPath().substring(0, resource.getPath().length() - resPath.length() - 1));
+		}
+		return null;
 	}
 
 	public static byte[] getResource(String path) {

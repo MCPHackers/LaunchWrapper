@@ -26,8 +26,8 @@ public class FabricLoaderTweak extends Tweak {
 	}
 
     @Override
-    public ClassLoaderTweak getLoaderTweak() {
-        return baseTweak.getLoaderTweak();
+    public List<LazyTweaker> getLazyTweakers() {
+        return baseTweak.getLazyTweakers();
     }
 
     @Override

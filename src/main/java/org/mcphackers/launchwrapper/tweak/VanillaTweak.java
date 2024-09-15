@@ -40,7 +40,7 @@ public class VanillaTweak extends Tweak {
 	}
 
 	@Override
-	public ClassLoaderTweak getLoaderTweak() {
+	public List<LazyTweaker> getLazyTweakers() {
 		return null;
 	}
 

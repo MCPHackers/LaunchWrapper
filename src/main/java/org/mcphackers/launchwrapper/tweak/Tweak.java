@@ -59,7 +59,7 @@ public abstract class Tweak {
 		return true;
 	}
 
-	public abstract ClassLoaderTweak getLoaderTweak();
+	public abstract List<LazyTweaker> getLazyTweakers();
 
 	public abstract LaunchTarget getLaunchTarget();
 

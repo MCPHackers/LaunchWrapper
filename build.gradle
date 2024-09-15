@@ -60,16 +60,16 @@ allprojects {
         archives sourcesJar
     }
 
-    sourceCompatibility = JavaVersion.VERSION_1_8
-    targetCompatibility = JavaVersion.VERSION_1_8
-
     compileJava {
         options.encoding = "UTF-8"
 
         // Minecraft is mostly compatible with java 5 up until the version we support, so why not?
-        if (JavaVersion.current().ordinal() <= JavaVersion.VERSION_1_8.ordinal()) {
-            sourceCompatibility = JavaVersion.VERSION_1_5
-            targetCompatibility = JavaVersion.VERSION_1_5
+        sourceCompatibility = JavaVersion.VERSION_1_5
+        targetCompatibility = JavaVersion.VERSION_1_5
+        // Target Java 8 on newer JDKs
+        if (JavaVersion.current().ordinal() > JavaVersion.VERSION_1_8.ordinal()) {
+            sourceCompatibility = JavaVersion.VERSION_1_8
+            targetCompatibility = JavaVersion.VERSION_1_8
         }
     }
 
