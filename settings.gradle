@@ -3,4 +3,4 @@ plugins {
 }
 rootProject.name = 'launchwrapper'
 include 'launchwrapper-fabric'
-// include 'launchwrapper-micromixin'
+include 'launchwrapper-micromixin'
