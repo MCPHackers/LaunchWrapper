@@ -8,11 +8,12 @@ import org.mcphackers.launchwrapper.loader.LaunchClassLoader;
  */
 public class MainLaunchTarget implements LaunchTarget {
 
-	public String targetClass;
-	public String[] args;
+	public final String targetClass;
+	public final String[] args;
 
-	public MainLaunchTarget(String classTarget) {
+	public MainLaunchTarget(String classTarget, String[] arguments) {
 		targetClass = classTarget.replace("/", ".");
+		args = arguments;
 	}
 
 	public void launch(LaunchClassLoader classLoader) {

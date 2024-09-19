@@ -5,6 +5,7 @@ import static org.objectweb.asm.Opcodes.*;
 
 import org.mcphackers.launchwrapper.LaunchConfig;
 import org.mcphackers.launchwrapper.tweak.injection.InjectionWithContext;
+import org.mcphackers.launchwrapper.tweak.storage.LegacyTweakContext;
 import org.mcphackers.launchwrapper.util.ClassNodeSource;
 import org.mcphackers.rdi.util.NodeHelper;
 import org.objectweb.asm.tree.AbstractInsnNode;
@@ -22,6 +23,9 @@ import org.objectweb.asm.tree.TryCatchBlockNode;
 import org.objectweb.asm.tree.TypeInsnNode;
 import org.objectweb.asm.tree.VarInsnNode;
 
+/**
+ * Currently includes deAWT, mouse fix and everything related to replacement of AWT calls with LWJGL ones
+ */
 public class LWJGLPatch extends InjectionWithContext<LegacyTweakContext> {
 
     public LWJGLPatch(LegacyTweakContext storage) {
@@ -50,12 +54,18 @@ public class LWJGLPatch extends InjectionWithContext<LegacyTweakContext> {
 
 
 	private void fixMouseHelper(ClassNodeSource source, LaunchConfig config) {
-		if(!config.lwjglFrame.get() || context.mouseHelperName == null) {
+		if(!config.lwjglFrame.get()) {
+			return;
+		}
+		//TODO split mouse fix from deAWT
+		String mouseHelperName = context.mouseHelperName;
+		if(mouseHelperName == null) {
 			return;
 		}
 		ClassNode mouseHelper = source.getClass(context.mouseHelperName);
 		MethodNode setDelta = null;
 		MethodNode setGrabbed = null;
+		MethodNode setUngrabbed = null;
 		String dx = null;
 		String dy = null;
 		method:
@@ -90,40 +100,65 @@ public class LWJGLPatch extends InjectionWithContext<LegacyTweakContext> {
 					}
 					continue method;
 				}
-				if(compareInsn(insns[0], GETFIELD, mouseHelper.name, null, "Lorg/lwjgl/input/Cursor;")
-				&& compareInsn(insns[1], INVOKESTATIC, "org/lwjgl/input/Mouse", "setNativeCursor", "(Lorg/lwjgl/input/Cursor;)Lorg/lwjgl/input/Cursor;")) {
-					setGrabbed = m;
+				if(compareInsn(insns[1], INVOKESTATIC, "org/lwjgl/input/Mouse", "setNativeCursor", "(Lorg/lwjgl/input/Cursor;)Lorg/lwjgl/input/Cursor;")) {
+					if(compareInsn(insns[0], GETFIELD, mouseHelper.name, null, "Lorg/lwjgl/input/Cursor;")) {
+						setGrabbed = m;
+					} else if(compareInsn(insns[0], ACONST_NULL)) {
+						setUngrabbed = m;
+					}
 					continue method;
 				}
 				insn = nextInsn(insn);
 			}
 		}
-		if(setDelta != null && setGrabbed != null && dx != null && dy != null) {
-			setGrabbed.localVariables = null;
-			setGrabbed.tryCatchBlocks.clear();
-			InsnList insns = new InsnList();
-			insns.add(new InsnNode(ICONST_1));
-			insns.add(new MethodInsnNode(INVOKESTATIC, "org/lwjgl/input/Mouse", "setGrabbed", "(Z)V"));
-			insns.add(new VarInsnNode(ALOAD, 0));
-			insns.add(new InsnNode(ICONST_0));
-			insns.add(new FieldInsnNode(PUTFIELD, mouseHelper.name, dx, "I"));
-			insns.add(new VarInsnNode(ALOAD, 0));
-			insns.add(new InsnNode(ICONST_0));
-			insns.add(new FieldInsnNode(PUTFIELD, mouseHelper.name, dy, "I"));
-			insns.add(new InsnNode(RETURN));
-			setGrabbed.instructions = insns;
+		if(dx != null && dy != null) {
+			InsnList insns;
+			if(setGrabbed != null) {
+				setGrabbed.localVariables = null;
+				setGrabbed.tryCatchBlocks.clear();
+				insns = new InsnList();
+				insns.add(new InsnNode(ICONST_1));
+				insns.add(new MethodInsnNode(INVOKESTATIC, "org/lwjgl/input/Mouse", "setGrabbed", "(Z)V"));
+				insns.add(new VarInsnNode(ALOAD, 0));
+				insns.add(new InsnNode(ICONST_0));
+				insns.add(new FieldInsnNode(PUTFIELD, mouseHelper.name, dx, "I"));
+				insns.add(new VarInsnNode(ALOAD, 0));
+				insns.add(new InsnNode(ICONST_0));
+				insns.add(new FieldInsnNode(PUTFIELD, mouseHelper.name, dy, "I"));
+				insns.add(new InsnNode(RETURN));
+				setGrabbed.instructions = insns;
+			}
+			if(setUngrabbed != null) {
+				// inf-630
+				setUngrabbed.localVariables = null;
+				setUngrabbed.tryCatchBlocks.clear();
+				insns = new InsnList();
+				insns.add(new MethodInsnNode(INVOKESTATIC, "org/lwjgl/opengl/Display", "getWidth", "()I"));
+				insns.add(new InsnNode(ICONST_2));
+				insns.add(new InsnNode(IDIV));
+				insns.add(new MethodInsnNode(INVOKESTATIC, "org/lwjgl/opengl/Display", "getHeight", "()I"));
+				insns.add(new InsnNode(ICONST_2));
+				insns.add(new InsnNode(IDIV));
+				insns.add(new MethodInsnNode(INVOKESTATIC, "org/lwjgl/input/Mouse", "setCursorPosition", "(II)V"));
+				insns.add(new InsnNode(ICONST_0));
+				insns.add(new MethodInsnNode(INVOKESTATIC, "org/lwjgl/input/Mouse", "setGrabbed", "(Z)V"));
+				insns.add(new InsnNode(RETURN));
+				setUngrabbed.instructions = insns;
+			}
 
-			setDelta.localVariables = null;
-			setDelta.tryCatchBlocks.clear();
-			insns = new InsnList();
-			insns.add(new VarInsnNode(ALOAD, 0));
-			insns.add(new MethodInsnNode(INVOKESTATIC, "org/lwjgl/input/Mouse", "getDX", "()I"));
-			insns.add(new FieldInsnNode(PUTFIELD, mouseHelper.name, dx, "I"));
-			insns.add(new VarInsnNode(ALOAD, 0));
-			insns.add(new MethodInsnNode(INVOKESTATIC, "org/lwjgl/input/Mouse", "getDY", "()I"));
-			insns.add(new FieldInsnNode(PUTFIELD, mouseHelper.name, dy, "I"));
-			insns.add(new InsnNode(RETURN));
-			setDelta.instructions = insns;
+			if(setDelta != null) {
+				setDelta.localVariables = null;
+				setDelta.tryCatchBlocks.clear();
+				insns = new InsnList();
+				insns.add(new VarInsnNode(ALOAD, 0));
+				insns.add(new MethodInsnNode(INVOKESTATIC, "org/lwjgl/input/Mouse", "getDX", "()I"));
+				insns.add(new FieldInsnNode(PUTFIELD, mouseHelper.name, dx, "I"));
+				insns.add(new VarInsnNode(ALOAD, 0));
+				insns.add(new MethodInsnNode(INVOKESTATIC, "org/lwjgl/input/Mouse", "getDY", "()I"));
+				insns.add(new FieldInsnNode(PUTFIELD, mouseHelper.name, dy, "I"));
+				insns.add(new InsnNode(RETURN));
+				setDelta.instructions = insns;
+			}
 
 			for(MethodNode m : context.minecraft.methods) {
 				if(!m.desc.equals("()V") || m.tryCatchBlocks.isEmpty()) {
@@ -132,6 +167,7 @@ public class LWJGLPatch extends InjectionWithContext<LegacyTweakContext> {
 				for(TryCatchBlockNode tryCatch : m.tryCatchBlocks) {
 					if(tryCatch.type != null && tryCatch.type.equals("org/lwjgl/LWJGLException")) {
 						AbstractInsnNode[] insns2 = fill(nextInsn(tryCatch.start), 3);
+						// setUngrabbed in inf-625 or earlier
 						if(compareInsn(insns2[0], ACONST_NULL)
 						&& compareInsn(insns2[1], INVOKESTATIC, "org/lwjgl/input/Mouse", "setNativeCursor", "(Lorg/lwjgl/input/Cursor;)Lorg/lwjgl/input/Cursor;")
 						&& compareInsn(insns2[2], POP)) {
@@ -164,13 +200,24 @@ public class LWJGLPatch extends InjectionWithContext<LegacyTweakContext> {
 					for(MethodNode m : node.methods) {
 						AbstractInsnNode insn = m.instructions.getFirst();
 						while(insn != null) {
+							// We need to patch these calls out to not discard mouse delta
 							if(insn.getOpcode() == INVOKESTATIC) {
 								AbstractInsnNode[] insns2 = fill(insn, 3);
 								if((compareInsn(insns2[0], INVOKESTATIC, "org/lwjgl/input/Mouse", "getDX", "()I")
 								|| compareInsn(insns2[0], INVOKESTATIC, "org/lwjgl/input/Mouse", "getDY", "()I"))
 								&& compareInsn(insns2[1], POP)) {
+									// Triggers in inf-625 and earlier
 									m.instructions.remove(insns2[0]);
 									m.instructions.remove(insns2[1]);
+									insn = insns2[2];
+									success = true;
+								}
+								if((compareInsn(insns2[0], INVOKESTATIC, "org/lwjgl/input/Mouse", "getDX", "()I")
+								|| compareInsn(insns2[0], INVOKESTATIC, "org/lwjgl/input/Mouse", "getDY", "()I"))
+								&& compareInsn(insns2[1], ICONST_0)
+								&& compareInsn(insns2[2], IMUL)) {
+									// inf-630. Uses multiply by 0 instead of POPing return value
+									m.instructions.set(insns2[0], new InsnNode(ICONST_0));
 									insn = insns2[2];
 									success = true;
 								}
@@ -179,6 +226,7 @@ public class LWJGLPatch extends InjectionWithContext<LegacyTweakContext> {
 								if(compareInsn(insns2[0], GETFIELD, context.minecraft.name, null, "L" + mouseHelper.name + ";")
 								&& compareInsn(insns2[1], GETFIELD, mouseHelper.name, dy, "I")
 								&& compareInsn(insns2[2], ISUB)) {
+									// Vertical mouse delta is reversed
 									m.instructions.set(insns2[2], new InsnNode(IADD));
 									success = true;
 									break method;
@@ -344,6 +392,7 @@ public class LWJGLPatch extends InjectionWithContext<LegacyTweakContext> {
 
 	private MethodNode getTickMethod(MethodNode run) {
 		if(context.running == null) {
+			// TODO document which version is missing running boolean
 			return run;
 		}
 		AbstractInsnNode insn = run.instructions.getFirst();

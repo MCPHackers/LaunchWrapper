@@ -6,6 +6,7 @@ import static org.objectweb.asm.Opcodes.*;
 import org.mcphackers.launchwrapper.LaunchConfig;
 import org.mcphackers.launchwrapper.tweak.LegacyTweak;
 import org.mcphackers.launchwrapper.tweak.injection.InjectionWithContext;
+import org.mcphackers.launchwrapper.tweak.storage.LegacyTweakContext;
 import org.mcphackers.launchwrapper.util.ClassNodeSource;
 import org.mcphackers.rdi.util.NodeHelper;
 import org.objectweb.asm.Opcodes;
@@ -15,6 +16,9 @@ import org.objectweb.asm.tree.FieldInsnNode;
 import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.MethodNode;
 
+/**
+ * Initializes LegacyTweakContext
+ */
 public class LegacyInit extends InjectionWithContext<LegacyTweakContext> {
 
     public LegacyInit(LegacyTweakContext storage) {

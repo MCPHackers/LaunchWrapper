@@ -5,6 +5,7 @@ import static org.objectweb.asm.Opcodes.*;
 
 import org.mcphackers.launchwrapper.LaunchConfig;
 import org.mcphackers.launchwrapper.tweak.injection.InjectionWithContext;
+import org.mcphackers.launchwrapper.tweak.storage.LegacyTweakContext;
 import org.mcphackers.launchwrapper.util.ClassNodeSource;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.ClassNode;
@@ -17,6 +18,9 @@ import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.TypeInsnNode;
 
+/**
+ * WIP
+ */
 public class FixClassicSession extends InjectionWithContext<LegacyTweakContext> {
 
     public FixClassicSession(LegacyTweakContext context) {

@@ -5,6 +5,7 @@ import static org.objectweb.asm.Opcodes.*;
 
 import org.mcphackers.launchwrapper.LaunchConfig;
 import org.mcphackers.launchwrapper.tweak.IsomTweak;
+import org.mcphackers.launchwrapper.tweak.storage.LegacyTweakContext;
 import org.mcphackers.launchwrapper.util.ClassNodeSource;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldInsnNode;
@@ -18,10 +19,6 @@ import org.objectweb.asm.tree.TypeInsnNode;
 import org.objectweb.asm.tree.VarInsnNode;
 
 public class LegacyInitIsom extends LegacyInit {
-
-	public ClassNode isomApplet;
-	public ClassNode isomCanvas;
-	public FieldNode mcDirIsom;
 
     public LegacyInitIsom(LegacyTweakContext storage) {
         super(storage);
@@ -37,6 +34,9 @@ public class LegacyInitIsom extends LegacyInit {
         if(!super.apply(source, config)) {
             return false;
         }
+		ClassNode isomApplet = null;
+		ClassNode isomCanvas = null;
+		FieldNode mcDirIsom = null;
         
 		isomApplet = source.getClass(IsomTweak.MAIN_ISOM);
 		if(isomApplet != null) {

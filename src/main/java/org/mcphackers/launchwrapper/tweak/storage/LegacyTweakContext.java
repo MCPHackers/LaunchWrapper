@@ -1,4 +1,4 @@
-package org.mcphackers.launchwrapper.tweak.injection.legacy;
+package org.mcphackers.launchwrapper.tweak.storage;
 
 import org.mcphackers.launchwrapper.tweak.LegacyTweak;
 import org.mcphackers.rdi.util.NodeHelper;
@@ -9,7 +9,7 @@ import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 
-public class LegacyTweakContext {
+public class LegacyTweakContext implements MinecraftGetter {
 	public ClassNode minecraft;
 	public ClassNode minecraftApplet;
 	/** Field that determines if Minecraft should exit */
@@ -27,12 +27,24 @@ public class LegacyTweakContext {
 	/** Default height when toggling fullscreen */
 	public FieldInsnNode defaultHeight;
 	public FieldInsnNode fullscreenField;
-	/** Name (usually obfuscated) of the MouseHelper class */
+	/** Name of the MouseHelper class */
 	public String mouseHelperName;
 	public boolean supportsResizing;
 	/** public static main(String[]) */
 	public MethodNode main;
 	public MethodNode run;
+
+    public ClassNode getMinecraft() {
+        return minecraft;
+    }
+
+    public MethodNode getRun() {
+        return run;
+    }
+
+    public FieldNode getIsRunning() {
+        return running;
+    }
 
 	public boolean isClassic() {
 		for(String s : LegacyTweak.MAIN_CLASSES) {
@@ -63,6 +75,7 @@ public class LegacyTweakContext {
 				if(invoke.owner.equals(minecraft.name)) {
 					return NodeHelper.getMethod(minecraft, invoke.name, invoke.desc);
 				} else {
+					// Sometimes init() is inlined inside of run() method
 					return run;
 				}
 			}

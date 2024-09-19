@@ -10,11 +10,14 @@ import java.util.List;
 import org.mcphackers.launchwrapper.LaunchConfig;
 import org.mcphackers.launchwrapper.tweak.VanillaTweak;
 import org.mcphackers.launchwrapper.tweak.injection.InjectionWithContext;
+import org.mcphackers.launchwrapper.tweak.storage.VanillaTweakContext;
 import org.mcphackers.launchwrapper.util.ClassNodeSource;
 import org.mcphackers.rdi.util.IdentifyCall;
 import org.mcphackers.rdi.util.NodeHelper;
+import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.ClassNode;
+import org.objectweb.asm.tree.FieldInsnNode;
 import org.objectweb.asm.tree.LdcInsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
@@ -45,17 +48,27 @@ public class VanillaInit extends InjectionWithContext<VanillaTweakContext> {
 		if(main == null) {
 			return false;
 		}
-		MethodNode run = null;
 		AbstractInsnNode insn = main.instructions.getLast();
 		while(insn != null) {
 			// Last call inside of main is minecraft.run();
 			if(insn.getOpcode() == INVOKEVIRTUAL) {
 				MethodInsnNode invoke = (MethodInsnNode) insn;
 				context.minecraft = source.getClass(invoke.owner);
-				run = NodeHelper.getMethod(context.minecraft, invoke.name, invoke.desc);
+				context.run = NodeHelper.getMethod(context.minecraft, invoke.name, invoke.desc);
 				break;
 			}
 			insn = previousInsn(insn);
+		}
+		insn = context.run.instructions.getFirst();
+		while(insn != null) {
+			if(insn.getOpcode() == Opcodes.PUTFIELD) {
+				FieldInsnNode putField = (FieldInsnNode) insn;
+				if("Z".equals(putField.desc)) {
+					context.running = NodeHelper.getField(context.minecraft, putField.name, putField.desc);
+				}
+				break;
+			}
+			insn = nextInsn(insn);
 		}
 		for(AbstractInsnNode insn2 = main.instructions.getFirst(); insn2 != null; insn2 = nextInsn(insn2)) {
 			if(compareInsn(insn2, INVOKEVIRTUAL, "joptsimple/OptionParser", "accepts", "(Ljava/lang/String;)Ljoptsimple/OptionSpecBuilder;")) {
@@ -85,7 +98,7 @@ public class VanillaInit extends InjectionWithContext<VanillaTweakContext> {
 		String[] arr = new String[newArgs.size()];
 		context.args = newArgs.toArray(arr);
 
-		MethodNode init = getInit(run);
+		MethodNode init = getInit(context.run);
 		boolean fixedTitle = replaceTitle(init, config);
 		boolean fixedIcon = replaceIcon(init, config);
 		for(MethodNode m : context.minecraft.methods) {
@@ -146,7 +159,7 @@ public class VanillaInit extends InjectionWithContext<VanillaTweakContext> {
 	}
 
 	private MethodNode getInit(MethodNode run) {
-		for(AbstractInsnNode insn : run.instructions) {
+		for(AbstractInsnNode insn = run.instructions.getFirst(); insn != null; insn = nextInsn(insn)) {
 			if(insn.getType() == AbstractInsnNode.METHOD_INSN) {
 				MethodInsnNode invoke = (MethodInsnNode) insn;
 				if(invoke.owner.equals(context.minecraft.name)) {

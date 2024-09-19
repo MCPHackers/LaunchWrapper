@@ -13,11 +13,6 @@ public class Launch {
 	 * Class loader where overwritten classes will be stored
 	 */
 	private static final LaunchClassLoader CLASS_LOADER = LaunchClassLoader.instantiate();
-	static {
-		CLASS_LOADER.addException("org.mcphackers.launchwrapper");
-		CLASS_LOADER.addException("org.objectweb.asm");
-		CLASS_LOADER.removeException("org.mcphackers.launchwrapper.inject");
-	}
 	private static Launch INSTANCE;
 	
 	public final LaunchConfig config;

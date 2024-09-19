@@ -25,11 +25,11 @@ import org.mcphackers.launchwrapper.tweak.injection.legacy.FixSplashScreen;
 import org.mcphackers.launchwrapper.tweak.injection.legacy.IndevSaving;
 import org.mcphackers.launchwrapper.tweak.injection.legacy.LWJGLPatch;
 import org.mcphackers.launchwrapper.tweak.injection.legacy.LegacyInit;
-import org.mcphackers.launchwrapper.tweak.injection.legacy.LegacyTweakContext;
 import org.mcphackers.launchwrapper.tweak.injection.legacy.OptionsLoadFix;
 import org.mcphackers.launchwrapper.tweak.injection.legacy.ReplaceGameDir;
 import org.mcphackers.launchwrapper.tweak.injection.legacy.UnlicensedCopyText;
 import org.mcphackers.launchwrapper.tweak.injection.vanilla.ChangeBrand;
+import org.mcphackers.launchwrapper.tweak.storage.LegacyTweakContext;
 import org.mcphackers.launchwrapper.util.UnsafeUtils;
 import org.mcphackers.launchwrapper.util.Util;
 
@@ -117,8 +117,7 @@ public class LegacyTweak extends Tweak {
 		enableLegacyMergeSort();
 		URLStreamHandlerProxy.setURLStreamHandler("http", new LegacyURLStreamHandler(config));
 		URLStreamHandlerProxy.setURLStreamHandler("https", new LegacyURLStreamHandler(config));
-		MainLaunchTarget target = new MainLaunchTarget(context.minecraft.name);
-		target.args = new String[] { config.username.get(), config.session.get() };
+		MainLaunchTarget target = new MainLaunchTarget(context.minecraft.name, new String[] { config.username.get(), config.session.get() });
 		return target;
 	}
 }

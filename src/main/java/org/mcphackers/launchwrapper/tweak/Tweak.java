@@ -12,6 +12,8 @@ import org.mcphackers.launchwrapper.tweak.injection.Injection;
 import org.mcphackers.launchwrapper.util.ClassNodeSource;
 import org.mcphackers.launchwrapper.util.ResourceSource;
 
+import net.minecraft.launchwrapper.ITweaker;
+
 public abstract class Tweak {
 	protected ClassNodeSource source;
 	protected LaunchConfig config;
@@ -65,14 +67,23 @@ public abstract class Tweak {
 
 	public static Tweak forClass(ClassNodeSource source, LaunchConfig launch, String clazz) {
 		try {
-			try {
-				return (Tweak)Class.forName(clazz)
-					.getConstructor(LaunchConfig.class, Tweak.class)
-					.newInstance(launch, getDefault(source, launch));
-			} catch (NoSuchMethodException e) {
-				return (Tweak)Class.forName(clazz)
-						.getConstructor(LaunchConfig.class)
-						.newInstance(launch);
+			Class<?> cls = Class.forName(clazz);
+			if(Tweak.class.isAssignableFrom(cls)) {
+				Class<? extends Tweak> tweak = cls.asSubclass(Tweak.class);
+				try {
+					return tweak
+						.getConstructor(LaunchConfig.class, Tweak.class)
+						.newInstance(launch, getDefault(source, launch));
+				} catch (NoSuchMethodException e) {
+					return tweak
+							.getConstructor(LaunchConfig.class)
+							.newInstance(launch);
+				}
+			}
+			else if(ITweaker.class.isAssignableFrom(cls)) {
+				return new LegacyLauncherTweak(launch, getDefault(source, launch));
+			} else {
+				return null;
 			}
 		} catch (ClassNotFoundException e) {
 			return null;

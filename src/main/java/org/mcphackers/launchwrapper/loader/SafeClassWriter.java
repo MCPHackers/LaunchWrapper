@@ -17,7 +17,11 @@ public class SafeClassWriter extends ClassWriter {
         if("java/lang/Object".equals(name)) {
             return null;
         }
-		return classLoader.getClass(name);
+		ClassNode node = classLoader.getClass(name);
+        if(node == null) {
+            throw new TypeNotPresentException(name, new NullPointerException());
+        }
+        return node;
 	}
 	
 	protected String getCommonSuperClass(final String type1, final String type2) {

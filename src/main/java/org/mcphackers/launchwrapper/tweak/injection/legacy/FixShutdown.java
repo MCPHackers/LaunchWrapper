@@ -5,6 +5,7 @@ import static org.objectweb.asm.Opcodes.*;
 
 import org.mcphackers.launchwrapper.LaunchConfig;
 import org.mcphackers.launchwrapper.tweak.injection.InjectionWithContext;
+import org.mcphackers.launchwrapper.tweak.storage.LegacyTweakContext;
 import org.mcphackers.launchwrapper.util.ClassNodeSource;
 import org.mcphackers.rdi.util.NodeHelper;
 import org.objectweb.asm.Type;
@@ -56,7 +57,6 @@ public class FixShutdown extends InjectionWithContext<LegacyTweakContext> {
 				&& containsInvoke(m.instructions, new MethodInsnNode(INVOKESTATIC, "org/lwjgl/input/Keyboard", "destroy", "()V"))
 				&& containsInvoke(m.instructions, new MethodInsnNode(INVOKESTATIC, "org/lwjgl/opengl/Display", "destroy", "()V"))) {
 					destroy = m;
-					// tweakInfo("destroy()", destroy.name + destroy.desc);
 					break;
 				}
 			}

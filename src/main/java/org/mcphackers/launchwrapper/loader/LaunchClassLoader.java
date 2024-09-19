@@ -33,11 +33,14 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 
 	public static final int CLASS_VERSION = getSupportedClassVersion();
 	private static LaunchClassLoader INSTANCE;
+	// private final ClassWriter writer = new SafeClassWriter(this, COMPUTE_MAXS | COMPUTE_FRAMES);
 
 	private ClassLoader parent;
 	private List<LazyTweaker> tweaks;
-	private Set<String> exceptions = new HashSet<String>();
-	private Set<String> ignoreExceptions = new HashSet<String>();
+	private Set<String> exclusions = new HashSet<String>();
+	private Set<String> ignoreExclusions = new HashSet<String>();
+
+	private Set<String> overridesExclude = new HashSet<String>();
 	/** Keys should contain dots */
 	Map<String, ClassNode> overridenClasses = new HashMap<String, ClassNode>();
 	Map<String, byte[]> overridenResources = new HashMap<String, byte[]>();
@@ -49,12 +52,12 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 	public LaunchClassLoader(ClassLoader parent) {
 		super(new URL[0], null);
 		this.parent = parent;
-	}
-
-	public void setClassPath(URL[] urls) {
-		for(URL url : urls) {
-			addURL(url);
-		}
+		addExclusion("java");
+		addExclusion("sun");
+		addExclusion("net.minecraft.launchwrapper");
+		addExclusion("org.mcphackers.launchwrapper");
+		addExclusion("org.objectweb.asm");
+		removeExclusion("org.mcphackers.launchwrapper.inject");
 	}
 
 	public void setDebugOutput(File directory) {
@@ -110,33 +113,22 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 
 	public Class<?> findClass(String name) throws ClassNotFoundException {
 		assert name.contains(".");
-		if(name.startsWith("java.")) {
-			return parent.loadClass(name);
-		}
-		Class<?> cls = null;
 
 		if(overridenSource.get(name) != null) {
 			return redefineClass(name);
 		}
 		outer:
-		for(String pkg : exceptions) {
-			for(String pkg2 : ignoreExceptions) {
+		for(String pkg : exclusions) {
+			for(String pkg2 : ignoreExclusions) {
 				if(name.startsWith(pkg2)) {
 					continue outer;
 				}
 			}
 			if(name.startsWith(pkg)) {
-				cls = parent.loadClass(name);
-				if(cls != null) {
-					return cls;
-				}
+				return parent.loadClass(name);
 			}
 		}
-		cls = redefineClass(name);
-		if(cls != null) {
-			return cls;
-		}
-		throw new ClassNotFoundException(name);
+		return redefineClass(name);
 	}
 
 	public void invokeMain(String launchTarget, String... args) {
@@ -152,12 +144,16 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 		}
 	}
 
-	public void addException(String pkg) {
-		exceptions.add(pkg + ".");
+	public void addOverrideExclusion(String pkg) {
+		overridesExclude.add(pkg + (pkg.endsWith(".") ? "" : "."));
 	}
 
-	public void removeException(String pkg) {
-		ignoreExceptions.add(pkg + ".");
+	public void addExclusion(String pkg) {
+		exclusions.add(pkg + (pkg.endsWith(".") ? "" : "."));
+	}
+
+	public void removeExclusion(String pkg) {
+		ignoreExclusions.add(pkg + (pkg.endsWith(".") ? "" : "."));
 	}
 
 	public void overrideClassSource(String name, String f) {
@@ -207,6 +203,11 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 	}
 
 	public void overrideClass(ClassNode node) {
+		for(String pkg : overridesExclude) {
+			if(node.name.replace("/", ".").startsWith(pkg)) {
+				return;
+			}
+		}
 		if(node == null)
 			return;
 		overridenClasses.put(className(node.name), node);
@@ -222,12 +223,15 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 			cls.getParentFile().mkdirs();
 			// org.objectweb.asm.util.TraceClassVisitor trace = new org.objectweb.asm.util.TraceClassVisitor(new java.io.PrintWriter(new File(debugOutput, node.name + ".dump")));
 			// node.accept(trace);
-			ClassWriter writer = new SafeClassWriter(this, COMPUTE_MAXS | COMPUTE_FRAMES);
+			ClassWriter writer = new CustomClassWriter(this, COMPUTE_MAXS | COMPUTE_FRAMES);//new SafeClassWriter(this, COMPUTE_MAXS | COMPUTE_FRAMES);
 			node.accept(writer);
 			byte[] classData = writer.toByteArray();
 			FileOutputStream fos = new FileOutputStream(cls);
-			fos.write(classData);
-			fos.close();
+			try {
+				fos.write(classData);
+			} finally {
+				fos.close();
+			}
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -239,9 +243,6 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 	 */
 	public ClassNode getClass(String name) {
 		assert !name.contains(".");
-		if(name.startsWith("java/")) {
-			return null;
-		}
 		ClassNode node = classNodeCache.get(name);
 		if(node != null) {
 			return node;
@@ -264,7 +265,14 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 	protected Class<?> redefineClass(String name) throws ClassNotFoundException {
 		assert name.contains(".");
 		String nodeName = classNodeName(name);
-		if(tweaks != null) {
+		boolean skip = false;
+		for(String pkg : overridesExclude) {
+			if(name.startsWith(pkg)) {
+				skip = true;
+				break;
+			}
+		}
+		if(tweaks != null && !skip) {
 			boolean modified = false;
 			for(LazyTweaker tweak : tweaks) {
 				modified |= tweak.tweakClass(this, nodeName);
@@ -296,7 +304,8 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 		if(node == null) {
 			return null;
 		}
-		ClassWriter writer = new SafeClassWriter(this, COMPUTE_MAXS | COMPUTE_FRAMES);
+		ClassWriter writer = new CustomClassWriter(this, COMPUTE_MAXS | COMPUTE_FRAMES);
+		//ClassWriter writer = new SafeClassWriter(this, COMPUTE_MAXS | COMPUTE_FRAMES);
 		node.accept(writer);
 		byte[] classData = writer.toByteArray();
 		return defineClass(className(node.name), classData);
@@ -321,9 +330,9 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 		return resource;
 	}
 
-	private InputStream getClassAsStream(String name) {
+	public InputStream getClassAsStream(String name) {
 		String className = classResourceName(name);
-		InputStream is = super.getResourceAsStream(className);
+		InputStream is = this.getResourceAsStream(className);
 		if(is != null) {
 			return is;
 		}
@@ -369,7 +378,9 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 		if(INSTANCE != null) {
 			throw new IllegalStateException("Can only have one instance of LaunchClassLoader!");
 		}
-		return INSTANCE = new LaunchClassLoader(getSystemClassLoader());
+		INSTANCE = new LaunchClassLoader(getSystemClassLoader());
+		Thread.currentThread().setContextClassLoader(INSTANCE);
+		return INSTANCE;
 	}
 
 }

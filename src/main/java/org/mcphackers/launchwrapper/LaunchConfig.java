@@ -136,7 +136,6 @@ public class LaunchConfig {
 		}
 		if(uuid.get() == null && username.get() != null) {
 			// Purely cosmetic change. Makes skins in modern versions when only provided with username
-			// FIXME could hang until connection timeout without running the game
 			uuid.set(SkinRequests.getUUIDfromName(username.get()));
 		}
 	}
