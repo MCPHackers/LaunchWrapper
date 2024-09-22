@@ -5,7 +5,7 @@ import static org.objectweb.asm.Opcodes.*;
 
 import org.mcphackers.launchwrapper.LaunchConfig;
 import org.mcphackers.launchwrapper.tweak.injection.InjectionWithContext;
-import org.mcphackers.launchwrapper.tweak.storage.LegacyTweakContext;
+import org.mcphackers.launchwrapper.tweak.injection.MinecraftGetter;
 import org.mcphackers.launchwrapper.util.ClassNodeSource;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AbstractInsnNode;
@@ -23,9 +23,9 @@ import org.objectweb.asm.tree.VarInsnNode;
 /**
  * Makes "online save" buttons work like offline level saving. Saves to ${gameDir}/levels
  */
-public class IndevSaving extends InjectionWithContext<LegacyTweakContext> {
+public class IndevSaving extends InjectionWithContext<MinecraftGetter> {
 
-    public IndevSaving(LegacyTweakContext storage) {
+    public IndevSaving(MinecraftGetter storage) {
         super(storage);
     }
 
@@ -41,13 +41,14 @@ public class IndevSaving extends InjectionWithContext<LegacyTweakContext> {
     
     @Override
 	public boolean apply(ClassNodeSource source, LaunchConfig config) {
+		ClassNode minecraft = context.getMinecraft();
 		ClassNode saveLevelMenu = null;
 		ClassNode loadLevelMenu = null;
 		methods:
-		for(MethodNode m : context.minecraft.methods) {
+		for(MethodNode m : minecraft.methods) {
 			AbstractInsnNode[] insns = fill(m.instructions.getFirst(), 10);
 			if(compareInsn(insns[0], ALOAD, 0)
-			&& compareInsn(insns[1], GETFIELD, context.minecraft.name)
+			&& compareInsn(insns[1], GETFIELD, minecraft.name)
 			&& compareInsn(insns[2], IFNULL)
 			&& compareInsn(insns[3], RETURN)
 			&& compareInsn(insns[4], ALOAD, 0)

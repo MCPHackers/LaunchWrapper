@@ -1,21 +1,29 @@
 package net.minecraft.launchwrapper;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.mcphackers.launchwrapper.tweak.LegacyLauncherTweak;
-import org.mcphackers.launchwrapper.util.Util;
+import org.mcphackers.launchwrapper.util.UnsafeUtils;
 
+@SuppressWarnings("unused")
 public class LaunchClassLoader extends URLClassLoader {
 
     private org.mcphackers.launchwrapper.loader.LaunchClassLoader classLoader;
     private LegacyLauncherTweak tweak;
     private List<URL> sources = new ArrayList<URL>();
+
+    private final Map<String, Class<?>> cachedClasses = Collections.<String, Class<?>>emptyMap();
+    private final Set<String> invalidClasses = new HashSet<String>();
+    // private final Set<String> classLoaderExceptions;
+    // private final Set<String> transformerExceptions;
 
     public LaunchClassLoader(org.mcphackers.launchwrapper.loader.LaunchClassLoader classLoader, LegacyLauncherTweak tweak) {
         super(new URL[0]);
@@ -36,7 +44,23 @@ public class LaunchClassLoader extends URLClassLoader {
     }
 
     public void addTransformerExclusion(String toExclude) {
-        classLoader.addOverrideExclusion(toExclude);
+        classLoader.addTransformExclusion(toExclude);
+    }
+
+    private String untransformName(final String name) {
+        if (tweak.renameTransformer != null) {
+            return tweak.renameTransformer.unmapClassName(name);
+        }
+
+        return name;
+    }
+
+    private String transformName(final String name) {
+        if (tweak.renameTransformer != null) {
+            return tweak.renameTransformer.remapClassName(name);
+        }
+
+        return name;
     }
 
     @Override
@@ -59,13 +83,10 @@ public class LaunchClassLoader extends URLClassLoader {
     }
 
     public byte[] getClassBytes(String name) throws IOException {
-        InputStream is = classLoader.getClassAsStream(name);
-        if(is == null) {
-            return null;
-        }
-        return Util.readStream(is);
+        return classLoader.getClassBytes(name);
     }
     
     public void clearNegativeEntries(Set<String> entriesToClear) {
+        invalidClasses.clear();
     }
 }

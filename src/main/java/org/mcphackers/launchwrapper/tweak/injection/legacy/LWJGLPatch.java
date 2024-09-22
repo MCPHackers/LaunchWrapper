@@ -5,7 +5,6 @@ import static org.objectweb.asm.Opcodes.*;
 
 import org.mcphackers.launchwrapper.LaunchConfig;
 import org.mcphackers.launchwrapper.tweak.injection.InjectionWithContext;
-import org.mcphackers.launchwrapper.tweak.storage.LegacyTweakContext;
 import org.mcphackers.launchwrapper.util.ClassNodeSource;
 import org.mcphackers.rdi.util.NodeHelper;
 import org.objectweb.asm.tree.AbstractInsnNode;
@@ -28,6 +27,8 @@ import org.objectweb.asm.tree.VarInsnNode;
  */
 public class LWJGLPatch extends InjectionWithContext<LegacyTweakContext> {
 
+	public String mouseHelperName;
+
     public LWJGLPatch(LegacyTweakContext storage) {
         super(storage);
     }
@@ -46,7 +47,7 @@ public class LWJGLPatch extends InjectionWithContext<LegacyTweakContext> {
     public boolean apply(ClassNodeSource source, LaunchConfig config) {
         bitDepthFix(context.getInit());
 		
-		removeCanvas(getTickMethod(context.run));
+		removeCanvas(getTickMethod(context.getRun()));
         boolean b = displayPatch(context.getInit(), context.supportsResizing, source, config);
 		fixMouseHelper(source, config);
 		return b;
@@ -58,11 +59,11 @@ public class LWJGLPatch extends InjectionWithContext<LegacyTweakContext> {
 			return;
 		}
 		//TODO split mouse fix from deAWT
-		String mouseHelperName = context.mouseHelperName;
 		if(mouseHelperName == null) {
 			return;
 		}
-		ClassNode mouseHelper = source.getClass(context.mouseHelperName);
+		ClassNode minecraft = context.getMinecraft();
+		ClassNode mouseHelper = source.getClass(mouseHelperName);
 		MethodNode setDelta = null;
 		MethodNode setGrabbed = null;
 		MethodNode setUngrabbed = null;
@@ -160,7 +161,7 @@ public class LWJGLPatch extends InjectionWithContext<LegacyTweakContext> {
 				setDelta.instructions = insns;
 			}
 
-			for(MethodNode m : context.minecraft.methods) {
+			for(MethodNode m : minecraft.methods) {
 				if(!m.desc.equals("()V") || m.tryCatchBlocks.isEmpty()) {
 					continue;
 				}
@@ -189,7 +190,7 @@ public class LWJGLPatch extends InjectionWithContext<LegacyTweakContext> {
 					}
 				}
 			}
-			for(FieldNode field : context.minecraft.fields) {
+			for(FieldNode field : minecraft.fields) {
 				if(field.desc.startsWith("L") && field.desc.endsWith(";")) {
 					boolean success = false;
 					ClassNode node = source.getClass(field.desc.substring(1, field.desc.length() - 1));
@@ -223,7 +224,7 @@ public class LWJGLPatch extends InjectionWithContext<LegacyTweakContext> {
 								}
 							} else {
 								AbstractInsnNode[] insns2 = fill(insn, 3);
-								if(compareInsn(insns2[0], GETFIELD, context.minecraft.name, null, "L" + mouseHelper.name + ";")
+								if(compareInsn(insns2[0], GETFIELD, minecraft.name, null, "L" + mouseHelper.name + ";")
 								&& compareInsn(insns2[1], GETFIELD, mouseHelper.name, dy, "I")
 								&& compareInsn(insns2[2], ISUB)) {
 									// Vertical mouse delta is reversed
@@ -324,20 +325,21 @@ public class LWJGLPatch extends InjectionWithContext<LegacyTweakContext> {
 	}
 	
 	private void removeCanvas(MethodNode method) {
+		ClassNode minecraft = context.getMinecraft();
 		AbstractInsnNode insn1 = method.instructions.getFirst();
 		while(insn1 != null) {
 			AbstractInsnNode[] insns = fill(insn1, 6);
 			if(context.width != null && context.height != null
 			&& compareInsn(insns[0], ALOAD)
 			&& compareInsn(insns[1], ALOAD)
-			&& compareInsn(insns[2], GETFIELD, context.minecraft.name, context.width.name, context.width.desc)
+			&& compareInsn(insns[2], GETFIELD, minecraft.name, context.width.name, context.width.desc)
 			&& compareInsn(insns[3], ALOAD)
-			&& compareInsn(insns[4], GETFIELD, context.minecraft.name, context.height.name, context.height.desc)
-			&& compareInsn(insns[5], INVOKESPECIAL, context.minecraft.name, null, "(II)V")) {
+			&& compareInsn(insns[4], GETFIELD, minecraft.name, context.height.name, context.height.desc)
+			&& compareInsn(insns[5], INVOKESPECIAL, minecraft.name, null, "(II)V")) {
 				context.supportsResizing = true;
 			}
 			if(compareInsn(insns[0], ALOAD)
-			&& compareInsn(insns[1], GETFIELD, context.minecraft.name, null, "Ljava/awt/Canvas;")
+			&& compareInsn(insns[1], GETFIELD, minecraft.name, null, "Ljava/awt/Canvas;")
 			&& compareInsn(insns[2], INVOKEVIRTUAL, "java/awt/Canvas", "getWidth", "()I")) {
 				MethodInsnNode invoke = new MethodInsnNode(INVOKESTATIC, "org/lwjgl/opengl/Display", "getWidth", "()I");
 				method.instructions.insert(insns[2], invoke);
@@ -347,7 +349,7 @@ public class LWJGLPatch extends InjectionWithContext<LegacyTweakContext> {
 				insn1 = invoke;
 			}
 			if(compareInsn(insns[0], ALOAD)
-			&& compareInsn(insns[1], GETFIELD, context.minecraft.name, null, "Ljava/awt/Canvas;")
+			&& compareInsn(insns[1], GETFIELD, minecraft.name, null, "Ljava/awt/Canvas;")
 			&& compareInsn(insns[2], INVOKEVIRTUAL, "java/awt/Canvas", "getHeight", "()I")) {
 				MethodInsnNode invoke = new MethodInsnNode(INVOKESTATIC, "org/lwjgl/opengl/Display", "getHeight", "()I");
 				method.instructions.insert(insns[2], invoke);
@@ -358,7 +360,7 @@ public class LWJGLPatch extends InjectionWithContext<LegacyTweakContext> {
 			}
 			
 			if(compareInsn(insns[0], ALOAD)
-			&& compareInsn(insns[1], GETFIELD, context.minecraft.name, null, "Ljava/awt/Canvas;")
+			&& compareInsn(insns[1], GETFIELD, minecraft.name, null, "Ljava/awt/Canvas;")
 			&& compareInsn(insns[2], IFNONNULL)
 			&& compareInsn(insns[3], INVOKESTATIC, "org/lwjgl/opengl/Display", "isCloseRequested", "()Z")
 			&& compareInsn(insns[4], IFEQ)) {
@@ -373,9 +375,9 @@ public class LWJGLPatch extends InjectionWithContext<LegacyTweakContext> {
 		while(insn1 != null) {
 			AbstractInsnNode[] insns = fill(insn1, 6);
 			if(compareInsn(insns[0], ALOAD)
-			&& compareInsn(insns[1], GETFIELD, context.minecraft.name, null, "Ljava/awt/Canvas;")
+			&& compareInsn(insns[1], GETFIELD, minecraft.name, null, "Ljava/awt/Canvas;")
 			&& compareInsn(insns[2], IFNULL) && compareInsn(insns[3], ALOAD)
-			&& compareInsn(insns[4], GETFIELD, context.minecraft.name, null, "Z")
+			&& compareInsn(insns[4], GETFIELD, minecraft.name, null, "Z")
 			&& compareInsn(insns[5], IFNE)) {
 				if(((JumpInsnNode) insns[2]).label != ((JumpInsnNode) insns[5]).label) {
 					continue;
@@ -391,23 +393,25 @@ public class LWJGLPatch extends InjectionWithContext<LegacyTweakContext> {
 
 
 	private MethodNode getTickMethod(MethodNode run) {
-		if(context.running == null) {
+		ClassNode minecraft = context.getMinecraft();
+		FieldNode running = context.getIsRunning();
+		if(running == null) {
 			// TODO document which version is missing running boolean
 			return run;
 		}
 		AbstractInsnNode insn = run.instructions.getFirst();
 		while(insn != null) {
 			if(compareInsn(insn.getPrevious(), ALOAD)
-			&& compareInsn(insn, INVOKESPECIAL, context.minecraft.name, null, "()V")) {
+			&& compareInsn(insn, INVOKESPECIAL, minecraft.name, null, "()V")) {
 				MethodInsnNode invoke = (MethodInsnNode) insn;
-				MethodNode testedMethod = NodeHelper.getMethod(context.minecraft, invoke.name, invoke.desc);
+				MethodNode testedMethod = NodeHelper.getMethod(minecraft, invoke.name, invoke.desc);
 				if(testedMethod != null) {
 					AbstractInsnNode insn2 = testedMethod.instructions.getFirst();
 					while(insn2 != null) {
 						AbstractInsnNode[] insns = fill(insn2, 3);
 						if(compareInsn(insns[0], ALOAD)
 						&& compareInsn(insns[1], ICONST_0)
-						&& compareInsn(insns[2], PUTFIELD, context.minecraft.name, context.running.name, context.running.desc)) {
+						&& compareInsn(insns[2], PUTFIELD, minecraft.name, running.name, running.desc)) {
 							return testedMethod;
 						}
 						insn2 = nextInsn(insn2);
@@ -422,13 +426,14 @@ public class LWJGLPatch extends InjectionWithContext<LegacyTweakContext> {
 	private InsnList getIcon(boolean grassIcon) {
 		InsnList insert = new InsnList();
 		insert.add(booleanInsn(grassIcon));
-		insert.add(new MethodInsnNode(INVOKESTATIC, "org/mcphackers/launchwrapper/inject/Inject", "loadIcon", "(Z)[Ljava/nio/ByteBuffer;"));
+		insert.add(new MethodInsnNode(INVOKESTATIC, "org/mcphackers/launchwrapper/util/IconUtils", "loadIcon", "(Z)[Ljava/nio/ByteBuffer;"));
 		insert.add(new MethodInsnNode(INVOKESTATIC, "org/lwjgl/opengl/Display", "setIcon", "([Ljava/nio/ByteBuffer;)I"));
 		insert.add(new InsnNode(POP));
 		return insert;
 	}
 
 	private boolean displayPatch(MethodNode init, boolean supportsResizing, ClassNodeSource source, LaunchConfig config) {
+		ClassNode minecraft = context.getMinecraft();
 		boolean foundTitle = false;
         boolean success = false;
 		String canvasName = null;
@@ -449,7 +454,7 @@ public class LWJGLPatch extends InjectionWithContext<LegacyTweakContext> {
 			AbstractInsnNode[] insns = fill(insn, 6);
 			if(iLabel == null
 			&& compareInsn(insns[0], ALOAD)
-			&& compareInsn(insns[1], GETFIELD, context.minecraft.name, null, "Ljava/awt/Canvas;")
+			&& compareInsn(insns[1], GETFIELD, minecraft.name, null, "Ljava/awt/Canvas;")
 			&& compareInsn(insns[2], IFNULL)) {
 				thisIndex = ((VarInsnNode) insns[0]).var;
 				canvasName = ((FieldInsnNode) insns[1]).name;
@@ -462,7 +467,7 @@ public class LWJGLPatch extends InjectionWithContext<LegacyTweakContext> {
 			&& compareInsn(insns[0], ALOAD)
 			&& compareInsn(insns[1], DUP)
 			&& compareInsn(insns[2], ASTORE)
-			&& compareInsn(insns[3], GETFIELD, context.minecraft.name, null, "Ljava/awt/Canvas;")
+			&& compareInsn(insns[3], GETFIELD, minecraft.name, null, "Ljava/awt/Canvas;")
 			&& compareInsn(insns[4], IFNULL)) {
 				thisIndex = ((VarInsnNode) insns[2]).var;
 				canvasName = ((FieldInsnNode) insns[3]).name;
@@ -556,16 +561,16 @@ public class LWJGLPatch extends InjectionWithContext<LegacyTweakContext> {
 			if(canvasName != null) {
 				boolean found
 				 = compareInsn(insns[0], ALOAD, thisIndex)
-				&& compareInsn(insns[1], GETFIELD, context.minecraft.name, canvasName, "Ljava/awt/Canvas;")
+				&& compareInsn(insns[1], GETFIELD, minecraft.name, canvasName, "Ljava/awt/Canvas;")
 				&& compareInsn(insns[2], INVOKESPECIAL, null, "<init>", "(Ljava/awt/Component;)V");
 
 				if(found
 				|| compareInsn(insns[0], ALOAD, thisIndex)
-				&& compareInsn(insns[1], GETFIELD, context.minecraft.name, canvasName, "Ljava/awt/Canvas;")
+				&& compareInsn(insns[1], GETFIELD, minecraft.name, canvasName, "Ljava/awt/Canvas;")
 				&& compareInsn(insns[2], ALOAD, thisIndex)
-				&& compareInsn(insns[3], GETFIELD, context.minecraft.name)
+				&& compareInsn(insns[3], GETFIELD, minecraft.name)
 				&& compareInsn(insns[4], INVOKESPECIAL, null, "<init>")) {
-					context.mouseHelperName = found ? ((MethodInsnNode) insns[2]).owner : ((MethodInsnNode) insns[4]).owner;
+					mouseHelperName = found ? ((MethodInsnNode) insns[2]).owner : ((MethodInsnNode) insns[4]).owner;
 				}
 			}
 			insn = nextInsn(insn);
@@ -588,10 +593,10 @@ public class LWJGLPatch extends InjectionWithContext<LegacyTweakContext> {
 			insert.add(booleanInsn(config.forceVsync.get()));
 			insert.add(new MethodInsnNode(INVOKESTATIC, "org/lwjgl/opengl/Display", "setVSyncEnabled", "(Z)V"));
 			insert.add(new VarInsnNode(ALOAD, thisIndex));
-			insert.add(new FieldInsnNode(GETFIELD, context.minecraft.name, canvasName, "Ljava/awt/Canvas;"));
+			insert.add(new FieldInsnNode(GETFIELD, minecraft.name, canvasName, "Ljava/awt/Canvas;"));
 			insert.add(new JumpInsnNode(IFNULL, iLabel));
 			insert.add(new VarInsnNode(ALOAD, thisIndex));
-			insert.add(new FieldInsnNode(GETFIELD, context.minecraft.name, canvasName, "Ljava/awt/Canvas;"));
+			insert.add(new FieldInsnNode(GETFIELD, minecraft.name, canvasName, "Ljava/awt/Canvas;"));
 			insert.add(new MethodInsnNode(INVOKESTATIC, "org/lwjgl/opengl/Display", "setParent", "(Ljava/awt/Canvas;)V"));
 
 			if(!foundTitle && config.title.get() != null) {
@@ -607,11 +612,11 @@ public class LWJGLPatch extends InjectionWithContext<LegacyTweakContext> {
 
 		if(context.fullscreenField != null) {
 			methodLoop:
-			for(MethodNode m : context.minecraft.methods) {
+			for(MethodNode m : minecraft.methods) {
 				AbstractInsnNode insn2 = m.instructions.getFirst();
 				while(insn2 != null) {
 					if(insn2.getOpcode() == GETFIELD) {
-						if(compareInsn(insn2, GETFIELD, context.minecraft.name, context.fullscreenField.name, context.fullscreenField.desc)) {
+						if(compareInsn(insn2, GETFIELD, minecraft.name, context.fullscreenField.name, context.fullscreenField.desc)) {
 							break;
 						} else {
 							continue methodLoop;
@@ -623,33 +628,33 @@ public class LWJGLPatch extends InjectionWithContext<LegacyTweakContext> {
 					AbstractInsnNode[] insns2 = fill(insn2, 4);
 					if(compareInsn(insns2[0], ALOAD)
 					&& compareInsn(insns2[1], ALOAD)
-					&& compareInsn(insns2[2], GETFIELD, context.minecraft.name, null, context.width.desc)
-					&& compareInsn(insns2[3], PUTFIELD, context.minecraft.name, context.width.name, context.width.desc)) {
+					&& compareInsn(insns2[2], GETFIELD, minecraft.name, null, context.width.desc)
+					&& compareInsn(insns2[3], PUTFIELD, minecraft.name, context.width.name, context.width.desc)) {
 						context.defaultWidth = (FieldInsnNode) insns2[2];
 					}
 					if(compareInsn(insns2[0], ALOAD)
 					&& compareInsn(insns2[1], ALOAD)
-					&& compareInsn(insns2[2], GETFIELD, context.minecraft.name, null, context.height.desc)
-					&& compareInsn(insns2[3], PUTFIELD, context.minecraft.name, context.height.name, context.height.desc)) {
+					&& compareInsn(insns2[2], GETFIELD, minecraft.name, null, context.height.desc)
+					&& compareInsn(insns2[3], PUTFIELD, minecraft.name, context.height.name, context.height.desc)) {
 						context.defaultHeight = (FieldInsnNode) insns2[2];
 					}
 					if(context.defaultWidth != null && context.defaultHeight != null && config.lwjglFrame.get()
 					&& compareInsn(insns2[0], IFGT)
 					&& compareInsn(insns2[1], ALOAD)
 					&& compareInsn(insns2[2], ICONST_1)
-					&& compareInsn(insns2[3], PUTFIELD, context.minecraft.name, context.height.name, context.height.desc)) {
+					&& compareInsn(insns2[3], PUTFIELD, minecraft.name, context.height.name, context.height.desc)) {
 						AbstractInsnNode next = nextInsn(insns2[3]);
 						AbstractInsnNode[] insns3 = fill(next, 8);
 						if(compareInsn(insns3[0], NEW, "org/lwjgl/opengl/DisplayMode")
 						&& compareInsn(insns3[1], DUP)
 						&& compareInsn(insns3[2], ALOAD)
-						&& compareInsn(insns3[3], GETFIELD, context.minecraft.name, null, context.defaultWidth.desc)
+						&& compareInsn(insns3[3], GETFIELD, minecraft.name, null, context.defaultWidth.desc)
 						&& compareInsn(insns3[4], ALOAD)
-						&& compareInsn(insns3[5], GETFIELD, context.minecraft.name, null, context.defaultHeight.desc)
+						&& compareInsn(insns3[5], GETFIELD, minecraft.name, null, context.defaultHeight.desc)
 						&& compareInsn(insns3[6], INVOKESPECIAL, "org/lwjgl/opengl/DisplayMode", "<init>", "(II)V")
 						&& compareInsn(insns3[7], INVOKESTATIC, "org/lwjgl/opengl/Display", "setDisplayMode", "(Lorg/lwjgl/opengl/DisplayMode;)V")) {
-							m.instructions.set(insns3[3], new FieldInsnNode(GETFIELD, context.minecraft.name, context.defaultWidth.name, context.defaultWidth.desc));
-							m.instructions.set(insns3[5], new FieldInsnNode(GETFIELD, context.minecraft.name, context.defaultHeight.name, context.defaultHeight.desc));
+							m.instructions.set(insns3[3], new FieldInsnNode(GETFIELD, minecraft.name, context.defaultWidth.name, context.defaultWidth.desc));
+							m.instructions.set(insns3[5], new FieldInsnNode(GETFIELD, minecraft.name, context.defaultHeight.name, context.defaultHeight.desc));
 							break methodLoop;
 						} else {
 							JumpInsnNode jump = (JumpInsnNode) insns2[0];
@@ -660,9 +665,9 @@ public class LWJGLPatch extends InjectionWithContext<LegacyTweakContext> {
 							insert.add(new TypeInsnNode(NEW, "org/lwjgl/opengl/DisplayMode"));
 							insert.add(new InsnNode(DUP));
 							insert.add(new VarInsnNode(ALOAD, 0));
-							insert.add(new FieldInsnNode(GETFIELD, context.minecraft.name, context.defaultWidth.name, context.defaultWidth.desc));
+							insert.add(new FieldInsnNode(GETFIELD, minecraft.name, context.defaultWidth.name, context.defaultWidth.desc));
 							insert.add(new VarInsnNode(ALOAD, 0));
-							insert.add(new FieldInsnNode(GETFIELD, context.minecraft.name, context.defaultHeight.name, context.defaultHeight.desc));
+							insert.add(new FieldInsnNode(GETFIELD, minecraft.name, context.defaultHeight.name, context.defaultHeight.desc));
 							insert.add(new MethodInsnNode(INVOKESPECIAL, "org/lwjgl/opengl/DisplayMode", "<init>", "(II)V"));
 							insert.add(new MethodInsnNode(INVOKESTATIC, "org/lwjgl/opengl/Display", "setDisplayMode", "(Lorg/lwjgl/opengl/DisplayMode;)V"));
 							m.instructions.insert(insns2[3], insert);
@@ -674,7 +679,7 @@ public class LWJGLPatch extends InjectionWithContext<LegacyTweakContext> {
 			}
 		}
 
-		source.overrideClass(context.minecraft);
+		source.overrideClass(minecraft);
         return success;
 	}
 

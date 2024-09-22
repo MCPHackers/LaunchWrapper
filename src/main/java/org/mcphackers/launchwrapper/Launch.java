@@ -39,21 +39,21 @@ public class Launch {
 			return;
 		}
 		mainTweak.prepare(loader);
-		if(mainTweak.transform(loader)) {
-			mainTweak.transformResources(loader);
-			if(config.discordRPC.get()) {
-				setupDiscordRPC();
-			}
-			loader.setLoaderTweakers(mainTweak.getLazyTweakers());
-			LaunchTarget target = mainTweak.getLaunchTarget();
-			if(target != null) {
-				target.launch(loader);
-			} else {
-				LOGGER.logErr("Could not find launch target");
-			}
-		} else {
+		if(!mainTweak.transform(loader)) {
 			LOGGER.logErr("Tweak could not be applied");
+			return;
 		}
+		mainTweak.transformResources(loader);
+		if(config.discordRPC.get()) {
+			setupDiscordRPC();
+		}
+		LaunchTarget target = mainTweak.getLaunchTarget();
+		if(target == null) {
+			LOGGER.logErr("Could not find launch target");
+			return;
+		}
+		loader.setLoaderTweakers(mainTweak.getLazyTweakers());
+		target.launch(loader);
 	}
 
 	protected Tweak getTweak() {
@@ -85,6 +85,11 @@ public class Launch {
 
 		public void logErr(String format, Object... args) {
 			System.err.println("[LaunchWrapper] " + String.format(format, args));
+		}
+
+		public void logErr(String msg, Exception e) {
+			System.err.println("[LaunchWrapper] " + msg);
+			e.printStackTrace(System.err);
 		}
 
 		public void logDebug(String format, Object... args) {

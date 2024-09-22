@@ -5,9 +5,10 @@ import static org.objectweb.asm.Opcodes.*;
 
 import org.mcphackers.launchwrapper.LaunchConfig;
 import org.mcphackers.launchwrapper.tweak.injection.InjectionWithContext;
-import org.mcphackers.launchwrapper.tweak.storage.LegacyTweakContext;
+import org.mcphackers.launchwrapper.tweak.injection.MinecraftGetter;
 import org.mcphackers.launchwrapper.util.ClassNodeSource;
 import org.objectweb.asm.tree.AbstractInsnNode;
+import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldInsnNode;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.InsnNode;
@@ -20,9 +21,9 @@ import org.objectweb.asm.tree.VarInsnNode;
 /**
  * Fixes mojang splash screen offset when running with custom window size or fullscreen
  */
-public class FixSplashScreen extends InjectionWithContext<LegacyTweakContext> {
+public class FixSplashScreen extends InjectionWithContext<MinecraftGetter> {
 
-    public FixSplashScreen(LegacyTweakContext storage) {
+    public FixSplashScreen(MinecraftGetter storage) {
         super(storage);
     }
 
@@ -38,7 +39,8 @@ public class FixSplashScreen extends InjectionWithContext<LegacyTweakContext> {
 
     @Override
     public boolean apply(ClassNodeSource source, LaunchConfig config) {
-		for(MethodNode m : context.minecraft.methods) {
+		ClassNode minecraft = context.getMinecraft();
+		for(MethodNode m : minecraft.methods) {
 			boolean astore1 = false;
 			boolean store2 = false;
 			boolean store3 = false;
@@ -106,7 +108,7 @@ public class FixSplashScreen extends InjectionWithContext<LegacyTweakContext> {
 									m.instructions.set(insns2[1], new VarInsnNode(ILOAD, 2));
 									m.instructions.remove(insns2[8]);
 									m.instructions.set(insns2[9], new VarInsnNode(ILOAD, 3));
-									source.overrideClass(context.minecraft);
+									source.overrideClass(minecraft);
 									return true;
 								} else if(owner != null) {
 									// b1.4
@@ -127,7 +129,7 @@ public class FixSplashScreen extends InjectionWithContext<LegacyTweakContext> {
 									m.instructions.insertBefore(insns2[8], list);
 									m.instructions.remove(insns2[8]);
 									m.instructions.remove(insns2[9]);
-									source.overrideClass(context.minecraft);
+									source.overrideClass(minecraft);
 									return true;
 								} else {
 									return false;

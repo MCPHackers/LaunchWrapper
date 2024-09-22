@@ -13,8 +13,7 @@ import org.mcphackers.launchwrapper.tweak.injection.Injection;
 import org.mcphackers.launchwrapper.tweak.injection.legacy.ClassicCrashScreen;
 import org.mcphackers.launchwrapper.tweak.injection.vanilla.ChangeBrand;
 import org.mcphackers.launchwrapper.tweak.injection.vanilla.OneSixAssetsFix;
-import org.mcphackers.launchwrapper.tweak.injection.vanilla.VanillaInit;
-import org.mcphackers.launchwrapper.tweak.storage.VanillaTweakContext;
+import org.mcphackers.launchwrapper.tweak.injection.vanilla.VanillaTweakContext;
 
 public class VanillaTweak extends Tweak {
 	public static final String MAIN_CLASS = "net/minecraft/client/main/Main";
@@ -27,7 +26,7 @@ public class VanillaTweak extends Tweak {
 
 	public List<Injection> getInjections() {
 		return Arrays.<Injection>asList(
-			new VanillaInit(context),
+			context,
 			new ClassicCrashScreen(context),
 			new OneSixAssetsFix(context),
 			new ChangeBrand()

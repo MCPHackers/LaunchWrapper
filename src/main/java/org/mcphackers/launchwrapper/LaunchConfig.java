@@ -104,6 +104,20 @@ public class LaunchConfig {
 		}
 	}
 
+	@SuppressWarnings("unchecked")
+	public LaunchConfig clone() {
+		LaunchConfig newConfig = new LaunchConfig();
+		newConfig.unknownParameters.putAll(unknownParameters);
+		for(Map.Entry<String, LaunchParameter<?>> entry : parameters.entrySet()) {
+			LaunchParameter<Object> param = (LaunchParameter<Object>)newConfig.parameters.get(entry.getKey());
+			if(param == null) {
+				continue;
+			}
+			param.set(entry.getValue().get());
+		}
+		return newConfig;
+	}
+
 	public LaunchConfig() {
 	}
 
@@ -135,7 +149,7 @@ public class LaunchConfig {
 			}
 		}
 		if(uuid.get() == null && username.get() != null) {
-			// Purely cosmetic change. Makes skins in modern versions when only provided with username
+			// Resolve profile UUID if we only provide username
 			uuid.set(SkinRequests.getUUIDfromName(username.get()));
 		}
 	}

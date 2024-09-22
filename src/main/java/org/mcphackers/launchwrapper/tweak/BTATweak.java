@@ -6,9 +6,8 @@ import java.util.List;
 import org.mcphackers.launchwrapper.LaunchConfig;
 import org.mcphackers.launchwrapper.tweak.injection.Injection;
 import org.mcphackers.launchwrapper.tweak.injection.legacy.FixShutdown;
-import org.mcphackers.launchwrapper.tweak.injection.legacy.LegacyInit;
-import org.mcphackers.launchwrapper.tweak.injection.legacy.ReplaceGameDir;
 import org.mcphackers.launchwrapper.tweak.injection.legacy.FixSplashScreen;
+import org.mcphackers.launchwrapper.tweak.injection.legacy.ReplaceGameDir;
 
 /**
  * Based on LegacyTweak but less invasive in order to maintain compatibility
@@ -23,7 +22,7 @@ public class BTATweak extends LegacyTweak {
 	@Override
 	public List<Injection> getInjections() {
 		return Arrays.<Injection>asList(
-				new LegacyInit(context),
+				context,
 				new FixSplashScreen(context),
 				new FixShutdown(context),
 				// new LWJGLPatch(context),

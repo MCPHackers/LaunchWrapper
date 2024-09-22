@@ -2,11 +2,8 @@ package org.mcphackers.launchwrapper.protocol;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
@@ -18,12 +15,11 @@ import org.mcphackers.launchwrapper.util.Util;
 
 public class LoadLevelURLConnection extends HttpURLConnection {
 
-	Exception exception;
-	private File gameDir;
+	private File levelsDir;
 
-	public LoadLevelURLConnection(URL url, File gameDir) {
+	public LoadLevelURLConnection(URL url, File levelsDir) {
 		super(url);
-		this.gameDir = gameDir;
+		this.levelsDir = levelsDir;
 	}
 
 	@Override
@@ -43,19 +39,14 @@ public class LoadLevelURLConnection extends HttpURLConnection {
 	public InputStream getInputStream() throws IOException {
 		ByteArrayOutputStream data = new ByteArrayOutputStream();
 		DataOutputStream output = new DataOutputStream(data);
+		Exception exception = null;
 		try {
 			Map<String, String> query = Util.queryMap(url);
 			if(!query.containsKey("id")) {
 				throw new MalformedURLException("Query is missing \"id\" parameter");
 			}
 			int levelId = Integer.parseInt(query.get("id"));
-			File levels = new File(gameDir, "levels");
-			File level = new File(levels, "level" + levelId + ".dat");
-			if(!level.exists()) {
-				throw new FileNotFoundException("Level doesn't exist");
-			}
-			DataInputStream in = new DataInputStream(new FileInputStream(level));
-			byte[] levelData = Util.readStream(in);
+			byte[] levelData = SaveRequests.loadLevel(levelsDir, levelId);
 			output.writeUTF("ok");
 			output.write(levelData);
 			output.close();
@@ -67,12 +58,9 @@ public class LoadLevelURLConnection extends HttpURLConnection {
 				Thread.sleep(100L); // Needs some sleep because it won't display error message if it's too fast
 			} catch (InterruptedException e) {
 			}
-			ByteArrayOutputStream errorData = new ByteArrayOutputStream();
-			DataOutputStream errorOutput = new DataOutputStream(errorData);
-			errorOutput.writeUTF("error");
-			errorOutput.writeUTF(exception.getMessage());
-			errorOutput.close();
-			return new ByteArrayInputStream(errorData.toByteArray());
+			output.writeUTF("error");
+			output.writeUTF(exception.getMessage());
+			output.close();
 		}
 		return new ByteArrayInputStream(data.toByteArray());
 	}

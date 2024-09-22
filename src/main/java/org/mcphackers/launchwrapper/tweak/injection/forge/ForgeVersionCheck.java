@@ -1,4 +1,4 @@
-package org.mcphackers.launchwrapper.tweak.injection.legacy;
+package org.mcphackers.launchwrapper.tweak.injection.forge;
 
 import static org.objectweb.asm.Opcodes.*;
 

@@ -1,29 +1,23 @@
 package org.mcphackers.launchwrapper.protocol;
 
-import static org.mcphackers.launchwrapper.protocol.ListLevelsURLConnection.EMPTY_LEVEL;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
-import org.mcphackers.launchwrapper.util.Util;
-
 public class SaveLevelURLConnection extends HttpURLConnection {
 
 	ByteArrayOutputStream levelOutput = new ByteArrayOutputStream();
-	private File gameDir;
+	private File levelsDir;
 
-	public SaveLevelURLConnection(URL url, File gameDir) {
+	public SaveLevelURLConnection(URL url, File levelsDir) {
 		super(url);
-		this.gameDir = gameDir;
+		this.levelsDir = levelsDir;
 	}
 
 	@Override
@@ -44,7 +38,6 @@ public class SaveLevelURLConnection extends HttpURLConnection {
 	public InputStream getInputStream() throws IOException {
 		Exception exception = null;
 		try {
-			File levels = new File(gameDir, "levels");
 			byte[] data = levelOutput.toByteArray();
 			DataInputStream in = new DataInputStream(new ByteArrayInputStream(data));
 			String username = in.readUTF();
@@ -55,38 +48,7 @@ public class SaveLevelURLConnection extends HttpURLConnection {
 			byte[] levelData = new byte[length];
 			in.read(levelData);
 			in.close();
-			File level = new File(levels, "level" + levelId + ".dat");
-			File levelNames = new File(levels, "levels.txt");
-			int maxLevels = 5;
-			String[] lvlNames = new String[maxLevels];
-			for(int i = 0; i < maxLevels; i++) {
-				lvlNames[i] = EMPTY_LEVEL;
-			}
-			if(levelNames.exists()) {
-				FileInputStream levelNamesStream = new FileInputStream(levelNames);
-				lvlNames = new String(Util.readStream(levelNamesStream)).split(";");
-				levelNamesStream.close();
-			}
-			lvlNames[levelId] = levelName;
-			// Since minecraft doesn't have a delete button on levels, just save a new one with this name and it'll get deleted
-			if(levelName.equals("---")) {
-				level.delete();
-				lvlNames[levelId] = EMPTY_LEVEL;
-			} else {
-				if(!levels.exists()) {
-					levels.mkdirs();
-				}
-				OutputStream fileOutput = new FileOutputStream(level);
-				fileOutput.write(levelData);
-				fileOutput.close();
-			}
-			FileOutputStream outputNames = new FileOutputStream(levelNames);
-			String lvls = "";
-			for(int i = 0; i < maxLevels; i++) {
-				lvls += lvlNames[i] + ";";
-			}
-			outputNames.write(lvls.getBytes());
-			outputNames.close();
+			SaveRequests.saveLevel(levelsDir, levelId, levelName, levelData);
 		} catch (Exception e) {
 			exception = e;
 		}

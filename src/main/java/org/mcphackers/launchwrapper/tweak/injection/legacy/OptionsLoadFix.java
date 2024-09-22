@@ -5,7 +5,6 @@ import static org.objectweb.asm.Opcodes.*;
 
 import org.mcphackers.launchwrapper.LaunchConfig;
 import org.mcphackers.launchwrapper.tweak.injection.InjectionWithContext;
-import org.mcphackers.launchwrapper.tweak.storage.LegacyTweakContext;
 import org.mcphackers.launchwrapper.util.ClassNodeSource;
 import org.mcphackers.rdi.util.NodeHelper;
 import org.objectweb.asm.tree.AbstractInsnNode;
@@ -47,6 +46,8 @@ public class OptionsLoadFix extends InjectionWithContext<LegacyTweakContext> {
     }
 
     private boolean optionsLoadFix(ClassNodeSource source, MethodNode init) {
+		ClassNode minecraft = context.getMinecraft();
+
 		AbstractInsnNode insn = init.instructions.getFirst();
 		while(insn != null) {
 			AbstractInsnNode[] insns = fill(insn, 8);
@@ -55,9 +56,9 @@ public class OptionsLoadFix extends InjectionWithContext<LegacyTweakContext> {
 			&& compareInsn(insns[2], DUP)
 			&& compareInsn(insns[3], ALOAD)
 			&& compareInsn(insns[4], ALOAD)
-			&& compareInsn(insns[5], GETFIELD, context.minecraft.name, null, "Ljava/io/File;")
+			&& compareInsn(insns[5], GETFIELD, minecraft.name, null, "Ljava/io/File;")
 			&& compareInsn(insns[6], INVOKESPECIAL, null, "<init>")
-			&& compareInsn(insns[7], PUTFIELD, context.minecraft.name)) {
+			&& compareInsn(insns[7], PUTFIELD, minecraft.name)) {
 				MethodInsnNode invoke = (MethodInsnNode) insns[6];
 				ClassNode optionsClass = source.getClass(invoke.owner);
 				if(optionsClass != null) {

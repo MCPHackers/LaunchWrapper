@@ -9,6 +9,8 @@ public class Launch {
     public static File assetsDir;
     public static Map<String,Object> blackboard = new HashMap<String,Object>();
 
+    public static LaunchClassLoader classLoader;
+
     public static void main(String[] args) {
         org.mcphackers.launchwrapper.Launch.main(args);
     }

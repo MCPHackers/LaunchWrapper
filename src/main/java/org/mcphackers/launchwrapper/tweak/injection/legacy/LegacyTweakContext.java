@@ -5,8 +5,8 @@ import static org.objectweb.asm.Opcodes.*;
 
 import org.mcphackers.launchwrapper.LaunchConfig;
 import org.mcphackers.launchwrapper.tweak.LegacyTweak;
-import org.mcphackers.launchwrapper.tweak.injection.InjectionWithContext;
-import org.mcphackers.launchwrapper.tweak.storage.LegacyTweakContext;
+import org.mcphackers.launchwrapper.tweak.injection.Injection;
+import org.mcphackers.launchwrapper.tweak.injection.MinecraftGetter;
 import org.mcphackers.launchwrapper.util.ClassNodeSource;
 import org.mcphackers.rdi.util.NodeHelper;
 import org.objectweb.asm.Opcodes;
@@ -14,16 +14,81 @@ import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldInsnNode;
 import org.objectweb.asm.tree.FieldNode;
+import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 
 /**
- * Initializes LegacyTweakContext
+ * Initializes context for LegacyTweak
  */
-public class LegacyInit extends InjectionWithContext<LegacyTweakContext> {
+public class LegacyTweakContext implements Injection, MinecraftGetter {
+	private ClassNode minecraft;
+	public ClassNode minecraftApplet;
+	/** Field that determines if Minecraft should exit */
+	private FieldNode running;
+	/** Frame width */
+	public FieldNode width;
+	/** Frame height */
+	public FieldNode height;
+	/** Working game directory */
+	public FieldNode mcDir;
+	/** Whenever the game runs in an applet */
+	public FieldNode appletMode;
+	/** Default width when toggling fullscreen */
+	public FieldInsnNode defaultWidth;
+	/** Default height when toggling fullscreen */
+	public FieldInsnNode defaultHeight;
+	public FieldInsnNode fullscreenField;
+	public boolean supportsResizing;
+	private MethodNode run;
 
-    public LegacyInit(LegacyTweakContext storage) {
-        super(storage);
+    public ClassNode getMinecraft() {
+        return minecraft;
     }
+
+    public MethodNode getRun() {
+        return run;
+    }
+
+    public FieldNode getIsRunning() {
+        return running;
+    }
+
+	public boolean isClassic() {
+		for(String s : LegacyTweak.MAIN_CLASSES) {
+			if(s.equals("net/minecraft/client/Minecraft")) {
+				continue;
+			}
+			if(s.equals(minecraft.name)) {
+				return true;
+			}
+		}
+		if(minecraftApplet != null) {
+			for(String s : LegacyTweak.MAIN_APPLETS) {
+				if(s.equals("net/minecraft/client/MinecraftApplet")) {
+					continue;
+				}
+				if(s.equals(minecraftApplet.name)) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
+	public MethodNode getInit() {
+		for(AbstractInsnNode insn : run.instructions) {
+			if(insn.getType() == AbstractInsnNode.METHOD_INSN) {
+				MethodInsnNode invoke = (MethodInsnNode) insn;
+				if(invoke.owner.equals(minecraft.name)) {
+					return NodeHelper.getMethod(minecraft, invoke.name, invoke.desc);
+				} else {
+					// Sometimes init() is inlined inside of run() method
+					return run;
+				}
+			}
+		}
+		return run;
+	}
 
     @Override
 	public String name() {
@@ -37,26 +102,23 @@ public class LegacyInit extends InjectionWithContext<LegacyTweakContext> {
 
     @Override
     public boolean apply(ClassNodeSource source, LaunchConfig config) {
-		context.minecraftApplet = getApplet(source);
-		context.minecraft = getMinecraft(source, context.minecraftApplet);
-		if(context.minecraft == null) {
+		minecraftApplet = getApplet(source);
+		minecraft = getMinecraft(source, minecraftApplet);
+		if(minecraft == null) {
 			return false;
 		}
-		context.run = NodeHelper.getMethod(context.minecraft, "run", "()V");
-		if(context.run == null) {
+		run = NodeHelper.getMethod(minecraft, "run", "()V");
+		if(run == null) {
 			return false;
 		}
-		for(MethodNode method : context.minecraft.methods) {
-			if("main".equals(method.name) && "([Ljava/lang/String;)V".equals(method.desc) && (method.access & Opcodes.ACC_STATIC) != 0) {
-				context.main = method;
-			}
+		for(MethodNode method : minecraft.methods) {
 			if("run".equals(method.name) && "()V".equals(method.desc)) {
 				AbstractInsnNode insn = method.instructions.getFirst();
 				while(insn != null) {
 					if(insn.getOpcode() == Opcodes.PUTFIELD) {
 						FieldInsnNode putField = (FieldInsnNode) insn;
 						if("Z".equals(putField.desc)) {
-							context.running = NodeHelper.getField(context.minecraft, putField.name, putField.desc);
+							running = NodeHelper.getField(minecraft, putField.name, putField.desc);
 						}
 						break;
 					}
@@ -66,9 +128,7 @@ public class LegacyInit extends InjectionWithContext<LegacyTweakContext> {
 		}
 		int i = 0;
 		boolean previousIsWidth = false;
-		FieldNode width = null;
-		FieldNode height = null;
-		for(FieldNode field : context.minecraft.fields) {
+		for(FieldNode field : minecraft.fields) {
 			if("I".equals(field.desc) && (field.access & ACC_STATIC) == 0) {
 				// Width and height are always the first two NON-STATIC int fields in Minecraft class
 				if(i == 0) {
@@ -82,63 +142,59 @@ public class LegacyInit extends InjectionWithContext<LegacyTweakContext> {
 				previousIsWidth = false;
 			}
 			if("Ljava/io/File;".equals(field.desc)) {
-				context.mcDir = field; // Possible candidate (Needed for infdev)
+				mcDir = field; // Possible candidate (Needed for infdev)
 				if((field.access & Opcodes.ACC_STATIC) != 0) {
 					// Definitely the mc directory
 					break;
 				}
 			}
 		}
-		if(width != null && height != null) {
-			context.width = width;
-			context.height = height;
-		}
-		if(context.minecraftApplet != null) {
-			String mcDesc = "L" + context.minecraft.name + ";";
+		if(minecraftApplet != null) {
+			String mcDesc = "L" + minecraft.name + ";";
 			String mcField = null;
-			for(FieldNode field : context.minecraftApplet.fields) {
+			for(FieldNode field : minecraftApplet.fields) {
 				if(mcDesc.equals(field.desc)) {
 					mcField = field.name;
 				}
 			}
 
-			MethodNode init = NodeHelper.getMethod(context.minecraftApplet, "init", "()V");
+			MethodNode init = NodeHelper.getMethod(minecraftApplet, "init", "()V");
 			if(init != null) {
 				AbstractInsnNode insn = init.instructions.getFirst();
 				while(insn != null) {
 					AbstractInsnNode[] insns = fill(insn, 8);
 					if(compareInsn(insns[0], ALOAD)
-					&& compareInsn(insns[1], GETFIELD, context.minecraftApplet.name, mcField, mcDesc)
+					&& compareInsn(insns[1], GETFIELD, minecraftApplet.name, mcField, mcDesc)
 					&& compareInsn(insns[2], ICONST_1)
-					&& compareInsn(insns[3], PUTFIELD, context.minecraft.name, null, "Z")) {
+					&& compareInsn(insns[3], PUTFIELD, minecraft.name, null, "Z")) {
 						FieldInsnNode field = (FieldInsnNode) insns[3];
-						context.appletMode = NodeHelper.getField(context.minecraft, field.name, field.desc);
+						appletMode = NodeHelper.getField(minecraft, field.name, field.desc);
 						break;
 					}
 					if(compareInsn(insns[0], ALOAD)
-					&& compareInsn(insns[1], GETFIELD, context.minecraftApplet.name, mcField, mcDesc)
+					&& compareInsn(insns[1], GETFIELD, minecraftApplet.name, mcField, mcDesc)
 					&& compareInsn(insns[2], LDC, "true")
 					&& compareInsn(insns[3], ALOAD)
 					&& compareInsn(insns[4], LDC, "stand-alone")
-					&& compareInsn(insns[5], INVOKEVIRTUAL, context.minecraftApplet.name, "getParameter", "(Ljava/lang/String;)Ljava/lang/String;")
+					&& compareInsn(insns[5], INVOKEVIRTUAL, minecraftApplet.name, "getParameter", "(Ljava/lang/String;)Ljava/lang/String;")
 					&& compareInsn(insns[6], INVOKEVIRTUAL, "java/lang/String", "equals", "(Ljava/lang/Object;)Z")) {
 						AbstractInsnNode[] insns2 = fill(insns[7], 7);
 						if(compareInsn(insns2[0], IFNE)
 						&& compareInsn(insns2[1], ICONST_1)
 						&& compareInsn(insns2[2], GOTO)
 						&& compareInsn(insns2[3], ICONST_0)
-						&& compareInsn(insns2[4], PUTFIELD, context.minecraft.name, null, "Z")) {
+						&& compareInsn(insns2[4], PUTFIELD, minecraft.name, null, "Z")) {
 							FieldInsnNode field = (FieldInsnNode) insns2[4];
-							context.appletMode = NodeHelper.getField(context.minecraft, field.name, field.desc);
+							appletMode = NodeHelper.getField(minecraft, field.name, field.desc);
 							break;
 						}
 						if(compareInsn(insns2[0], IFEQ)
 						&& compareInsn(insns2[1], ICONST_0)
 						&& compareInsn(insns2[2], GOTO)
 						&& compareInsn(insns2[3], ICONST_1)
-						&& compareInsn(insns2[4], PUTFIELD, context.minecraft.name, null, "Z")) {
+						&& compareInsn(insns2[4], PUTFIELD, minecraft.name, null, "Z")) {
 							FieldInsnNode field = (FieldInsnNode) insns2[4];
-							context.appletMode = NodeHelper.getField(context.minecraft, field.name, field.desc);
+							appletMode = NodeHelper.getField(minecraft, field.name, field.desc);
 							break;
 						}
 					}
@@ -147,9 +203,9 @@ public class LegacyInit extends InjectionWithContext<LegacyTweakContext> {
 			}
 		}
 		if(config.forceResizable.get()) {
-			context.supportsResizing = true;
+			supportsResizing = true;
 		}
-		source.overrideClass(context.minecraft);
+		source.overrideClass(minecraft);
         return true;
 	}
 

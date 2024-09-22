@@ -12,11 +12,13 @@ public class LegacyURLStreamHandler extends URLStreamHandlerProxy {
 	private LaunchConfig config;
 	private AssetRequests assets;
 	private SkinRequests skins;
+	private File levelSaveDir;
 
 	public LegacyURLStreamHandler(LaunchConfig config) {
 		this.config = config;
 		this.assets = new AssetRequests(config.assetsDir.get(), config.assetIndex.get());
 		this.skins = new SkinRequests(new File(config.gameDir.get(), "skin"), config.skinOptions.get(), config.skinProxy.get());
+		this.levelSaveDir = new File(config.gameDir.get(), "levels");
 	}
 
 	@Override
@@ -43,11 +45,11 @@ public class LegacyURLStreamHandler extends URLStreamHandlerProxy {
 			if(path.equals("/haspaid.jsp"))
 				return new BasicResponseURLConnection(url, "true"); // TODO Where is this used?
 			if(path.contains("/level/save.html"))
-				return new SaveLevelURLConnection(url, config.gameDir.get());
+				return new SaveLevelURLConnection(url, levelSaveDir);
 			if(path.contains("/level/load.html"))
-				return new LoadLevelURLConnection(url, config.gameDir.get());
+				return new LoadLevelURLConnection(url, levelSaveDir);
 			if(path.equals("/listmaps.jsp"))
-				return new ListLevelsURLConnection(url, config.gameDir.get());
+				return new ListLevelsURLConnection(url, levelSaveDir);
 			if(path.startsWith("/MinecraftResources/") || path.startsWith("/resources/"))
 				return new AssetURLConnection(url, assets);
 			if(path.startsWith("/MinecraftSkins/") || path.startsWith("/skin/") || path.startsWith("/MinecraftCloaks/") || path.startsWith("/cloak/"))

@@ -100,9 +100,6 @@ public abstract class Tweak {
 		return getDefault(classLoader, launch);
 	}
 	public static Tweak getDefault(ClassNodeSource classLoader, LaunchConfig launch) {
-		if(launch.isom.get()) {
-			return new IsomTweak(launch);
-		}
 		if(classLoader.getClass(VanillaTweak.MAIN_CLASS) != null) {
 			return new VanillaTweak(launch);
 		}

@@ -5,7 +5,7 @@ import static org.objectweb.asm.Opcodes.*;
 
 import org.mcphackers.launchwrapper.LaunchConfig;
 import org.mcphackers.launchwrapper.tweak.injection.InjectionWithContext;
-import org.mcphackers.launchwrapper.tweak.storage.LegacyTweakContext;
+import org.mcphackers.launchwrapper.tweak.injection.MinecraftGetter;
 import org.mcphackers.launchwrapper.util.ClassNodeSource;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.ClassNode;
@@ -19,11 +19,12 @@ import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.TypeInsnNode;
 
 /**
- * WIP
+ * WIP. In 0.24 ST - meant to fix level saving and skin
+ * Hopefully in early infdev that's going to fix skin too
  */
-public class FixClassicSession extends InjectionWithContext<LegacyTweakContext> {
+public class FixClassicSession extends InjectionWithContext<MinecraftGetter> {
 
-    public FixClassicSession(LegacyTweakContext context) {
+    public FixClassicSession(MinecraftGetter context) {
         super(context);
     }
 
@@ -39,7 +40,7 @@ public class FixClassicSession extends InjectionWithContext<LegacyTweakContext> 
 
     @Override
     public boolean apply(ClassNodeSource source, LaunchConfig config) {
-        for(MethodNode m : context.minecraft.methods) {
+        for(MethodNode m : context.getMinecraft().methods) {
             if(m.name.equals("<init>")) {
                 for(AbstractInsnNode insn = m.instructions.getFirst(); insn != null; insn = nextInsn(insn)) {
                     AbstractInsnNode[] insns = fill(insn, 2);
@@ -72,7 +73,7 @@ public class FixClassicSession extends InjectionWithContext<LegacyTweakContext> 
                                 inject.add(new MethodInsnNode(INVOKESPECIAL, session.name, m2.name, m2.desc));
                                 m.instructions.insertBefore(insns[1], inject);
                                 m.instructions.remove(insns[0]);
-                                source.overrideClass(context.minecraft);
+                                source.overrideClass(context.getMinecraft());
                                 return true;
                             }
                         }

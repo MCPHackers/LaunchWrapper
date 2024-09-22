@@ -5,15 +5,15 @@ import static org.objectweb.asm.Opcodes.*;
 
 import org.mcphackers.launchwrapper.LaunchConfig;
 import org.mcphackers.launchwrapper.tweak.injection.InjectionWithContext;
-import org.mcphackers.launchwrapper.tweak.storage.LegacyTweakContext;
+import org.mcphackers.launchwrapper.tweak.injection.MinecraftGetter;
 import org.mcphackers.launchwrapper.util.ClassNodeSource;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.InsnNode;
 import org.objectweb.asm.tree.MethodNode;
 
-public class FixGrayScreen extends InjectionWithContext<LegacyTweakContext> {
+public class FixGrayScreen extends InjectionWithContext<MinecraftGetter> {
 
-    public FixGrayScreen(LegacyTweakContext storage) {
+    public FixGrayScreen(MinecraftGetter storage) {
         super(storage);
     }
 
@@ -30,7 +30,7 @@ public class FixGrayScreen extends InjectionWithContext<LegacyTweakContext> {
     @Override
     public boolean apply(ClassNodeSource source, LaunchConfig config) {
 		next:
-		for(MethodNode m : context.minecraft.methods) {
+		for(MethodNode m : context.getMinecraft().methods) {
 			if(m.desc.equals("()V")) {
 				AbstractInsnNode insn = m.instructions.getFirst();
 				while(insn != null) {

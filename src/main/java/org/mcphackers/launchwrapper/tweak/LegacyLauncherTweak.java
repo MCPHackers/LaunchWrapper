@@ -9,15 +9,17 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.mcphackers.launchwrapper.LaunchConfig;
+import org.mcphackers.launchwrapper.loader.RawBytecodeProvider;
 import org.mcphackers.launchwrapper.target.LaunchTarget;
 import org.mcphackers.launchwrapper.target.MainLaunchTarget;
 import org.mcphackers.launchwrapper.tweak.injection.Injection;
+import org.mcphackers.launchwrapper.tweak.injection.forge.ForgeClassLoader;
+import org.mcphackers.launchwrapper.tweak.injection.vanilla.ChangeBrand;
 import org.mcphackers.launchwrapper.util.ClassNodeSource;
-import org.objectweb.asm.ClassReader;
-import org.objectweb.asm.tree.ClassNode;
 
 import net.minecraft.launchwrapper.IClassNameTransformer;
 import net.minecraft.launchwrapper.IClassTransformer;
@@ -28,9 +30,9 @@ import net.minecraft.launchwrapper.LaunchClassLoader;
 public class LegacyLauncherTweak extends Tweak {
     public IClassNameTransformer renameTransformer;
     protected List<IClassTransformer> transformers = new ArrayList<IClassTransformer>();
+    protected List<String> arguments = new ArrayList<String>();
+    protected Tweak baseTweak;
     ITweaker primaryTweaker;
-    LaunchClassLoader loader;
-    Tweak baseTweak;
     boolean initialized = false;
 
     public LegacyLauncherTweak(LaunchConfig config, Tweak baseTweak) {
@@ -61,7 +63,6 @@ public class LegacyLauncherTweak extends Tweak {
     public List<Injection> getInjections() {
         List<Injection> injections = new ArrayList<Injection>();
         injections.add(new InjectTest());
-        // FIXME breaks forge patches?
         injections.addAll(baseTweak.getInjections());
         return injections;
     }
@@ -69,44 +70,58 @@ public class LegacyLauncherTweak extends Tweak {
     @Override
     public List<LazyTweaker> getLazyTweakers() {
         List<LazyTweaker> tweakers = new ArrayList<LazyTweaker>();
-        tweakers.add(new LegacyLauncherLazyTweaker(transformers));
         tweakers.addAll(baseTweak.getLazyTweakers());
         return tweakers;
     }
 
     @Override
     public LaunchTarget getLaunchTarget() {
-        return new MainLaunchTarget(primaryTweaker.getLaunchTarget(), primaryTweaker.getLaunchArguments());
+        String target = primaryTweaker.getLaunchTarget();
+        LOGGER.log("Launching wrapped minecraft {%s}", target);
+        return new MainLaunchTarget(target, arguments.toArray(new String[arguments.size()]));
     }
 
     @Override
     public void prepare(org.mcphackers.launchwrapper.loader.LaunchClassLoader launchloader) {
-        loader = new LaunchClassLoader(launchloader, this);
+        Launch.classLoader = new LaunchClassLoader(launchloader, this);
         List<String> tweakClassNames = new ArrayList<String>();
         tweakClassNames.add(config.tweakClass.get());
         Launch.blackboard.put("TweakClasses", tweakClassNames);
         Launch.blackboard.put("ArgumentList", new ArrayList<String>());
         Launch.minecraftHome = config.gameDir.get();
         Launch.assetsDir = config.assetsDir.get();
+        new ForgeClassLoader().apply(launchloader, config);
+        new ChangeBrand().apply(launchloader, config);
+        launchloader.setBytecodeProvider(new LegacyLauncherBytecodeProvider(transformers));
+        runTweakers();
+        initialized = true;
+    }
+
+    private List<String> getArgs() {
         List<String> args = new ArrayList<String>();
-        // FIXME Remove gamedir, assetsdir and version in a more clean way
-        args.addAll(Arrays.asList(config.getArgs()));
-        for(int i = 0; i < args.size(); i++) {
-            if(i + 1 < args.size()) {
-                while(args.get(i).equals("--version")
-                || args.get(i).equals("--gameDir")
-                || args.get(i).equals("--assetsDir")) {
-                    args.remove(i+1);
-                    args.remove(i);
-                }
-            }
+        LaunchConfig configCopy = config.clone();
+        configCopy.gameDir.set(null);
+        configCopy.assetsDir.set(null);
+        configCopy.version.set(null);
+        for (Map.Entry<String, String> entry : configCopy.getArgsAsMap().entrySet()) {
+            args.add("--" + entry.getKey());
+            args.add(entry.getValue());
         }
+        return args;
+    }
+
+    @SuppressWarnings("unchecked")
+    protected void runTweakers() {
+        List<String> args = getArgs();
+        List<String> tweakClassNames = (List<String>)Launch.blackboard.get("TweakClasses");
+
+        final Set<String> allTweakerNames = new HashSet<String>();
+        final List<ITweaker> allTweakers = new ArrayList<ITweaker>();
         try {
-            final Set<String> allTweakerNames = new HashSet<String>();
             final List<ITweaker> tweakers = new ArrayList<ITweaker>(tweakClassNames.size() + 1);
             Launch.blackboard.put("Tweaks", tweakers);
             do {
-                for (final Iterator<String> it = tweakClassNames.iterator(); it.hasNext(); ) {
+                for (final Iterator<String> it = tweakClassNames.iterator(); it.hasNext();) {
                     final String tweakName = it.next();
                     if (allTweakerNames.contains(tweakName)) {
                         LOGGER.log("Tweak class name %s has already been visited -- skipping", tweakName);
@@ -117,8 +132,9 @@ public class LegacyLauncherTweak extends Tweak {
                     }
                     LOGGER.log("Loading tweak class name %s", tweakName);
 
-                    loader.addClassLoaderExclusion(tweakName.substring(0,tweakName.lastIndexOf('.')));
-                    final ITweaker tweaker = (ITweaker) Class.forName(tweakName, true, loader).newInstance();
+                    Launch.classLoader.addClassLoaderExclusion(tweakName.substring(0, tweakName.lastIndexOf('.')));
+                    final ITweaker tweaker = (ITweaker) Class.forName(tweakName, true, getClass().getClassLoader())
+                            .newInstance();
                     tweakers.add(tweaker);
 
                     it.remove();
@@ -128,21 +144,22 @@ public class LegacyLauncherTweak extends Tweak {
                     }
                 }
 
-                for (final Iterator<ITweaker> it = tweakers.iterator(); it.hasNext(); ) {
+                for (final Iterator<ITweaker> it = tweakers.iterator(); it.hasNext();) {
                     final ITweaker tweaker = it.next();
                     LOGGER.log("Calling tweak class %s", tweaker.getClass().getName());
                     tweaker.acceptOptions(args, config.gameDir.get(), config.assetsDir.get(), config.version.get());
-                    tweaker.injectIntoClassLoader(loader);
+                    tweaker.injectIntoClassLoader(Launch.classLoader);
+                    allTweakers.add(tweaker);
                     it.remove();
                 }
             } while (!tweakClassNames.isEmpty());
+            for (final ITweaker tweaker : allTweakers) {
+                arguments.addAll(Arrays.asList(tweaker.getLaunchArguments()));
+            }
         } catch (Exception e) {
             e.printStackTrace();
-            return;
         }
-        initialized = true;
     }
-
 
     public List<IClassTransformer> getTransformers() {
         return Collections.unmodifiableList(transformers);
@@ -150,7 +167,8 @@ public class LegacyLauncherTweak extends Tweak {
 
     public void registerTransformer(String transformerClassName) {
         try {
-            IClassTransformer transformer = (IClassTransformer) loader.loadClass(transformerClassName).newInstance();
+            IClassTransformer transformer = (IClassTransformer) Launch.classLoader.loadClass(transformerClassName)
+                    .newInstance();
             transformers.add(transformer);
             if (transformer instanceof IClassNameTransformer && renameTransformer == null) {
                 renameTransformer = (IClassNameTransformer) transformer;
@@ -160,38 +178,30 @@ public class LegacyLauncherTweak extends Tweak {
         }
     }
 
-    public class LegacyLauncherLazyTweaker implements LazyTweaker {
+    public class LegacyLauncherBytecodeProvider implements RawBytecodeProvider {
         List<IClassTransformer> transformers;
-        public LegacyLauncherLazyTweaker(List<IClassTransformer> transformers) {
+
+        public LegacyLauncherBytecodeProvider(List<IClassTransformer> transformers) {
             this.transformers = transformers;
         }
 
-        public boolean tweakClass(ClassNodeSource source, String name) {
-            name = name.replace("/", ".");
+        public byte[] getClassBytecode(String name) {
             String untransformedName = renameTransformer == null ? name : renameTransformer.unmapClassName(name);
             String transformedName = renameTransformer == null ? name : renameTransformer.remapClassName(name);
-            // Mojang LW caches byte[] arrays. MCPHackers LW caches ClassNodes.
-            // That's why there's such a messy convertion back and forth
-            byte[] transformed = getClass(untransformedName);
-            for(IClassTransformer transformer : transformers) {
-                transformed = transformer.transform(untransformedName, transformedName, transformed);
-            }
-            if(transformed == null) {
-                return false;
-            }
-            ClassReader reader = new ClassReader(transformed);
-            ClassNode node = new ClassNode();
-            reader.accept(node, ClassReader.SKIP_FRAMES);
-            source.overrideClass(node);
-            return true;
-        }
-
-        private byte[] getClass(String name) {
             try {
-                return loader.getClassBytes(name);
+                byte[] transformed = Launch.classLoader.getClassBytes(untransformedName);
+                for (IClassTransformer transformer : transformers) {
+                    transformed = transformer.transform(untransformedName, transformedName, transformed);
+                }
+                return transformed;
             } catch (IOException e) {
+                e.printStackTrace();
                 return null;
             }
+        }
+
+        public String getClassName(String name) {
+            return renameTransformer == null ? name : renameTransformer.remapClassName(name);
         }
     }
 

@@ -9,8 +9,8 @@ import java.util.List;
 
 import org.mcphackers.launchwrapper.LaunchConfig;
 import org.mcphackers.launchwrapper.tweak.VanillaTweak;
-import org.mcphackers.launchwrapper.tweak.injection.InjectionWithContext;
-import org.mcphackers.launchwrapper.tweak.storage.VanillaTweakContext;
+import org.mcphackers.launchwrapper.tweak.injection.Injection;
+import org.mcphackers.launchwrapper.tweak.injection.MinecraftGetter;
 import org.mcphackers.launchwrapper.util.ClassNodeSource;
 import org.mcphackers.rdi.util.IdentifyCall;
 import org.mcphackers.rdi.util.NodeHelper;
@@ -18,14 +18,28 @@ import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldInsnNode;
+import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.LdcInsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 
-public class VanillaInit extends InjectionWithContext<VanillaTweakContext> {
+public class VanillaTweakContext implements Injection, MinecraftGetter {
+	public ClassNode minecraft;
+	public MethodNode run;
+	public FieldNode running;
+    public List<String> availableParameters = new ArrayList<String>();
+    public String[] args;
 
-    public VanillaInit(VanillaTweakContext storage) {
-        super(storage);
+    public ClassNode getMinecraft() {
+        return minecraft;
+    }
+
+    public MethodNode getRun() {
+        return run;
+    }
+
+    public FieldNode getIsRunning() {
+        return running;
     }
 
     @Override
@@ -53,18 +67,21 @@ public class VanillaInit extends InjectionWithContext<VanillaTweakContext> {
 			// Last call inside of main is minecraft.run();
 			if(insn.getOpcode() == INVOKEVIRTUAL) {
 				MethodInsnNode invoke = (MethodInsnNode) insn;
-				context.minecraft = source.getClass(invoke.owner);
-				context.run = NodeHelper.getMethod(context.minecraft, invoke.name, invoke.desc);
+				minecraft = source.getClass(invoke.owner);
+				run = NodeHelper.getMethod(minecraft, invoke.name, invoke.desc);
 				break;
 			}
 			insn = previousInsn(insn);
 		}
-		insn = context.run.instructions.getFirst();
+		if(run == null) {
+			return false;
+		}
+		insn = run.instructions.getFirst();
 		while(insn != null) {
 			if(insn.getOpcode() == Opcodes.PUTFIELD) {
 				FieldInsnNode putField = (FieldInsnNode) insn;
 				if("Z".equals(putField.desc)) {
-					context.running = NodeHelper.getField(context.minecraft, putField.name, putField.desc);
+					running = NodeHelper.getField(minecraft, putField.name, putField.desc);
 				}
 				break;
 			}
@@ -75,7 +92,7 @@ public class VanillaInit extends InjectionWithContext<VanillaTweakContext> {
 				if(insn2.getPrevious() != null && insn2.getPrevious().getType() == AbstractInsnNode.LDC_INSN) {
 					LdcInsnNode ldc = (LdcInsnNode) insn2.getPrevious();
 					if(ldc.cst instanceof String) {
-						context.availableParameters.add((String) ldc.cst);
+						availableParameters.add((String) ldc.cst);
 					}
 				}
 			}
@@ -86,7 +103,7 @@ public class VanillaInit extends InjectionWithContext<VanillaTweakContext> {
 			if(!params[i].startsWith("--")) {
 				continue;
 			}
-			if(!context.availableParameters.contains(params[i].substring(2))) {
+			if(!availableParameters.contains(params[i].substring(2))) {
 				continue;
 			}
 			newArgs.add(params[i]);
@@ -96,19 +113,19 @@ public class VanillaInit extends InjectionWithContext<VanillaTweakContext> {
 			}
 		}
 		String[] arr = new String[newArgs.size()];
-		context.args = newArgs.toArray(arr);
+		args = newArgs.toArray(arr);
 
-		MethodNode init = getInit(context.run);
+		MethodNode init = getInit(run);
 		boolean fixedTitle = replaceTitle(init, config);
 		boolean fixedIcon = replaceIcon(init, config);
-		for(MethodNode m : context.minecraft.methods) {
+		for(MethodNode m : minecraft.methods) {
 			fixedTitle = fixedTitle || replaceTitle(m, config);
 			fixedIcon = fixedIcon || replaceIcon(m, config);
 			if(fixedTitle && fixedIcon) {
 				break;
 			}
 		}
-		source.overrideClass(context.minecraft);
+		source.overrideClass(minecraft);
 		return true;
 	}
 
@@ -140,7 +157,7 @@ public class VanillaInit extends InjectionWithContext<VanillaTweakContext> {
 				for(AbstractInsnNode[] arg : call.getArguments()) {
 					remove(m.instructions, arg);
 				}
-				MethodInsnNode insert = new MethodInsnNode(INVOKESTATIC, "org/mcphackers/launchwrapper/inject/Inject", "loadIcons", "()[Ljava/nio/ByteBuffer;");
+				MethodInsnNode insert = new MethodInsnNode(INVOKESTATIC, "org/mcphackers/launchwrapper/util/IconUtils", "loadIcon", "()[Ljava/nio/ByteBuffer;");
 				m.instructions.insertBefore(insn, insert);
 				return true;
 			}
@@ -162,8 +179,8 @@ public class VanillaInit extends InjectionWithContext<VanillaTweakContext> {
 		for(AbstractInsnNode insn = run.instructions.getFirst(); insn != null; insn = nextInsn(insn)) {
 			if(insn.getType() == AbstractInsnNode.METHOD_INSN) {
 				MethodInsnNode invoke = (MethodInsnNode) insn;
-				if(invoke.owner.equals(context.minecraft.name)) {
-					return NodeHelper.getMethod(context.minecraft, invoke.name, invoke.desc);
+				if(invoke.owner.equals(minecraft.name)) {
+					return NodeHelper.getMethod(minecraft, invoke.name, invoke.desc);
 				}
 			}
 		}

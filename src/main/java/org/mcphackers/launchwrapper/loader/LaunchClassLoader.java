@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.mcphackers.launchwrapper.Launch;
 import org.mcphackers.launchwrapper.tweak.LazyTweaker;
 import org.mcphackers.launchwrapper.util.ClassNodeSource;
 import org.mcphackers.launchwrapper.util.ResourceSource;
@@ -28,19 +29,21 @@ import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.tree.ClassNode;
 
-// URLClassLoader is required to support ModLoader loading mods from mod folder
+// URLClassLoader is required to support ModLoader loading mods from mod folder, as well as Forge
+
+/**
+ * The main class loader for overwritten and patched classes
+ */
 public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource, ResourceSource {
 
 	public static final int CLASS_VERSION = getSupportedClassVersion();
 	private static LaunchClassLoader INSTANCE;
-	// private final ClassWriter writer = new SafeClassWriter(this, COMPUTE_MAXS | COMPUTE_FRAMES);
 
 	private ClassLoader parent;
+	private RawBytecodeProvider bytecodeProvider;
 	private List<LazyTweaker> tweaks;
 	private Set<String> exclusions = new HashSet<String>();
-	private Set<String> ignoreExclusions = new HashSet<String>();
-
-	private Set<String> overridesExclude = new HashSet<String>();
+	private Set<String> transformExclusions = new HashSet<String>();
 	/** Keys should contain dots */
 	Map<String, ClassNode> overridenClasses = new HashMap<String, ClassNode>();
 	Map<String, byte[]> overridenResources = new HashMap<String, byte[]>();
@@ -53,15 +56,21 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 		super(new URL[0], null);
 		this.parent = parent;
 		addExclusion("java");
+		addExclusion("javax");
 		addExclusion("sun");
 		addExclusion("net.minecraft.launchwrapper");
 		addExclusion("org.mcphackers.launchwrapper");
 		addExclusion("org.objectweb.asm");
-		removeExclusion("org.mcphackers.launchwrapper.inject");
+		addExclusion("org.json");
 	}
 
 	public void setDebugOutput(File directory) {
 		debugOutput = directory;
+	}
+
+	public void setBytecodeProvider(RawBytecodeProvider provider) {
+		bytecodeProvider = provider;
+		classNodeCache.clear();
 	}
 
     public void addURL(URL url) {
@@ -73,8 +82,8 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 		if(url != null) {
 			return url;
 		}
-		url = super.findResource(name);
-		return url == null ? parent.getResource(name) : url;
+		url = parent.getResource(name);
+		return url == null ? super.findResource(name) : url;
 	}
 
 	public URL getResource(String name) {
@@ -82,8 +91,8 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 		if(url != null) {
 			return url;
 		}
-		url = super.getResource(name);
-		return url == null ? parent.getResource(name) : url;
+		url = parent.getResource(name);
+		return url == null ? super.getResource(name) : url;
 	}
 
 	private URL getOverridenResourceURL(String name) {
@@ -111,19 +120,39 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 		return parent.getResources(name);
 	}
 
+	public void addExclusion(String pkg) {
+		exclusions.add(pkg + (pkg.endsWith(".") ? "" : "."));
+	}
+
+	public void addTransformExclusion(String pkg) {
+		transformExclusions.add(pkg + (pkg.endsWith(".") ? "" : "."));
+	}
+
+	public void overrideClassSource(String name, String f) {
+		overridenSource.put(className(name), f);
+	}
+
+	public void overrideResource(String name, byte[] data) {
+		overridenResources.put(name, data);
+	}
+
+	public byte[] getResourceData(String path) {
+		try {
+			return Util.readStream(this.getResourceAsStream(path));
+		} catch(IOException e) {
+			return null;
+		}
+	}
+
 	public Class<?> findClass(String name) throws ClassNotFoundException {
 		assert name.contains(".");
-
-		if(overridenSource.get(name) != null) {
+		
+		// Force wrap inject package
+		if(name.startsWith("org.mcphackers.launchwrapper.inject.")) {
 			return redefineClass(name);
 		}
-		outer:
+
 		for(String pkg : exclusions) {
-			for(String pkg2 : ignoreExclusions) {
-				if(name.startsWith(pkg2)) {
-					continue outer;
-				}
-			}
 			if(name.startsWith(pkg)) {
 				return parent.loadClass(name);
 			}
@@ -144,75 +173,26 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 		}
 	}
 
-	public void addOverrideExclusion(String pkg) {
-		overridesExclude.add(pkg + (pkg.endsWith(".") ? "" : "."));
-	}
-
-	public void addExclusion(String pkg) {
-		exclusions.add(pkg + (pkg.endsWith(".") ? "" : "."));
-	}
-
-	public void removeExclusion(String pkg) {
-		ignoreExclusions.add(pkg + (pkg.endsWith(".") ? "" : "."));
-	}
-
-	public void overrideClassSource(String name, String f) {
-		overridenSource.put(className(name), f);
-	}
-
-	public void overrideResource(String name, byte[] data) {
-		overridenResources.put(name, data);
-	}
-
-	public byte[] getResourceData(String path) {
-		try {
-			return Util.readStream(this.getResourceAsStream(path));
-		} catch(IOException e) {
-			return null;
-		}
-	}
-
-	private ProtectionDomain getProtectionDomain(String name) {
-		final URL resource = getResource(classResourceName(name));
-		if(resource == null) {
-			return null;
-		}
-		CodeSource codeSource;
-		if(resource.getProtocol().equals("jar")) {
-			String path = resource.getPath();
-			if(path.startsWith("file:")) {
-				path = path.substring("file:".length());
-				int i = path.lastIndexOf('!');
-				if(i != -1) {
-					path = path.substring(0, i);
-				}
-			}
-			if(overridenSource.get(name) != null) {
-				path = overridenSource.get(name);
-			}
-			try {
-				URL newResource = new URL("file", "", path);
-				codeSource = new CodeSource(newResource, new Certificate[0]);
-			} catch (MalformedURLException e) {
-				codeSource = new CodeSource(resource, new Certificate[0]);
-			}
-		} else {
-			codeSource = new CodeSource(resource, new Certificate[0]);
-		}
-		return new ProtectionDomain(codeSource, null);
-	}
-
 	public void overrideClass(ClassNode node) {
-		for(String pkg : overridesExclude) {
-			if(node.name.replace("/", ".").startsWith(pkg)) {
-				return;
-			}
-		}
 		if(node == null)
 			return;
 		overridenClasses.put(className(node.name), node);
 		classNodeCache.put(node.name, node);
 	}
+
+	// public void saveDebugDump(ClassNode node) {
+	// 	if(debugOutput == null) {
+	// 		return;
+	// 	}
+	// 	try {
+	// 		File cls = new File(debugOutput, node.name + ".dump");
+	// 		cls.getParentFile().mkdirs();
+	// 		org.objectweb.asm.util.TraceClassVisitor trace = new org.objectweb.asm.util.TraceClassVisitor(new java.io.PrintWriter(new File(debugOutput, node.name + ".dump")));
+	// 		node.accept(trace);
+	// 	} catch (IOException e) {
+	// 		e.printStackTrace();
+	// 	}
+	// }
 
 	public void saveDebugClass(ClassNode node) {
 		if(debugOutput == null) {
@@ -221,9 +201,7 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 		try {
 			File cls = new File(debugOutput, node.name + ".class");
 			cls.getParentFile().mkdirs();
-			// org.objectweb.asm.util.TraceClassVisitor trace = new org.objectweb.asm.util.TraceClassVisitor(new java.io.PrintWriter(new File(debugOutput, node.name + ".dump")));
-			// node.accept(trace);
-			ClassWriter writer = new CustomClassWriter(this, COMPUTE_MAXS | COMPUTE_FRAMES);//new SafeClassWriter(this, COMPUTE_MAXS | COMPUTE_FRAMES);
+			ClassWriter writer = new SafeClassWriter(this, COMPUTE_MAXS);
 			node.accept(writer);
 			byte[] classData = writer.toByteArray();
 			FileOutputStream fos = new FileOutputStream(cls);
@@ -248,12 +226,12 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 			return node;
 		}
 		try {
-			InputStream is = getClassAsStream(name);
-			if(is == null) {
+			byte[] data = getTransformedClass(name);
+			if(data == null) {
 				return null;
 			}
 			ClassNode classNode = new ClassNode();
-			ClassReader classReader = new ClassReader(is);
+			ClassReader classReader = new ClassReader(data);
 			classReader.accept(classNode, ClassReader.SKIP_FRAMES);
 			classNodeCache.put(classNode.name, classNode);
 			return classNode;
@@ -265,36 +243,30 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 	protected Class<?> redefineClass(String name) throws ClassNotFoundException {
 		assert name.contains(".");
 		String nodeName = classNodeName(name);
-		boolean skip = false;
-		for(String pkg : overridesExclude) {
-			if(name.startsWith(pkg)) {
-				skip = true;
-				break;
-			}
-		}
-		if(tweaks != null && !skip) {
+		if(tweaks != null) {
 			boolean modified = false;
 			for(LazyTweaker tweak : tweaks) {
 				modified |= tweak.tweakClass(this, nodeName);
 			}
 			if(modified) {
-				ClassNode tweakedNode = getClass(nodeName);
-				saveDebugClass(tweakedNode);
-				return redefineClass(tweakedNode);
+				Launch.LOGGER.logDebug("Applying lazy tweak to %s", nodeName);
 			}
 		}
 		ClassNode overridenNode = overridenClasses.get(name);
 		if(overridenNode != null) {
-			saveDebugClass(overridenNode);
 			return redefineClass(overridenNode);
 		}
 		try {
-			InputStream is = getClassAsStream(name);
-			if(is == null) {
+			Class<?> loadedClass = findLoadedClass(getTransformedName(name));
+			if(loadedClass != null) {
+				Launch.LOGGER.logDebug("Attempted to reference unremapped class: %s", name);
+				return loadedClass;
+			}
+			byte[] data = getTransformedClass(name);
+			if(data == null) {
 				throw new ClassNotFoundException(name);
 			}
-			byte[] classData = Util.readStream(is);
-			return defineClass(name, classData);
+			return defineClass(getTransformedName(name), data);
 		} catch (IOException e) {
 			throw new ClassNotFoundException(name, e);
 		}
@@ -304,39 +276,46 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 		if(node == null) {
 			return null;
 		}
-		ClassWriter writer = new CustomClassWriter(this, COMPUTE_MAXS | COMPUTE_FRAMES);
-		//ClassWriter writer = new SafeClassWriter(this, COMPUTE_MAXS | COMPUTE_FRAMES);
+		saveDebugClass(node);
+		ClassWriter writer = new SafeClassWriter(this, COMPUTE_MAXS | COMPUTE_FRAMES);
 		node.accept(writer);
-		byte[] classData = writer.toByteArray();
-		return defineClass(className(node.name), classData);
+		classNodeCache.remove(node.name);
+		return defineClass(className(node.name), writer.toByteArray());
 	}
 
-	private static String className(String nameWithSlashes) {
-		return nameWithSlashes.replace('/', '.');
-	}
-
-	private static String classNodeName(String nameWithDots) {
-		return nameWithDots.replace('.', '/');
-	}
-
-	private static String classResourceName(String name) {
-		return classNodeName(name) + ".class";
-	}
-
-	static String classNameFromResource(String resource) {
-		if(resource.endsWith(".class")) {
-			return resource.substring(0, resource.length() - 6);
+	public String getTransformedName(String name) {
+		if(bytecodeProvider != null) {
+			return bytecodeProvider.getClassName(name);
 		}
-		return resource;
+		return name;
+	}
+	
+	public byte[] getTransformedClass(String name) throws IOException {
+		for(String pkg : transformExclusions) {
+			if(name.startsWith(pkg)) {
+				return getClassBytes(name);
+			}
+		}
+		if(bytecodeProvider != null) {
+			return bytecodeProvider.getClassBytecode(name);
+		}
+		return getClassBytes(name);
 	}
 
-	public InputStream getClassAsStream(String name) {
+	public Class<?> getLoadedClass(String name) {
+		return findLoadedClass(name);
+	}
+
+	public byte[] getClassBytes(String name) throws IOException {
 		String className = classResourceName(name);
 		InputStream is = this.getResourceAsStream(className);
-		if(is != null) {
-			return is;
+		if(is == null) {
+			is = parent.getResourceAsStream(className);
 		}
-		return parent.getResourceAsStream(className);
+		if(is == null) {
+			return null;
+		}
+		return Util.readStream(is);
 	}
 
 	public void setLoaderTweakers(List<LazyTweaker> classLoaderTweaks) {
@@ -352,6 +331,36 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 			}
 		}
 		return defineClass(name, classData, 0, classData.length, getProtectionDomain(name));
+	}
+
+	private ProtectionDomain getProtectionDomain(String name) {
+		final URL resource = getResource(classResourceName(name));
+		if(resource == null) {
+			return null;
+		}
+		CodeSource codeSource;
+		if(resource.getProtocol().equals("jar")) {
+			String path = resource.getPath();
+			if(path.startsWith("file:")) {
+				path = path.substring("file:".length());
+				int i = path.lastIndexOf('!');
+				if(i != -1) {
+					path = path.substring(0, i);
+				}
+			}
+			if(overridenSource.get(name) != null) {
+				path = overridenSource.get(name);
+			}
+			try {
+				URL newResource = new URL("file", "", path);
+				codeSource = new CodeSource(newResource, (Certificate[])null);
+			} catch (MalformedURLException e) {
+				codeSource = new CodeSource(resource, (Certificate[])null);
+			}
+		} else {
+			codeSource = new CodeSource(resource, (Certificate[])null);
+		}
+		return new ProtectionDomain(codeSource, null);
 	}
 
 	private static ClassNode getSystemClass(Class<?> cls) {
@@ -381,6 +390,25 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 		INSTANCE = new LaunchClassLoader(getSystemClassLoader());
 		Thread.currentThread().setContextClassLoader(INSTANCE);
 		return INSTANCE;
+	}
+
+	public static String className(String nameWithSlashes) {
+		return nameWithSlashes.replace('/', '.');
+	}
+
+	public static String classNodeName(String nameWithDots) {
+		return nameWithDots.replace('.', '/');
+	}
+
+	public static String classResourceName(String name) {
+		return classNodeName(name) + ".class";
+	}
+
+	public static String classNameFromResource(String resource) {
+		if(resource.endsWith(".class")) {
+			return resource.substring(0, resource.length() - 6);
+		}
+		return resource;
 	}
 
 }

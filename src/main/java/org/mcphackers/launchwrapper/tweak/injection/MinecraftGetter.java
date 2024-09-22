@@ -1,4 +1,4 @@
-package org.mcphackers.launchwrapper.tweak.storage;
+package org.mcphackers.launchwrapper.tweak.injection;
 
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldNode;

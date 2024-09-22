@@ -5,7 +5,7 @@ import static org.objectweb.asm.Opcodes.*;
 
 import org.mcphackers.launchwrapper.LaunchConfig;
 import org.mcphackers.launchwrapper.tweak.injection.InjectionWithContext;
-import org.mcphackers.launchwrapper.tweak.storage.MinecraftGetter;
+import org.mcphackers.launchwrapper.tweak.injection.MinecraftGetter;
 import org.mcphackers.launchwrapper.util.ClassNodeSource;
 import org.mcphackers.rdi.util.IdentifyCall;
 import org.mcphackers.rdi.util.NodeHelper;
@@ -53,25 +53,33 @@ public class ClassicCrashScreen extends InjectionWithContext<MinecraftGetter> {
 		ClassNode minecraft = context.getMinecraft();
 
 		for(MethodNode m : minecraft.methods) {
-			if(m.desc.equals("()V")) {
-				AbstractInsnNode insn = m.instructions.getFirst();
-				if(insn != null && insn.getOpcode() == -1) {
-					insn = nextInsn(insn);
+			if(!m.desc.equals("()V")) {
+				continue;
+			}
+			AbstractInsnNode insn = m.instructions.getFirst();
+			if(insn != null && insn.getOpcode() == -1) {
+				insn = nextInsn(insn);
+			}
+			if(!compareInsn(insn, INVOKESTATIC, "org/lwjgl/opengl/Display", "isActive", "()Z")) {
+				continue;
+			}
+			AbstractInsnNode insn2 = insn;
+			while(insn2 != null) {
+				AbstractInsnNode[] insns2 = fill(insn2, 4);
+				if(compareInsn(insns2[0], ALOAD, 0)
+				&& compareInsn(insns2[1], ACONST_NULL)
+				&& compareInsn(insns2[2], INVOKEVIRTUAL, minecraft.name, null, null)) {
+					MethodInsnNode invoke = (MethodInsnNode) insns2[2];
+					return NodeHelper.getMethod(minecraft, invoke.name, invoke.desc);
 				}
-				if(!compareInsn(insn, INVOKESTATIC, "org/lwjgl/opengl/Display", "isActive", "()Z")) {
-					continue;
+				if(compareInsn(insns2[0], ALOAD, 0)
+				&& compareInsn(insns2[1], ACONST_NULL)
+				&& compareInsn(insns2[2], CHECKCAST)
+				&& compareInsn(insns2[3], INVOKEVIRTUAL, minecraft.name, null, null)) {
+					MethodInsnNode invoke = (MethodInsnNode) insns2[3];
+					return NodeHelper.getMethod(minecraft, invoke.name, invoke.desc);
 				}
-				AbstractInsnNode insn2 = insn;
-				while(insn2 != null) {
-					AbstractInsnNode[] insns2 = fill(insn2, 3);
-					if(compareInsn(insns2[0], ALOAD, 0)
-					&& compareInsn(insns2[1], ACONST_NULL)
-					&& compareInsn(insns2[2], INVOKEVIRTUAL, minecraft.name, null, null)) {
-						MethodInsnNode invoke = (MethodInsnNode) insns2[2];
-						return NodeHelper.getMethod(minecraft, invoke.name, invoke.desc);
-					}
-					insn2 = nextInsn(insn2);
-				}
+				insn2 = nextInsn(insn2);
 			}
 		}
 		return null;
@@ -170,31 +178,32 @@ public class ClassicCrashScreen extends InjectionWithContext<MinecraftGetter> {
 		if(errScreen != null && setWorld != null) {
 			boolean patched = false;
 			for(TryCatchBlockNode tryCatch : run.tryCatchBlocks) {
+				if(!"java/lang/Exception".equals(tryCatch.type)) {
+					continue;
+				}
 				int var = -1;
-				if("java/lang/Exception".equals(tryCatch.type)) {
-					for(AbstractInsnNode insn = tryCatch.handler; insn != null; insn = nextInsn(insn)) {
-						AbstractInsnNode[] insns = fill(insn, 5);
-						if(compareInsn(insns[0], ASTORE) // exception
-						&& compareInsn(insns[1], ALOAD, 0)
-						&& compareInsn(insns[2], NEW, errScreen.name)
-						&& compareInsn(insns[3], DUP)
-						&& compareInsn(insns[4], LDC, "Client error")) {
-							VarInsnNode store = (VarInsnNode)insn;
-							var = store.var;
-							InsnList inject = new InsnList();
-							inject.add(new VarInsnNode(ALOAD, 0));
-							inject.add(new InsnNode(ACONST_NULL));
-							inject.add(new MethodInsnNode(INVOKESPECIAL, minecraft.name, setWorld.name, setWorld.desc));
-							run.instructions.insertBefore(insns[1], inject);
-						}
-						if(var > 0
-						&& compareInsn(insns[0], ALOAD, var)
-						&& compareInsn(insns[1], INVOKEVIRTUAL, "java/lang/Exception", "printStackTrace", "()V")
-						&& compareInsn(insns[2], GOTO)) {
-							JumpInsnNode gotoInsn = (JumpInsnNode)insns[2];
-							gotoInsn.label = start;
-							patched = true;
-						}
+				for(AbstractInsnNode insn = tryCatch.handler; insn != null; insn = nextInsn(insn)) {
+					AbstractInsnNode[] insns = fill(insn, 5);
+					if(compareInsn(insns[0], ASTORE) // exception
+					&& compareInsn(insns[1], ALOAD, 0)
+					&& compareInsn(insns[2], NEW, errScreen.name)
+					&& compareInsn(insns[3], DUP)
+					&& compareInsn(insns[4], LDC, "Client error")) {
+						VarInsnNode store = (VarInsnNode)insn;
+						var = store.var;
+						InsnList inject = new InsnList();
+						inject.add(new VarInsnNode(ALOAD, 0));
+						inject.add(new InsnNode(ACONST_NULL));
+						inject.add(new MethodInsnNode(INVOKESPECIAL, minecraft.name, setWorld.name, setWorld.desc));
+						run.instructions.insertBefore(insns[1], inject);
+					}
+					if(var > 0
+					&& compareInsn(insns[0], ALOAD, var)
+					&& compareInsn(insns[1], INVOKEVIRTUAL, "java/lang/Exception", "printStackTrace", "()V")
+					&& compareInsn(insns[2], GOTO)) {
+						JumpInsnNode gotoInsn = (JumpInsnNode)insns[2];
+						gotoInsn.label = start;
+						patched = true;
 					}
 				}
 			}

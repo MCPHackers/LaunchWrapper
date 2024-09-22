@@ -10,12 +10,15 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import org.mcphackers.launchwrapper.Launch;
 import org.mcphackers.launchwrapper.LaunchConfig;
 import org.mcphackers.launchwrapper.protocol.LegacyURLStreamHandler;
 import org.mcphackers.launchwrapper.protocol.URLStreamHandlerProxy;
+import org.mcphackers.launchwrapper.target.AppletLaunchTarget;
 import org.mcphackers.launchwrapper.target.LaunchTarget;
 import org.mcphackers.launchwrapper.target.MainLaunchTarget;
 import org.mcphackers.launchwrapper.tweak.injection.Injection;
+import org.mcphackers.launchwrapper.tweak.injection.forge.ForgeVersionCheck;
 import org.mcphackers.launchwrapper.tweak.injection.legacy.AddMain;
 import org.mcphackers.launchwrapper.tweak.injection.legacy.ClassicCrashScreen;
 import org.mcphackers.launchwrapper.tweak.injection.legacy.FixClassicSession;
@@ -24,16 +27,20 @@ import org.mcphackers.launchwrapper.tweak.injection.legacy.FixShutdown;
 import org.mcphackers.launchwrapper.tweak.injection.legacy.FixSplashScreen;
 import org.mcphackers.launchwrapper.tweak.injection.legacy.IndevSaving;
 import org.mcphackers.launchwrapper.tweak.injection.legacy.LWJGLPatch;
-import org.mcphackers.launchwrapper.tweak.injection.legacy.LegacyInit;
+import org.mcphackers.launchwrapper.tweak.injection.legacy.LegacyTweakContext;
 import org.mcphackers.launchwrapper.tweak.injection.legacy.OptionsLoadFix;
 import org.mcphackers.launchwrapper.tweak.injection.legacy.ReplaceGameDir;
 import org.mcphackers.launchwrapper.tweak.injection.legacy.UnlicensedCopyText;
 import org.mcphackers.launchwrapper.tweak.injection.vanilla.ChangeBrand;
-import org.mcphackers.launchwrapper.tweak.storage.LegacyTweakContext;
 import org.mcphackers.launchwrapper.util.UnsafeUtils;
 import org.mcphackers.launchwrapper.util.Util;
+import org.mcphackers.rdi.util.NodeHelper;
+
+import javax.imageio.ImageIO;
 
 public class LegacyTweak extends Tweak {
+
+	public static final String MAIN_ISOM = "net/minecraft/isom/IsomPreviewApplet";
 
 	public static final String[] MAIN_CLASSES = {
 			"net/minecraft/client/Minecraft",
@@ -53,7 +60,7 @@ public class LegacyTweak extends Tweak {
 
 	public List<Injection> getInjections() {
 		return Arrays.asList(
-			new LegacyInit(context),
+			context,
 			new ClassicCrashScreen(context),
 			new UnlicensedCopyText(context),
 			new FixSplashScreen(context),
@@ -65,6 +72,7 @@ public class LegacyTweak extends Tweak {
 			new OptionsLoadFix(context),
 			new FixClassicSession(context),
 			new AddMain(context),
+			new ForgeVersionCheck(),
 			new ChangeBrand()
 		);
 	}
@@ -109,15 +117,30 @@ public class LegacyTweak extends Tweak {
 		}
 	}
 
+	protected AppletLaunchTarget getIsomLaunchTarget() {
+		AppletLaunchTarget launchTarget = new AppletLaunchTarget(MAIN_ISOM.replace("/", "."));
+		launchTarget.setTitle(config.title.get() != null ? config.title.get() : "IsomPreview");
+		try {
+			launchTarget.setIcon(ImageIO.read(Launch.class.getClassLoader().getResourceAsStream("favicon.png")));
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		launchTarget.setResolution(config.width.get(), config.height.get());
+		return launchTarget;
+	}
+
 	public LaunchTarget getLaunchTarget() {
-		if(context.main == null) {
+		if(config.isom.get()) {
+			return getIsomLaunchTarget();
+		}
+		if(NodeHelper.getMethod(context.getMinecraft(), "main", "([Ljava/lang/String;)V") == null) {
 			return null;
 		}
 		downloadServer();
 		enableLegacyMergeSort();
 		URLStreamHandlerProxy.setURLStreamHandler("http", new LegacyURLStreamHandler(config));
 		URLStreamHandlerProxy.setURLStreamHandler("https", new LegacyURLStreamHandler(config));
-		MainLaunchTarget target = new MainLaunchTarget(context.minecraft.name, new String[] { config.username.get(), config.session.get() });
+		MainLaunchTarget target = new MainLaunchTarget(context.getMinecraft().name, new String[] { config.username.get(), config.session.get() });
 		return target;
 	}
 }
