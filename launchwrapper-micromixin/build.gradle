@@ -20,9 +20,9 @@ dependencies {
     implementation "org.mcphackers.rdi:rdi:1.0"
     implementation 'org.json:json:20230311'
     implementation 'org.jetbrains:annotations-java5:24.1.0'
-	implementation "org.stianloader:micromixin-transformer:0.6.5-a20240909.2"
-	implementation "org.stianloader:micromixin-runtime:0.6.4-a20240825"
-	implementation "org.stianloader:micromixin-annotations:0.6.4-a20240825"
+	implementation "org.stianloader:micromixin-transformer:0.6.5-a20240922"
+	implementation "org.stianloader:micromixin-runtime:0.6.5-a20240922"
+	implementation "org.stianloader:micromixin-annotations:0.6.5-a20240922"
 	implementation "org.stianloader:micromixin-remapper:0.2.0-a20240908" // For remapping mixin annotations
     implementation "org.stianloader:stianloader-remapper:0.1.0-a20240601" // For remapping classes and references
 	implementation "net.fabricmc:mapping-io:0.3.0"
