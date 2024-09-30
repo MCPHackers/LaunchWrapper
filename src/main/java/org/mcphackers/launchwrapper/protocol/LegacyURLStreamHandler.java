@@ -17,7 +17,7 @@ public class LegacyURLStreamHandler extends URLStreamHandlerProxy {
 	public LegacyURLStreamHandler(LaunchConfig config) {
 		this.config = config;
 		this.assets = new AssetRequests(config.assetsDir.get(), config.assetIndex.get());
-		this.skins = new SkinRequests(new File(config.gameDir.get(), "skin"), config.skinOptions.get(), config.skinProxy.get());
+		this.skins = new SkinRequests(config.gameDir.get(), config.skinOptions.get(), config.skinProxy.get());
 		this.levelSaveDir = new File(config.gameDir.get(), "levels");
 	}
 
@@ -29,19 +29,17 @@ public class LegacyURLStreamHandler extends URLStreamHandlerProxy {
 		if(host.endsWith(".minecraft.net") || host.equals("s3.amazonaws.com")) {
 			if(path.equals("/game/joinserver.jsp"))
 				// TODO: update this to use the "sessionserver.mojang.com" API instead?
-				return super.openConnection(new URL("https", "session.minecraft.net", file));
+				return openDirectConnection(new URL("https", "session.minecraft.net", file));
 			if(path.equals("/login/session.jsp") || host.equals("login.minecraft.net") && path.equals("/session")) {
-				// UnlicensedCopyText injection does this instead. (It doesn't fire the check thread fro some reason)
-				if(config.haspaid.get()) {
-					return new BasicResponseURLConnection(url, "ok");
-				} else {
+				// UnlicensedCopyText injection does this instead. (It doesn't fire the check thread for some reason)
+				if(config.unlicensedCopy.get()) {
 					return new BasicResponseURLConnection(url, 400, "");
+				} else {
+					return new BasicResponseURLConnection(url, "ok");
 				}
 			}
 			if(path.equals("/game/"))
 				return new BasicResponseURLConnection(url, "42069");
-			if(path.equals("/client"))
-				return new BasicResponseURLConnection(url, "idk"); // TODO figure out what this API endpoint is for
 			if(path.equals("/haspaid.jsp"))
 				return new BasicResponseURLConnection(url, "true"); // TODO Where is this used?
 			if(path.contains("/level/save.html"))
@@ -60,14 +58,21 @@ public class LegacyURLStreamHandler extends URLStreamHandlerProxy {
 				else
 					return new BasicResponseURLConnection(url, "");
 			
+			if(host.equals("snoop.minecraft.net")) {
+				// Don't snoop
+				if(path.equals("/client") || path.equals("/server"))
+					return new BasicResponseURLConnection(url, "");
+			}
+			if(path.equals("/heartbeat.jsp"))
+				return new HeartbeatURLConnection(url);
 			// TODO redirect to something actually useful. Like a local self hosted realm
 			if(host.equals("mcoapi.minecraft.net")) {
 				if(path.equals("/mco/available"))
 					return new BasicResponseURLConnection(url, "true");
 				if(path.equals("/mco/client/outdated"))
 					return new BasicResponseURLConnection(url, "false");
-				if(path.equals("/payments/unused"))
-					return new BasicResponseURLConnection(url, "0");
+				// if(path.equals("/payments/unused"))
+				// 	return new BasicResponseURLConnection(url, "0");
 				// if(path.equals("/invites/count/pending"))
 				// 	return new BasicResponseURLConnection(url, "0");
 				// if(path.equals("/invites/pending"))
@@ -79,7 +84,17 @@ public class LegacyURLStreamHandler extends URLStreamHandlerProxy {
 				// if(path.equals("/worlds/test/$LOCATION_ID"))
 				// 	return new BasicResponseURLConnection(url, "1");
 			}
+			if(host.equals("textures.minecraft.net")) {
+				if(path.startsWith("/texture/")) {
+					return new TextureURLConnection(url, skins);
+				}
+			}
 		}
-		return super.openConnection(url);
+		if(host.equals("sessionserver.mojang.com")) {
+			if(path.startsWith("/session/minecraft/profile/")) {
+				return new ProfileURLConnection(url, skins);
+			}
+		}
+		return openDirectConnection(url);
 	}
 }

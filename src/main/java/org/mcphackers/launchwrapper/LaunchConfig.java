@@ -42,7 +42,7 @@ public class LaunchConfig {
 	public LaunchParameterString userType 			= new LaunchParameterString("userType");
 	public LaunchParameterString versionType 		= new LaunchParameterString("versionType");
 	public LaunchParameterSwitch applet 			= new LaunchParameterSwitch("applet", false);
-	public LaunchParameterSwitch haspaid			= new LaunchParameterSwitch("haspaid", true);
+	private LaunchParameterSwitch haspaid			= new LaunchParameterSwitch("haspaid", true);
 	public LaunchParameterSwitch unlicensedCopy		= new LaunchParameterSwitchReverse("unlicensedCopy", haspaid);
 	public LaunchParameterString loadmap_user 		= new LaunchParameterString("loadmap_user");
 	public LaunchParameterNumber loadmap_id 		= new LaunchParameterNumber("loadmap_id");

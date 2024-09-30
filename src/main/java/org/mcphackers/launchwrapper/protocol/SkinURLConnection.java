@@ -39,26 +39,28 @@ public class SkinURLConnection extends HttpURLConnection {
 		String path = url.getPath();
 
 		for(String template : CLOAKS) {
-			if(path.startsWith(template)) {
-				if(username == null)
-					username = path.substring(template.length()).replace(".png", "");
-				byte[] skinData = skinRequests.getCape(username);
-				if(skinData != null) {
-					inputStream = new ByteArrayInputStream(skinData);
-					return;
-				}
+			if(!path.startsWith(template)) {
+				continue;
+			}
+			if(username == null)
+				username = path.substring(template.length(), path.length() - ".png".length());
+			byte[] skinData = skinRequests.getCape(username);
+			if(skinData != null) {
+				inputStream = new ByteArrayInputStream(skinData);
+				return;
 			}
 		}
 
 		for(String template : SKINS) {
-			if(path.startsWith(template)) {
-				if(username == null)
-					username = path.substring(template.length()).replace(".png", "");
-				byte[] skinData = skinRequests.getSkin(username);
-				if(skinData != null) {
-					inputStream = new ByteArrayInputStream(skinData);
-					return;
-				}
+			if(!path.startsWith(template)) {
+				continue;
+			}
+			if(username == null)
+				username = path.substring(template.length(), path.length() - ".png".length());
+			byte[] skinData = skinRequests.getSkin(username);
+			if(skinData != null) {
+				inputStream = new ByteArrayInputStream(skinData);
+				return;
 			}
 		}
 		responseCode = 404;

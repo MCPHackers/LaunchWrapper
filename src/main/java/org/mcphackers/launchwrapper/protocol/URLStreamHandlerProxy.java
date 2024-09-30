@@ -14,6 +14,7 @@ import org.mcphackers.launchwrapper.util.UnsafeUtils;
 
 public abstract class URLStreamHandlerProxy extends URLStreamHandler {
 	private static final Map<String, URLStreamHandler> DEFAULT_HANDLERS = new HashMap<String, URLStreamHandler>();
+	private static final Hashtable<String, URLStreamHandler> HANDLERS = getHandlers();
 
 	protected URLStreamHandler parent;
 
@@ -23,25 +24,19 @@ public abstract class URLStreamHandlerProxy extends URLStreamHandler {
 	}
 
 	protected URLConnection openConnection(URL url) throws IOException {
-		if(parent == null) {
-			return null;
-		}
-		return new URL(null, url.toExternalForm(), parent).openConnection();
+		return openDirectConnection(url);
 	}
 
-	@SuppressWarnings({ "rawtypes", "unchecked" })
+	public static URLConnection openDirectConnection(URL url) throws IOException {
+		return new URL(null, url.toExternalForm(), getDefaultURLStreamHandler(url.getProtocol())).openConnection();
+	}
+
 	public static void setURLStreamHandler(String protocol, URLStreamHandlerProxy handler) {
 		handler.parent = getURLStreamHandler(protocol);
-		try {
-			Field handlersField = URL.class.getDeclaredField("handlers");
-			Hashtable handlers = (Hashtable) UnsafeUtils.getStaticObject(handlersField);
-			handlers.put(protocol, handler);
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
+		HANDLERS.put(protocol, handler);
 	}
 
-	public static URLStreamHandler getURLStreamHandler(String protocol) {
+	private static URLStreamHandler getDefaultURLStreamHandler(String protocol) {
 		URLStreamHandler handler = DEFAULT_HANDLERS.get(protocol);
 		if(handler != null) {
 			return handler;
@@ -56,5 +51,24 @@ public abstract class URLStreamHandlerProxy extends URLStreamHandler {
 			e.printStackTrace();
 			return null;
 		}
+	}
+
+	public static URLStreamHandler getURLStreamHandler(String protocol) {
+		URLStreamHandler handler = DEFAULT_HANDLERS.get(protocol);
+		if(handler == null) {
+			return getDefaultURLStreamHandler(protocol);
+		}
+		return HANDLERS.get(protocol);
+	}
+
+	@SuppressWarnings("unchecked")
+	private static Hashtable<String, URLStreamHandler> getHandlers() {
+		try {
+			Field handlersField = URL.class.getDeclaredField("handlers");
+			return (Hashtable<String, URLStreamHandler>) UnsafeUtils.getStaticObject(handlersField);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return null;
 	}
 }

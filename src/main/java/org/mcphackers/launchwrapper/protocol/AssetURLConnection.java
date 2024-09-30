@@ -1,5 +1,7 @@
 package org.mcphackers.launchwrapper.protocol;
 
+import static org.mcphackers.launchwrapper.protocol.URLStreamHandlerProxy.openDirectConnection;
+
 import java.io.ByteArrayInputStream;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -61,7 +63,7 @@ public class AssetURLConnection extends URLConnection {
 			if(object.url != null) { // url is only set when the resource is requested to be re-downloaded
 				Launch.LOGGER.log("Downloading resource: " + object.path);
 				object.file.getParentFile().mkdirs();
-				Util.copyStream(new URL(object.url).openStream(), new FileOutputStream(object.file));
+				Util.copyStream(openDirectConnection(new URL(object.url)).getInputStream(), new FileOutputStream(object.file));
 			}
 			return new FileInputStream(object.file);
 		}

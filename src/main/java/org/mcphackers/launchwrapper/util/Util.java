@@ -79,6 +79,30 @@ public final class Util {
 		stream2.close();
 	}
 
+	public static String getSHA256(InputStream is) throws IOException {
+		MessageDigest md;
+		try {
+			md = MessageDigest.getInstance("SHA-256");
+		} catch (NoSuchAlgorithmException e) {
+			throw new IOException(e.getMessage());
+		}
+		BufferedInputStream bs = new BufferedInputStream(is);
+		byte[] buffer = new byte[1024];
+		int bytesRead;
+
+		while((bytesRead = bs.read(buffer, 0, buffer.length)) != -1) {
+			md.update(buffer, 0, bytesRead);
+		}
+		byte[] digest = md.digest();
+
+		StringBuilder sb = new StringBuilder();
+		for(byte bite : digest) {
+			sb.append(Integer.toString((bite & 255) + 256, 16).substring(1).toLowerCase());
+		}
+		bs.close();
+		return sb.toString();
+	}
+
 	public static String getSHA1(InputStream is) throws IOException {
 		MessageDigest md;
 		try {
