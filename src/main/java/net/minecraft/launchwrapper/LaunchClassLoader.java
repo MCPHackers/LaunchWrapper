@@ -12,6 +12,7 @@ import java.util.Set;
 
 import org.mcphackers.launchwrapper.tweak.LegacyLauncherTweak;
 import org.mcphackers.launchwrapper.util.UnsafeUtils;
+import org.mcphackers.rdi.injector.data.Exceptions;
 
 @SuppressWarnings("unused")
 public class LaunchClassLoader extends URLClassLoader {
@@ -22,13 +23,20 @@ public class LaunchClassLoader extends URLClassLoader {
 
     private final Map<String, Class<?>> cachedClasses = Collections.<String, Class<?>>emptyMap();
     private final Set<String> invalidClasses = new HashSet<String>();
-    // private final Set<String> classLoaderExceptions;
-    // private final Set<String> transformerExceptions;
+    private final Set<String> classLoaderExceptions;
+    private final Set<String> transformerExceptions;
 
+    @SuppressWarnings("unchecked")
     public LaunchClassLoader(org.mcphackers.launchwrapper.loader.LaunchClassLoader classLoader, LegacyLauncherTweak tweak) {
         super(new URL[0]);
         this.classLoader = classLoader;
         this.tweak = tweak;
+        try {
+            classLoaderExceptions = (Set<String>)UnsafeUtils.getObject(classLoader, classLoader.getClass().getDeclaredField("exclusions"));
+            transformerExceptions = (Set<String>)UnsafeUtils.getObject(classLoader, classLoader.getClass().getDeclaredField("transformExclusions"));
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public void registerTransformer(String transformerClassName) {

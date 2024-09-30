@@ -21,18 +21,13 @@ public class LaunchConfig {
 	private Map<String, LaunchParameter<?>> parameters = new HashMap<String, LaunchParameter<?>>();
 	private Map<String, Object> unknownParameters = new HashMap<String, Object>();
 
-	public LaunchParameterSwitch demo 				= new LaunchParameterSwitch("demo", false);
-	public LaunchParameterSwitch fullscreen 		= new LaunchParameterSwitch("fullscreen", false);
-	public LaunchParameterSwitch checkGlErrors 		= new LaunchParameterSwitch("checkGlErrors", false);
+	public LaunchParameterSwitch demo 				= new LaunchParameterSwitch("demo");
+	public LaunchParameterSwitch fullscreen 		= new LaunchParameterSwitch("fullscreen");
 	public LaunchParameterString server 			= new LaunchParameterString("server");
 	public LaunchParameterNumber port 				= new LaunchParameterNumber("port", 25565);
 	public LaunchParameterFile gameDir 				= new LaunchParameterFile("gameDir", defaultGameDir).altName("workDir");
 	public LaunchParameterFile assetsDir 			= new LaunchParameterFile("assetsDir");
 	public LaunchParameterFile resourcePackDir 		= new LaunchParameterFile("resourcePackDir");
-	public LaunchParameterString proxyHost 			= new LaunchParameterString("proxyHost");
-	public LaunchParameterNumber proxyPort 			= new LaunchParameterNumber("proxyPort", 8080);
-	public LaunchParameterString proxyUser 			= new LaunchParameterString("proxyUser");
-	public LaunchParameterString proxyPass 			= new LaunchParameterString("proxyPass");
 	public LaunchParameterString username 			= new LaunchParameterString("username", "Player");
 	public LaunchParameterString session 			= new LaunchParameterString("session", "-").altName("sessionid");
 	public LaunchParameterString password 			= new LaunchParameterString("password");
@@ -48,7 +43,7 @@ public class LaunchConfig {
 	public LaunchParameterString versionType 		= new LaunchParameterString("versionType");
 	public LaunchParameterSwitch applet 			= new LaunchParameterSwitch("applet", false);
 	public LaunchParameterSwitch haspaid			= new LaunchParameterSwitch("haspaid", true);
-	private LaunchParameterSwitch unlicensedCopy	= new LaunchParameterSwitchReverse("unlicensedCopy", haspaid);
+	public LaunchParameterSwitch unlicensedCopy		= new LaunchParameterSwitchReverse("unlicensedCopy", haspaid);
 	public LaunchParameterString loadmap_user 		= new LaunchParameterString("loadmap_user");
 	public LaunchParameterNumber loadmap_id 		= new LaunchParameterNumber("loadmap_id");
 	public LaunchParameterString mppass 			= new LaunchParameterString("mppass", "");
@@ -67,6 +62,8 @@ public class LaunchConfig {
 	public LaunchParameterString tweakClass 		= new LaunchParameterString("tweakClass", null, true);
 	public LaunchParameterSwitch discordRPC 		= new LaunchParameterSwitch("discordRPC", false, true);
 	public LaunchParameterString brand				= new LaunchParameterString("brand", "launchwrapper", true);
+	public LaunchParameterSwitch creative	 		= new LaunchParameterSwitch("creative", false);
+	public LaunchParameterSwitch survival	 		= new LaunchParameterSwitch("survival", false);
 
 	private static File getDefaultGameDir() {
 		String game = "minecraft";

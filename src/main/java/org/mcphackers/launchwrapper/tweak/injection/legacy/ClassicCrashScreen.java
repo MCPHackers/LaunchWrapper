@@ -90,7 +90,7 @@ public class ClassicCrashScreen extends InjectionWithContext<MinecraftGetter> {
 		ClassNode minecraft = context.getMinecraft();
 		MethodNode run = context.getRun();
 		FieldNode running = context.getIsRunning();
-		if(run == null) {
+		if(run == null || running == null) {
 			return false;
 		}
 		AbstractInsnNode insn1 = run.instructions.getFirst();

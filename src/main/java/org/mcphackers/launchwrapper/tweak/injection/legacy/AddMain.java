@@ -120,6 +120,7 @@ public class AddMain extends InjectionWithContext<LegacyTweakContext> {
 
     protected MethodNode getMain(ClassNodeSource source, LaunchConfig config) {
 		ClassNode minecraft = context.getMinecraft();
+		ClassNode minecraftApplet = context.getMinecraftApplet();
 		MethodNode node = new MethodNode(ACC_PUBLIC | ACC_STATIC, "main", "([Ljava/lang/String;)V", null, null);
 		InsnList insns = node.instructions;
 
@@ -134,20 +135,20 @@ public class AddMain extends InjectionWithContext<LegacyTweakContext> {
 		String mcDesc = "L" + minecraft.name + ";";
 		boolean invokeAppletInit = patchAppletInit(source, config);
 		if(invokeAppletInit) {
-			for(FieldNode field : context.minecraftApplet.fields) {
+			for(FieldNode field : minecraftApplet.fields) {
 				if(mcDesc.equals(field.desc)) {
 					mcField = field.name;
 				}
 			}
-			insns.add(new TypeInsnNode(NEW, context.minecraftApplet.name));
+			insns.add(new TypeInsnNode(NEW, minecraftApplet.name));
 			insns.add(new InsnNode(DUP));
-			insns.add(new MethodInsnNode(INVOKESPECIAL, context.minecraftApplet.name, "<init>", "()V"));
+			insns.add(new MethodInsnNode(INVOKESPECIAL, minecraftApplet.name, "<init>", "()V"));
 			insns.add(new VarInsnNode(ASTORE, appletIndex));
 			insns.add(new VarInsnNode(ALOAD, appletIndex));
 			insns.add(new MethodInsnNode(INVOKESTATIC, "org/mcphackers/launchwrapper/inject/Inject", "getApplet", "()Lorg/mcphackers/launchwrapper/tweak/AppletWrapper;"));
 			insns.add(new MethodInsnNode(INVOKEVIRTUAL, "java/applet/Applet", "setStub", "(Ljava/applet/AppletStub;)V"));
 			insns.add(new VarInsnNode(ALOAD, appletIndex));
-			insns.add(new MethodInsnNode(INVOKEVIRTUAL, context.minecraftApplet.name, "init", "()V"));
+			insns.add(new MethodInsnNode(INVOKEVIRTUAL, minecraftApplet.name, "init", "()V"));
 		}
 		if(!config.lwjglFrame.get()) {
 			insns.add(new TypeInsnNode(NEW, "java/awt/Frame"));
@@ -176,7 +177,7 @@ public class AddMain extends InjectionWithContext<LegacyTweakContext> {
 		}
 		if(invokeAppletInit) {
 			insns.add(new VarInsnNode(ALOAD, appletIndex));
-			insns.add(new FieldInsnNode(GETFIELD, context.minecraftApplet.name, mcField, mcDesc));
+			insns.add(new FieldInsnNode(GETFIELD, minecraftApplet.name, mcField, mcDesc));
 		} else {
 			InsnList constructor = getNewMinecraftImpl(minecraft, null, config);
 			if(constructor != null) {
@@ -241,17 +242,18 @@ public class AddMain extends InjectionWithContext<LegacyTweakContext> {
 
 	protected boolean patchAppletInit(ClassNodeSource source, LaunchConfig config) {
 		ClassNode minecraft = context.getMinecraft();
-		if(context.minecraftApplet == null) {
+		ClassNode minecraftApplet = context.getMinecraftApplet();
+		if(minecraftApplet == null) {
 			return false;
 		}
 		String mcField = null;
 		String canvasField = null;
 		String mcDesc = "L" + minecraft.name + ";";
-		MethodNode init = NodeHelper.getMethod(context.minecraftApplet, "init", "()V");
+		MethodNode init = NodeHelper.getMethod(minecraftApplet, "init", "()V");
 		if(init == null) {
 			return false;
 		}
-		for(FieldNode field : context.minecraftApplet.fields) {
+		for(FieldNode field : minecraftApplet.fields) {
 			if(mcDesc.equals(field.desc)) {
 				field.access = Access.Level.PUBLIC.setAccess(field.access);
 				mcField = field.name;
@@ -263,14 +265,14 @@ public class AddMain extends InjectionWithContext<LegacyTweakContext> {
 		AbstractInsnNode insn = init.instructions.getFirst();
 		while(insn != null) {
 			AbstractInsnNode[] insns2 = fill(insn, 6);
-			if(compareInsn(insns2[1], PUTFIELD, context.minecraftApplet.name, mcField, mcDesc)
+			if(compareInsn(insns2[1], PUTFIELD, minecraftApplet.name, mcField, mcDesc)
 			&& compareInsn(insns2[0], INVOKESPECIAL, null, "<init>")) {
 				MethodInsnNode invoke = (MethodInsnNode) insns2[0];
 				InsnList constructor = getNewMinecraftImpl(source.getClass(invoke.owner), canvasField, config);
 				if(constructor != null) {
 					InsnList insns = new InsnList();
 					insns.add(new VarInsnNode(ALOAD, 0));
-					insns.add(new FieldInsnNode(GETFIELD, context.minecraftApplet.name, canvasField, "Ljava/awt/Canvas;"));
+					insns.add(new FieldInsnNode(GETFIELD, minecraftApplet.name, canvasField, "Ljava/awt/Canvas;"));
 					insns.add(new TypeInsnNode(NEW, "java/awt/Dimension"));
 					insns.add(new InsnNode(DUP));
 					insns.add(intInsn(config.width.get()));
@@ -292,7 +294,7 @@ public class AddMain extends InjectionWithContext<LegacyTweakContext> {
 				insn = insns2[1];
 			}
 			if(compareInsn(insns2[0], ALOAD, 0)
-			&& compareInsn(insns2[1], GETFIELD, context.minecraftApplet.name, mcField, mcDesc)
+			&& compareInsn(insns2[1], GETFIELD, minecraftApplet.name, mcField, mcDesc)
 			&& compareInsn(insns2[2], NEW)
 			&& compareInsn(insns2[3], DUP)
 			&& compareInsn(insns2[4], INVOKESPECIAL, null, "<init>", "()V")
@@ -314,8 +316,8 @@ public class AddMain extends InjectionWithContext<LegacyTweakContext> {
 				}
 			}
 			if(compareInsn(insns2[0], ALOAD, 0)
-			&& compareInsn(insns2[1], GETFIELD, context.minecraftApplet.name, mcField, mcDesc)
-			&& compareInsn(insns2[2], LDC, "79.136.77.240")
+			&& compareInsn(insns2[1], GETFIELD, minecraftApplet.name, mcField, mcDesc)
+			&& compareInsn(insns2[2], LDC, "79.136.77.240") // hardcoded IP in c0.0.15a
 			&& compareInsn(insns2[3], SIPUSH)
 			&& compareInsn(insns2[4], INVOKEVIRTUAL, minecraft.name, null, "(Ljava/lang/String;I)V")) {
 				LabelNode label = new LabelNode();
@@ -324,27 +326,27 @@ public class AddMain extends InjectionWithContext<LegacyTweakContext> {
 				InsnList insert = new InsnList();
 				insert.add(new VarInsnNode(ALOAD, 0));
 				insert.add(new LdcInsnNode("server"));
-				insert.add(new MethodInsnNode(INVOKEVIRTUAL, context.minecraftApplet.name, "getParameter", "(Ljava/lang/String;)Ljava/lang/String;"));
+				insert.add(new MethodInsnNode(INVOKEVIRTUAL, minecraftApplet.name, "getParameter", "(Ljava/lang/String;)Ljava/lang/String;"));
 				insert.add(new VarInsnNode(ALOAD, 0));
 				insert.add(new LdcInsnNode("port"));
-				insert.add(new MethodInsnNode(INVOKEVIRTUAL, context.minecraftApplet.name, "getParameter", "(Ljava/lang/String;)Ljava/lang/String;"));
+				insert.add(new MethodInsnNode(INVOKEVIRTUAL, minecraftApplet.name, "getParameter", "(Ljava/lang/String;)Ljava/lang/String;"));
 				insert.add(new MethodInsnNode(INVOKESTATIC, "java/lang/Integer", "parseInt", "(Ljava/lang/String;)I"));
 				init.instructions.insertBefore(insns2[4], insert);
 				insert = new InsnList();
 				insert.add(new VarInsnNode(ALOAD, 0));
 				insert.add(new LdcInsnNode("server"));
-				insert.add(new MethodInsnNode(INVOKEVIRTUAL, context.minecraftApplet.name, "getParameter", "(Ljava/lang/String;)Ljava/lang/String;"));
+				insert.add(new MethodInsnNode(INVOKEVIRTUAL, minecraftApplet.name, "getParameter", "(Ljava/lang/String;)Ljava/lang/String;"));
 				insert.add(new JumpInsnNode(IFNULL, label));
 				insert.add(new VarInsnNode(ALOAD, 0));
 				insert.add(new LdcInsnNode("port"));
-				insert.add(new MethodInsnNode(INVOKEVIRTUAL, context.minecraftApplet.name, "getParameter", "(Ljava/lang/String;)Ljava/lang/String;"));
+				insert.add(new MethodInsnNode(INVOKEVIRTUAL, minecraftApplet.name, "getParameter", "(Ljava/lang/String;)Ljava/lang/String;"));
 				insert.add(new JumpInsnNode(IFNULL, label));
 				init.instructions.insertBefore(insns2[0], insert);
 				init.instructions.insert(insns2[4], label);
 			}
 			insn = nextInsn(insn);
 		}
-		source.overrideClass(context.minecraftApplet);
+		source.overrideClass(minecraftApplet);
 		return true;
 	}
 
@@ -379,6 +381,7 @@ public class AddMain extends InjectionWithContext<LegacyTweakContext> {
 	}
 
 	private InsnList getNewMinecraftImpl(ClassNode minecraftImpl, String canvasField, LaunchConfig config) {
+		ClassNode minecraftApplet = context.getMinecraftApplet();
 		MethodNode init = null;
 		for(MethodNode m : minecraftImpl.methods) {
 			if(m.name.equals("<init>")) {
@@ -403,7 +406,7 @@ public class AddMain extends InjectionWithContext<LegacyTweakContext> {
 					insns.add(new InsnNode(ACONST_NULL));
 				} else {
 					insns.add(new VarInsnNode(ALOAD, 0));
-					insns.add(new FieldInsnNode(GETFIELD, context.minecraftApplet.name, canvasField, "Ljava/awt/Canvas;"));
+					insns.add(new FieldInsnNode(GETFIELD, minecraftApplet.name, canvasField, "Ljava/awt/Canvas;"));
 				}
 			} else if(desc.equals("Ljava/awt/Component;")) {
 				if(config.lwjglFrame.get()) {
@@ -411,7 +414,7 @@ public class AddMain extends InjectionWithContext<LegacyTweakContext> {
 				} else {
 					insns.add(new VarInsnNode(ALOAD, 0));
 				}
-			} else if(context.minecraftApplet != null && desc.equals("L" + context.minecraftApplet.name + ";")) {
+			} else if(minecraftApplet != null && desc.equals("L" + minecraftApplet.name + ";")) {
 				insns.add(new VarInsnNode(ALOAD, 0));
 			} else if(desc.equals("I")) {
 				if(i == 0) {

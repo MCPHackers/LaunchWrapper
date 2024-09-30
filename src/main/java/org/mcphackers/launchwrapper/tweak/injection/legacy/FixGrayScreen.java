@@ -11,6 +11,10 @@ import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.InsnNode;
 import org.objectweb.asm.tree.MethodNode;
 
+/**
+ * Specifically intended to fix gray screen in a1.1.1.
+ * Any other calls to Display.setDisplayConfiguration will not be replaced
+ */
 public class FixGrayScreen extends InjectionWithContext<MinecraftGetter> {
 
     public FixGrayScreen(MinecraftGetter storage) {

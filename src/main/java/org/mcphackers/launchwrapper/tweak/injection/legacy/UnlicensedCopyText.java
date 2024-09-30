@@ -33,7 +33,7 @@ public class UnlicensedCopyText extends InjectionWithContext<MinecraftGetter> {
 
     @Override
     public boolean apply(ClassNodeSource source, LaunchConfig config) {
-        if(config.haspaid.get()) {
+        if(!config.unlicensedCopy.get()) {
             return false;
         }
         ClassNode minecraft = context.getMinecraft();

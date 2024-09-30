@@ -18,6 +18,10 @@ import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.TryCatchBlockNode;
 import org.objectweb.asm.tree.VarInsnNode;
 
+/**
+ * This patch makes the game exit *cleanly* by properly running deinitialization method
+ * This also includes fixes to certain soft locks when the game crashes
+ */
 public class FixShutdown extends InjectionWithContext<MinecraftGetter> {
 
 	public FixShutdown(MinecraftGetter storage) {

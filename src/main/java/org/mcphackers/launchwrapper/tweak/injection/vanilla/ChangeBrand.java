@@ -32,7 +32,7 @@ public class ChangeBrand implements Injection {
 			MethodNode getClientModName = NodeHelper.getMethod(clientBrand, "getClientModName", "()Ljava/lang/String;");
 			if(getClientModName != null) {
 				InsnList insns = new InsnList();
-				insns.add(new LdcInsnNode("launchwrapper"));
+				insns.add(new LdcInsnNode(config.brand.get() != null ? config.brand.get() : "launchwrapper"));
 				insns.add(new InsnNode(ARETURN));
 				getClientModName.instructions = insns;
 				source.overrideClass(clientBrand);

@@ -113,6 +113,11 @@ public abstract class Tweak {
 				return new LegacyTweak(launch);
 			}
 		}
+		for(String cls : ServerTweak.MAIN_CLASSES) {
+			if(classLoader.getClass(cls) != null) {
+				return new ServerTweak(launch);
+			}
+		}
 		return null; // Tweak not found
 	}
 

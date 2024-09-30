@@ -38,7 +38,7 @@ public class ReplaceGameDir extends InjectionWithContext<LegacyTweakContext> {
 
     @Override
 	public boolean required() {
-		return true;
+		return false;
 	}
 
     @Override

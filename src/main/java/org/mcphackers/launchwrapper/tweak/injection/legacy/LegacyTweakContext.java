@@ -22,7 +22,7 @@ import org.objectweb.asm.tree.MethodNode;
  */
 public class LegacyTweakContext implements Injection, MinecraftGetter {
 	private ClassNode minecraft;
-	public ClassNode minecraftApplet;
+	private ClassNode minecraftApplet;
 	/** Field that determines if Minecraft should exit */
 	private FieldNode running;
 	/** Frame width */
@@ -43,6 +43,10 @@ public class LegacyTweakContext implements Injection, MinecraftGetter {
 
     public ClassNode getMinecraft() {
         return minecraft;
+    }
+
+    public ClassNode getMinecraftApplet() {
+        return minecraftApplet;
     }
 
     public MethodNode getRun() {

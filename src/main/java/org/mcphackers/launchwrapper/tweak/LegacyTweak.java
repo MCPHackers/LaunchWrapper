@@ -10,6 +10,8 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import javax.imageio.ImageIO;
+
 import org.mcphackers.launchwrapper.Launch;
 import org.mcphackers.launchwrapper.LaunchConfig;
 import org.mcphackers.launchwrapper.protocol.LegacyURLStreamHandler;
@@ -20,14 +22,17 @@ import org.mcphackers.launchwrapper.target.MainLaunchTarget;
 import org.mcphackers.launchwrapper.tweak.injection.Injection;
 import org.mcphackers.launchwrapper.tweak.injection.forge.ForgeVersionCheck;
 import org.mcphackers.launchwrapper.tweak.injection.legacy.AddMain;
+import org.mcphackers.launchwrapper.tweak.injection.legacy.BitDepthFix;
 import org.mcphackers.launchwrapper.tweak.injection.legacy.ClassicCrashScreen;
 import org.mcphackers.launchwrapper.tweak.injection.legacy.FixClassicSession;
 import org.mcphackers.launchwrapper.tweak.injection.legacy.FixGrayScreen;
 import org.mcphackers.launchwrapper.tweak.injection.legacy.FixShutdown;
 import org.mcphackers.launchwrapper.tweak.injection.legacy.FixSplashScreen;
+import org.mcphackers.launchwrapper.tweak.injection.legacy.GameModeSwitch;
 import org.mcphackers.launchwrapper.tweak.injection.legacy.IndevSaving;
 import org.mcphackers.launchwrapper.tweak.injection.legacy.LWJGLPatch;
 import org.mcphackers.launchwrapper.tweak.injection.legacy.LegacyTweakContext;
+import org.mcphackers.launchwrapper.tweak.injection.legacy.MouseFix;
 import org.mcphackers.launchwrapper.tweak.injection.legacy.OptionsLoadFix;
 import org.mcphackers.launchwrapper.tweak.injection.legacy.ReplaceGameDir;
 import org.mcphackers.launchwrapper.tweak.injection.legacy.UnlicensedCopyText;
@@ -35,8 +40,6 @@ import org.mcphackers.launchwrapper.tweak.injection.vanilla.ChangeBrand;
 import org.mcphackers.launchwrapper.util.UnsafeUtils;
 import org.mcphackers.launchwrapper.util.Util;
 import org.mcphackers.rdi.util.NodeHelper;
-
-import javax.imageio.ImageIO;
 
 public class LegacyTweak extends Tweak {
 
@@ -67,10 +70,13 @@ public class LegacyTweak extends Tweak {
 			new FixGrayScreen(context),
 			new FixShutdown(context),
 			new IndevSaving(context),
+			new BitDepthFix(context),
 			new LWJGLPatch(context),
+			new MouseFix(context),
 			new ReplaceGameDir(context),
 			new OptionsLoadFix(context),
 			new FixClassicSession(context),
+			new GameModeSwitch(context),
 			new AddMain(context),
 			new ForgeVersionCheck(),
 			new ChangeBrand()
@@ -133,7 +139,7 @@ public class LegacyTweak extends Tweak {
 		if(config.isom.get()) {
 			return getIsomLaunchTarget();
 		}
-		if(NodeHelper.getMethod(context.getMinecraft(), "main", "([Ljava/lang/String;)V") == null) {
+		if(context.getMinecraft() == null || NodeHelper.getMethod(context.getMinecraft(), "main", "([Ljava/lang/String;)V") == null) {
 			return null;
 		}
 		downloadServer();

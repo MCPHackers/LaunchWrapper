@@ -14,7 +14,7 @@ import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 
 /**
- * Compatibility fixes for Java 5
+ * Compatibility fixes for Java 5.
  * Replaces most of Java 6 API used by Minecraft with Java 5 alternative
  */
 public class Java5LazyTweaker implements LazyTweaker {
@@ -70,6 +70,9 @@ public class Java5LazyTweaker implements LazyTweaker {
 				}
 				insn = nextInsn(insn);
 			}
+		}
+		if(changed) {
+			source.overrideClass(node);
 		}
 		return changed;
 	}

@@ -25,7 +25,6 @@ public class BTATweak extends LegacyTweak {
 				context,
 				new FixSplashScreen(context),
 				new FixShutdown(context),
-				// new LWJGLPatch(context),
 				new ReplaceGameDir(context));
 	}
 
