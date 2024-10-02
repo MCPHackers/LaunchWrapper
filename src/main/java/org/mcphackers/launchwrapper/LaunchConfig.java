@@ -19,7 +19,7 @@ import org.mcphackers.launchwrapper.util.OS;
 public class LaunchConfig {
 	private static final File defaultGameDir = getDefaultGameDir();
 	private Map<String, LaunchParameter<?>> parameters = new HashMap<String, LaunchParameter<?>>();
-	private Map<String, Object> unknownParameters = new HashMap<String, Object>();
+	private List<String> extraParameters = new ArrayList<String>();
 
 	public LaunchParameterSwitch demo 				= new LaunchParameterSwitch("demo");
 	public LaunchParameterSwitch fullscreen 		= new LaunchParameterSwitch("fullscreen");
@@ -104,7 +104,7 @@ public class LaunchConfig {
 	@SuppressWarnings("unchecked")
 	public LaunchConfig clone() {
 		LaunchConfig newConfig = new LaunchConfig();
-		newConfig.unknownParameters.putAll(unknownParameters);
+		newConfig.extraParameters.addAll(extraParameters);
 		for(Map.Entry<String, LaunchParameter<?>> entry : parameters.entrySet()) {
 			LaunchParameter<Object> param = (LaunchParameter<Object>)newConfig.parameters.get(entry.getKey());
 			if(param == null) {
@@ -120,28 +120,25 @@ public class LaunchConfig {
 
 	public LaunchConfig(String[] args) {
 		for(int i = 0; i < args.length; i++) {
-			if(args[i].startsWith("--")) {
-				String paramName = args[i].substring(2);
-				LaunchParameter<?> param = parameters.get(paramName);
-				if(param == null) {
-					if(i + 1 >= args.length || args[i+1].startsWith("--")) {
-						unknownParameters.put(paramName, Boolean.TRUE);
-					} else {
-						unknownParameters.put(paramName, args[i+1]);
-						i++;
-					}
-					continue;
-				}
-				if(param.isSwitch()) {
-					((LaunchParameterSwitch) param).setFlag();
-					continue;
-				}
-				if(i + 1 < args.length) {
-					try {
-						param.setString(args[i + 1]);
-						i++;
-					} catch (IllegalArgumentException e) {
-					}
+			if(!args[i].startsWith("--")) {
+				extraParameters.add(args[i]);
+				continue;
+			}
+			String paramName = args[i].substring(2);
+			LaunchParameter<?> param = parameters.get(paramName);
+			if(param == null) {
+				extraParameters.add(args[i]);
+				continue;
+			}
+			if(param.isSwitch()) {
+				((LaunchParameterSwitch) param).setFlag();
+				continue;
+			}
+			if(i + 1 < args.length) {
+				try {
+					param.setString(args[i + 1]);
+					i++;
+				} catch (IllegalArgumentException e) {
 				}
 			}
 		}
@@ -186,19 +183,11 @@ public class LaunchConfig {
 				}
 			}
 		}
-		for(String paramName : unknownParameters.keySet()) {
-			if(paramName == null) {
+		for(String param : extraParameters) {
+			if(param == null) {
 				continue;
 			}
-			Object value = unknownParameters.get(paramName); // Either Boolean.TRUE or String
-			if(value == Boolean.TRUE) {
-				list.add("--" + paramName);
-				continue;
-			}
-			if(value != null) {
-				list.add("--" + paramName);
-				list.add(value.toString());
-			}
+			list.add(param);
 		}
 		String[] arr = new String[list.size()];
 		return list.toArray(arr);

@@ -13,22 +13,23 @@ LaunchWrapper is bundled in [BetterJSONs](https://github.com/MCPHackers/BetterJS
 ## Features
 - Does not depend on any hard-coded obfuscated names and is mostly compatible with every Minecraft version
 	- This also includes modded versions
-- Strips game window from Java **AWT** (**Abstract Window Toolkit**) and lets the game use internal **LWJGL** frame
+- **deAWT** (aka **M1Fix**) - Strips game window from Java **AWT** (Abstract Window Toolkit) and lets the game use internal **LWJGL** frame
+- Replaces mouse input code with **LWJGL** calls (Fixes any mouse input issues in Classic, Indev and Infdev. Commonly included with deAWT or M1Fix mods)
 - BitDepthFix
 - Online mode authentication fix
 - LaunchWrapper works with Risugami's Modloader so long as you're using Java 8
 - Built-in [Modloader Fix](https://github.com/coffeenotfound/ModloaderFix-b1.7.3)
-- Replaces mouse input code with **LWJGL** calls (Fixes any mouse input issues in classic, indev and infdev)
 - Allows changing game directory in versions before 1.6
 - Makes save slots in classic and indev functional and saves to `.minecraft/levels` directory
 - Adds ability to launch classic and pre-classic at custom resolution or in fullscreen
 - Fixes TimSort crash when using Java 8+
-- Proxies all requests from old skin servers to the current skin API and converts skins to required format
+- **SkinFix** - Proxies all requests from old skin servers to the current skin API and converts skins to required format
 	- Skins don't work in Java versions before 8u181, due to the requrement of TLS 1.2 support
 - Adds ability to customize built-in **LWJGL** frame
 	- Changing display title
 	- Setting icon
 - Fixes sounds by using sounds from `.minecraft/assets`
+	- You need a valid asset index to be specified in `--assetIndex`
 - Enabling VSync for versions without that option
 - The wrapper is fully compatible with Java 5+ if the game is vanilla
 	- The wrapper also fixes Beta 1.3, Pre-classic and Classic compatibility with Java 5

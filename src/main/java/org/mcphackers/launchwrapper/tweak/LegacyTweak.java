@@ -24,6 +24,7 @@ import org.mcphackers.launchwrapper.tweak.injection.forge.ForgeVersionCheck;
 import org.mcphackers.launchwrapper.tweak.injection.legacy.AddMain;
 import org.mcphackers.launchwrapper.tweak.injection.legacy.BitDepthFix;
 import org.mcphackers.launchwrapper.tweak.injection.legacy.ClassicCrashScreen;
+import org.mcphackers.launchwrapper.tweak.injection.legacy.ClassicLoadingFix;
 import org.mcphackers.launchwrapper.tweak.injection.legacy.FixClassicSession;
 import org.mcphackers.launchwrapper.tweak.injection.legacy.FixGrayScreen;
 import org.mcphackers.launchwrapper.tweak.injection.legacy.FixShutdown;
@@ -65,6 +66,7 @@ public class LegacyTweak extends Tweak {
 		return Arrays.asList(
 			context,
 			new ClassicCrashScreen(context),
+			new ClassicLoadingFix(context),
 			new UnlicensedCopyText(context),
 			new FixSplashScreen(context),
 			new FixGrayScreen(context),

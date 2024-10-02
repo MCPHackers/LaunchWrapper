@@ -87,6 +87,7 @@ public class ClassicCrashScreen extends InjectionWithContext<MinecraftGetter> {
 
 	@Override
 	public boolean apply(ClassNodeSource source, LaunchConfig config) {
+		// TODO catch MinecraftServer crashes in 1.3+
 		ClassNode minecraft = context.getMinecraft();
 		MethodNode run = context.getRun();
 		FieldNode running = context.getIsRunning();
@@ -150,6 +151,7 @@ public class ClassicCrashScreen extends InjectionWithContext<MinecraftGetter> {
 		if(openScreen == null) {
 			return false;
 		}
+		AbstractInsnNode instanceOf = null;
 		
 		for(AbstractInsnNode insn = openScreen.instructions.getFirst(); insn != null; insn = nextInsn(insn)) {
 			AbstractInsnNode[] insns2 = fill(insn, 8);
@@ -167,13 +169,11 @@ public class ClassicCrashScreen extends InjectionWithContext<MinecraftGetter> {
 			&& compareInsn(insns2[1], IFEQ)
 			&& compareInsn(insns2[2], RETURN)) {
 				errScreen = source.getClass(((TypeInsnNode)insn).desc);
+				instanceOf = insn;
 				break;
 			}
 		}
 
-		if(setWorld == null && cleanup == null) {
-			return false;
-		} 
 		// In indev and early infdev crash screen is already present, we just need to patch it to not exit game loop
 		if(errScreen != null && setWorld != null) {
 			boolean patched = false;
@@ -327,7 +327,12 @@ public class ClassicCrashScreen extends InjectionWithContext<MinecraftGetter> {
 		if(errScreen == null) {
 			return false;
 		}
-		patchErrorScreen(source, errScreen, openScreen);
+		if(patchErrorScreen(source, errScreen, openScreen) && instanceOf != null) {
+			openScreen.instructions.set(instanceOf, new InsnNode(ICONST_0));
+		}
+		if(setWorld == null && cleanup == null) {
+			return false;
+		} 
 
 		int n = getFreeIndex(run.instructions);
 		InsnList handle = new InsnList();
@@ -425,8 +430,8 @@ public class ClassicCrashScreen extends InjectionWithContext<MinecraftGetter> {
 		return setWorld;
 	}
 
-	public void patchErrorScreen(ClassNodeSource source, ClassNode errScreen, MethodNode openScreen) {
-		//TODO patch cancel button
+	public boolean patchErrorScreen(ClassNodeSource source, ClassNode errScreen, MethodNode openScreen) {
+		boolean needCancelButton = true;
 		String[] fields = {"message", "description"};
 		MethodNode init = NodeHelper.getMethod(errScreen, "<init>", "(Ljava/lang/String;Ljava/lang/String;)V");
 		if(init == null) {
@@ -489,7 +494,120 @@ public class ClassicCrashScreen extends InjectionWithContext<MinecraftGetter> {
 				}
 			}
 		}
+		// Cancel button patch
+		// TODO don't patch button if it's already present
+		ClassNode screen = source.getClass(errScreen.superName);
+		cancelButton:
+		if(screen != null) {
+			FieldNode mcField = null;
+			FieldNode buttonsList = null;
+			for(FieldNode f : screen.fields) {
+				if(f.desc.equals("Ljava/util/List;") && buttonsList == null) {
+					buttonsList = f;
+				}
+				if(f.desc.equals("L" + context.getMinecraft().name + ";")) {
+					mcField = f;
+				}
+			}
+			if(buttonsList == null || mcField == null) {
+				break cancelButton;
+			}
+			String buttonType = null;
+			for(MethodNode m : screen.methods) {
+				for(AbstractInsnNode insn = m.instructions.getFirst(); insn != null; insn = nextInsn(insn)) {
+					AbstractInsnNode[] insns = fill(insn, 4); 
+
+					if(compareInsn(insns[0], GETFIELD, screen.name, buttonsList.name, buttonsList.desc)
+					&& compareInsn(insns[1], ILOAD)
+					&& compareInsn(insns[2], INVOKEINTERFACE, "java/util/List", "get", "(I)Ljava/lang/Object;")
+					&& compareInsn(insns[3], CHECKCAST)) {
+						buttonType = ((TypeInsnNode)insns[3]).desc;
+						break;
+					}
+				}
+				if(buttonType != null) {
+					break;
+				}
+			}
+			MethodNode buttonClicked = null;
+			for(MethodNode m : screen.methods) {
+				if(!m.desc.equals("(L" + buttonType + ";)V")) {
+					continue;
+				}
+				buttonClicked = m;
+				break;
+			}
+			ClassNode button = source.getClass(buttonType);
+			if(button != null) {
+				if(NodeHelper.getMethod(button, "<init>", "(IIILjava/lang/String;)V") == null) {
+					break cancelButton;
+				}
+			}
+			FieldInsnNode width = null;
+			for(MethodNode m : errScreen.methods) {
+				if(!m.desc.equals("(II)V") && !m.desc.equals("(IIF)V")) {
+					continue;
+				}
+				for(AbstractInsnNode insn = m.instructions.getFirst(); insn != null; insn = nextInsn(insn)) {
+					AbstractInsnNode[] insns = fill(insn, 6); 
+					if(compareInsn(insns[0], ICONST_0)
+					&& compareInsn(insns[1], ICONST_0)
+					&& compareInsn(insns[2], ALOAD, 0)
+					&& compareInsn(insns[3], GETFIELD, null, null, "I")
+					&& compareInsn(insns[4], ALOAD, 0)
+					&& compareInsn(insns[5], GETFIELD, null, null, "I")) {
+						width = (FieldInsnNode)insns[3];
+						break;
+					}
+				}
+				if(width != null) {
+					break;
+				}
+			}
+			MethodNode initScreen = null;
+			for(MethodNode m : errScreen.methods) {
+				if(!m.desc.equals("()V") || m.name.equals("<init>")) {
+					continue;
+				}
+				initScreen = m;
+				break;
+			}
+			if(initScreen == null || width == null) {
+				break cancelButton;
+			}
+			if(NodeHelper.getMethod(errScreen, buttonClicked.name, buttonClicked.desc) != null) {
+				break cancelButton;
+			}
+			MethodNode buttonClickedNew = new MethodNode(buttonClicked.access, buttonClicked.name, buttonClicked.desc, null, null);
+			errScreen.methods.add(buttonClickedNew);
+			InsnList list = buttonClickedNew.instructions;
+			list.add(new VarInsnNode(ALOAD, 0));
+			list.add(new FieldInsnNode(GETFIELD, screen.name, mcField.name, mcField.desc));
+			list.add(new InsnNode(ACONST_NULL));
+			list.add(new MethodInsnNode(INVOKEVIRTUAL, context.getMinecraft().name, openScreen.name, openScreen.desc));
+			list.add(new InsnNode(RETURN));
+			
+			list = new InsnList();
+			list.add(new VarInsnNode(ALOAD, 0));
+			list.add(new FieldInsnNode(GETFIELD, screen.name, buttonsList.name, buttonsList.desc));
+			list.add(new TypeInsnNode(NEW, buttonType));
+			list.add(new InsnNode(DUP));
+			list.add(new InsnNode(ICONST_0));
+			list.add(new VarInsnNode(ALOAD, 0));
+			list.add(new FieldInsnNode(GETFIELD, screen.name, width.name, width.desc));
+			list.add(new InsnNode(ICONST_2));
+			list.add(new InsnNode(IDIV));
+			list.add(intInsn(100));
+			list.add(new InsnNode(ISUB));
+			list.add(intInsn(140));
+			list.add(new LdcInsnNode("Cancel")); // TODO translate string?
+			list.add(new MethodInsnNode(INVOKESPECIAL, buttonType, "<init>", "(IIILjava/lang/String;)V"));
+			list.add(new MethodInsnNode(INVOKEINTERFACE, "java/util/List", "add", "(Ljava/lang/Object;)Z"));
+			list.add(new InsnNode(POP));
+			initScreen.instructions.insert(list);
+		}
 		source.overrideClass(errScreen);
+		return needCancelButton;
 	}
 
 }
