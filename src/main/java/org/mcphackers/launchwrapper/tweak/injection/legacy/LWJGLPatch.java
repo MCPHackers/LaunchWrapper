@@ -26,6 +26,8 @@ import org.objectweb.asm.tree.VarInsnNode;
  */
 public class LWJGLPatch extends InjectionWithContext<LegacyTweakContext> {
 
+	private MethodNode tick;
+
     public LWJGLPatch(LegacyTweakContext storage) {
         super(storage);
     }
@@ -42,7 +44,8 @@ public class LWJGLPatch extends InjectionWithContext<LegacyTweakContext> {
 
     @Override
     public boolean apply(ClassNodeSource source, LaunchConfig config) {
-		removeCanvas(getTickMethod(context.getRun()));
+		tick = getTickMethod(context.getRun());
+		removeCanvas(tick);
         return displayPatch(context.getInit(), context.supportsResizing, source, config);
     }
 	
@@ -113,7 +116,6 @@ public class LWJGLPatch extends InjectionWithContext<LegacyTweakContext> {
 		}
 	}
 
-
 	private MethodNode getTickMethod(MethodNode run) {
 		ClassNode minecraft = context.getMinecraft();
 		FieldNode running = context.getIsRunning();
@@ -130,10 +132,8 @@ public class LWJGLPatch extends InjectionWithContext<LegacyTweakContext> {
 				if(testedMethod != null) {
 					AbstractInsnNode insn2 = testedMethod.instructions.getFirst();
 					while(insn2 != null) {
-						AbstractInsnNode[] insns = fill(insn2, 3);
-						if(compareInsn(insns[0], ALOAD)
-						&& compareInsn(insns[1], ICONST_0)
-						&& compareInsn(insns[2], PUTFIELD, minecraft.name, running.name, running.desc)) {
+						// tick method up to 1.12.2 contains this call
+						if(compareInsn(insn2, INVOKESTATIC, "org/lwjgl/opengl/Display", "isCloseRequested", "()Z")) {
 							return testedMethod;
 						}
 						insn2 = nextInsn(insn2);
@@ -191,7 +191,7 @@ public class LWJGLPatch extends InjectionWithContext<LegacyTweakContext> {
 			&& compareInsn(insns[2], ASTORE)
 			&& compareInsn(insns[3], GETFIELD, minecraft.name, null, "Ljava/awt/Canvas;")
 			&& compareInsn(insns[4], IFNULL)) {
-				// Required for in-20100131-2. Has this weird bytecode to ASTORE this instance to another var
+				// Required for in-20100131-2. Has weird bytecode to ASTORE this instance to another var
 				thisIndex = ((VarInsnNode) insns[2]).var;
 				canvasName = ((FieldInsnNode) insns[3]).name;
 				ifNoCanvas = (JumpInsnNode) insns[4];
@@ -317,8 +317,9 @@ public class LWJGLPatch extends InjectionWithContext<LegacyTweakContext> {
 			insert.add(new MethodInsnNode(INVOKESTATIC, "org/lwjgl/opengl/Display", "setTitle", "(Ljava/lang/String;)V"));
 			insnList.insertBefore(insnList.getFirst(), insert);
 		}
-
+		
 		if(context.fullscreenField != null) {
+			MethodNode toggleFullscreen = null;
 			methodLoop:
 			for(MethodNode m : minecraft.methods) {
 				AbstractInsnNode insn2 = m.instructions.getFirst();
@@ -363,7 +364,7 @@ public class LWJGLPatch extends InjectionWithContext<LegacyTweakContext> {
 						&& compareInsn(insns3[7], INVOKESTATIC, "org/lwjgl/opengl/Display", "setDisplayMode", "(Lorg/lwjgl/opengl/DisplayMode;)V")) {
 							m.instructions.set(insns3[3], new FieldInsnNode(GETFIELD, minecraft.name, context.defaultWidth.name, context.defaultWidth.desc));
 							m.instructions.set(insns3[5], new FieldInsnNode(GETFIELD, minecraft.name, context.defaultHeight.name, context.defaultHeight.desc));
-							break methodLoop;
+							break;
 						} else {
 							JumpInsnNode jump = (JumpInsnNode) insns2[0];
 							LabelNode newLabel = new LabelNode();
@@ -379,10 +380,39 @@ public class LWJGLPatch extends InjectionWithContext<LegacyTweakContext> {
 							insert.add(new MethodInsnNode(INVOKESPECIAL, "org/lwjgl/opengl/DisplayMode", "<init>", "(II)V"));
 							insert.add(new MethodInsnNode(INVOKESTATIC, "org/lwjgl/opengl/Display", "setDisplayMode", "(Lorg/lwjgl/opengl/DisplayMode;)V"));
 							m.instructions.insert(insns2[3], insert);
-							break methodLoop;
+							break;
 						}
 					}
 					insn2 = nextInsn(insn2);
+				}
+				insn2 = m.instructions.getFirst();
+				while(insn2 != null) {
+					AbstractInsnNode[] insns2 = fill(insn2, 4);
+					if(compareInsn(insns2[0], INVOKESTATIC, "org/lwjgl/opengl/Display", "setFullscreen", "(Z)V")
+					&& compareInsn(insns2[1], INVOKESTATIC, "org/lwjgl/opengl/Display", "update", "()V")
+					&& compareInsn(insns2[2], LDC, 1000L)
+					&& compareInsn(insns2[3], INVOKESTATIC, "java/lang/Thread", "sleep", "(J)V")) {
+						// Removes fullscreen delay
+						m.instructions.remove(insns2[2]);
+						m.instructions.remove(insns2[3]);
+						toggleFullscreen = m;
+					}
+
+					insn2 = nextInsn(insn2);
+				}
+			}
+			if(toggleFullscreen != null) {
+				for(AbstractInsnNode insn2 = tick.instructions.getFirst(); insn2 != null; insn2 = nextInsn(insn2)) {
+					AbstractInsnNode[] insns2 = fill(insn2, 7);
+					if(compareInsn(insns2[0], INVOKESTATIC, "org/lwjgl/opengl/Display", "isActive", "()Z")
+					&& compareInsn(insns2[1], IFNE)
+					&& compareInsn(insns2[2], ALOAD)
+					&& compareInsn(insns2[3], GETFIELD, minecraft.name, context.fullscreenField.name, context.fullscreenField.desc)
+					&& compareInsn(insns2[4], IFEQ)
+					&& compareInsn(insns2[5], ALOAD)
+					&& compareInsn(insns2[6], INVOKEVIRTUAL, minecraft.name, toggleFullscreen.name, toggleFullscreen.desc)) {
+						tick.instructions.set(insn2, new InsnNode(ICONST_1));
+					}
 				}
 			}
 		}

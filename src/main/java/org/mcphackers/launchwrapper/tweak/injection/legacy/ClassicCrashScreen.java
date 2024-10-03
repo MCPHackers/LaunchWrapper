@@ -3,6 +3,9 @@ package org.mcphackers.launchwrapper.tweak.injection.legacy;
 import static org.mcphackers.rdi.util.InsnHelper.*;
 import static org.objectweb.asm.Opcodes.*;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.mcphackers.launchwrapper.LaunchConfig;
 import org.mcphackers.launchwrapper.tweak.injection.InjectionWithContext;
 import org.mcphackers.launchwrapper.tweak.injection.MinecraftGetter;
@@ -588,6 +591,9 @@ public class ClassicCrashScreen extends InjectionWithContext<MinecraftGetter> {
 			list.add(new InsnNode(RETURN));
 			
 			list = new InsnList();
+			list.add(new VarInsnNode(ALOAD, 0));
+			list.add(new FieldInsnNode(GETFIELD, screen.name, buttonsList.name, buttonsList.desc));
+			list.add(new MethodInsnNode(INVOKEINTERFACE, "java/util/List", "clear", "()V"));
 			list.add(new VarInsnNode(ALOAD, 0));
 			list.add(new FieldInsnNode(GETFIELD, screen.name, buttonsList.name, buttonsList.desc));
 			list.add(new TypeInsnNode(NEW, buttonType));

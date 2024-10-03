@@ -13,6 +13,7 @@ import org.mcphackers.launchwrapper.tweak.injection.Injection;
 import org.mcphackers.launchwrapper.tweak.injection.legacy.ClassicCrashScreen;
 import org.mcphackers.launchwrapper.tweak.injection.vanilla.ChangeBrand;
 import org.mcphackers.launchwrapper.tweak.injection.vanilla.OneSixAssetsFix;
+import org.mcphackers.launchwrapper.tweak.injection.vanilla.OutOfFocusFullscreen;
 import org.mcphackers.launchwrapper.tweak.injection.vanilla.VanillaTweakContext;
 
 public class VanillaTweak extends Tweak {
@@ -27,6 +28,7 @@ public class VanillaTweak extends Tweak {
 	public List<Injection> getInjections() {
 		return Arrays.<Injection>asList(
 			context,
+			new OutOfFocusFullscreen(context),
 			new ClassicCrashScreen(context),
 			new OneSixAssetsFix(context),
 			new ChangeBrand()

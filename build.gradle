@@ -60,8 +60,20 @@ allprojects {
         archives sourcesJar
     }
 
+    java {
+        toolchain {
+            languageVersion = JavaLanguageVersion.of(8)
+        }
+    }
+
     compileJava {
         options.encoding = "UTF-8"
+        // needed to fix java.lang.NoSuchMethodError: java.nio.ByteBuffer.flip()Ljava/nio/ByteBuffer;
+        // but can't use it because of sun.misc.Unsafe
+        // If you are reading this, please use JDK 8 to compile
+        // if (JavaVersion.current().isJava9Compatible()) {
+		//     options.release.set(8)
+	    // }
 
         // Minecraft is mostly compatible with java 5 up until the version we support, so why not?
         sourceCompatibility = JavaVersion.VERSION_1_5

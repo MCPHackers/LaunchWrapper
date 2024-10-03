@@ -5,7 +5,9 @@ import static org.objectweb.asm.Opcodes.*;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.mcphackers.launchwrapper.LaunchConfig;
 import org.mcphackers.launchwrapper.tweak.VanillaTweak;
@@ -27,7 +29,7 @@ public class VanillaTweakContext implements Injection, MinecraftGetter {
 	public ClassNode minecraft;
 	public MethodNode run;
 	public FieldNode running;
-    public List<String> availableParameters = new ArrayList<String>();
+    public Set<String> availableParameters = new HashSet<String>();
     public String[] args;
 
     public ClassNode getMinecraft() {
