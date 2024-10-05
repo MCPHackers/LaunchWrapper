@@ -3,9 +3,6 @@ package org.mcphackers.launchwrapper.tweak.injection.legacy;
 import static org.mcphackers.rdi.util.InsnHelper.*;
 import static org.objectweb.asm.Opcodes.*;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.mcphackers.launchwrapper.LaunchConfig;
 import org.mcphackers.launchwrapper.tweak.injection.InjectionWithContext;
 import org.mcphackers.launchwrapper.tweak.injection.MinecraftGetter;
@@ -498,7 +495,6 @@ public class ClassicCrashScreen extends InjectionWithContext<MinecraftGetter> {
 			}
 		}
 		// Cancel button patch
-		// TODO don't patch button if it's already present
 		ClassNode screen = source.getClass(errScreen.superName);
 		cancelButton:
 		if(screen != null) {

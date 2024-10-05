@@ -24,7 +24,6 @@ public class BTATest extends TweakTest {
     @Override
     public TestFeatureBuilder getTests() {
         return new TestFeatureBuilder()
-        //TODO LWJGL patch is applied partially so it doesn't "succeed"
             .tweakInfoList("LegacyTweak init", "Fix Shutdown", "Replace game directory");
     }
 

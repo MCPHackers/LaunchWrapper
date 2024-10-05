@@ -9,16 +9,12 @@ repositories {
     }
 }
 
-archivesBaseName = 'launchwrapper-micromixin'
 compileJava {
     sourceCompatibility = JavaVersion.VERSION_1_8
     targetCompatibility = JavaVersion.VERSION_1_8
 }
 
 dependencies {
-	implementation rootProject
-    implementation "org.mcphackers.rdi:rdi:1.0"
-    implementation 'org.json:json:20230311'
     implementation 'org.jetbrains:annotations-java5:24.1.0'
 	implementation "org.stianloader:micromixin-transformer:0.6.5-a20240922"
 	implementation "org.stianloader:micromixin-runtime:0.6.5-a20240922"
@@ -27,7 +23,4 @@ dependencies {
     implementation "org.stianloader:stianloader-remapper:0.1.0-a20240601" // For remapping classes and references
 	implementation "net.fabricmc:mapping-io:0.3.0"
 	implementation "net.fabricmc:access-widener:2.1.0"
-    implementation "org.ow2.asm:asm:${project.asm_version}"
-    implementation "org.ow2.asm:asm-tree:${project.asm_version}"
-    implementation "org.ow2.asm:asm-util:${project.asm_version}"
 }
