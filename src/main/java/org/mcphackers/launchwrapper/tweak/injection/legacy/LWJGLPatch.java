@@ -145,7 +145,8 @@ public class LWJGLPatch extends InjectionWithContext<LegacyTweakContext> {
 		return run;
 	}
 
-	private InsnList getIcon(boolean grassIcon) {
+	private InsnList getIcon() {
+		boolean grassIcon = context.isClassic();
 		InsnList insert = new InsnList();
 		insert.add(booleanInsn(grassIcon));
 		insert.add(new MethodInsnNode(INVOKESTATIC, "org/mcphackers/launchwrapper/util/IconUtils", "loadIcon", "(Z)[Ljava/nio/ByteBuffer;"));
@@ -210,7 +211,7 @@ public class LWJGLPatch extends InjectionWithContext<LegacyTweakContext> {
 			&& compareInsn(insns[3], SIPUSH)
 			&& compareInsn(insns[4], INVOKESPECIAL, "org/lwjgl/opengl/DisplayMode", "<init>", "(II)V")
 			&& compareInsn(insns[5], INVOKESTATIC, "org/lwjgl/opengl/Display", "setDisplayMode", "(Lorg/lwjgl/opengl/DisplayMode;)V")) {
-				InsnList insert = getIcon(context.isClassic());
+				InsnList insert = getIcon();
 				if(config.forceVsync.get()) {
 					insert.add(new InsnNode(ICONST_1));
 					insert.add(new MethodInsnNode(INVOKESTATIC, "org/lwjgl/opengl/Display", "setVSyncEnabled", "(Z)V"));
@@ -231,7 +232,7 @@ public class LWJGLPatch extends InjectionWithContext<LegacyTweakContext> {
 			if(compareInsn(insns[0], ICONST_1)
 			&& compareInsn(insns[1], INVOKESTATIC, "org/lwjgl/opengl/Display", "setFullscreen", "(Z)V")
 			&& compareInsn(insns[2], INVOKESTATIC, "org/lwjgl/opengl/Display", "create", "()V")) {
-				InsnList insert = getIcon(context.isClassic());
+				InsnList insert = getIcon();
 				if(config.forceVsync.get()) {
 					insert.add(new InsnNode(ICONST_1));
 					insert.add(new MethodInsnNode(INVOKESTATIC, "org/lwjgl/opengl/Display", "setVSyncEnabled", "(Z)V"));
@@ -288,8 +289,7 @@ public class LWJGLPatch extends InjectionWithContext<LegacyTweakContext> {
 		&& ifNoCanvas != null
 		&& ifFullscreen != null) {
 			insnList.insertBefore(afterLabel, aLabel);
-			InsnList insert = new InsnList();
-			insert.add(getIcon(context.isClassic()));
+			InsnList insert = getIcon();
 			if(supportsResizing) {
 				insert.add(new InsnNode(ICONST_1));
 				insert.add(new MethodInsnNode(INVOKESTATIC, "org/lwjgl/opengl/Display", "setResizable", "(Z)V"));

@@ -19,6 +19,7 @@ LaunchWrapper is bundled in [BetterJSONs](https://github.com/MCPHackers/BetterJS
 - Online mode authentication fix
 - LaunchWrapper works with Risugami's Modloader so long as you're using Java 8
 - Built-in [Modloader Fix](https://github.com/coffeenotfound/ModloaderFix-b1.7.3)
+- Drop-in replacement for [LegacyLauncher (aka net.minecraft.launchwrapper)](https://github.com/Mojang/LegacyLauncher)
 - Allows changing game directory in versions before 1.6
 - Makes save slots in classic and indev functional and saves to `.minecraft/levels` directory
 - Adds ability to launch classic and pre-classic at custom resolution or in fullscreen

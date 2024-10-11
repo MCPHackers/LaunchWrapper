@@ -105,10 +105,10 @@ public class ClassicCrashScreen extends InjectionWithContext<MinecraftGetter> {
 			if(compareInsn(insns1[0], ALOAD, 0)
 			&& compareInsn(insns1[1], GETFIELD, minecraft.name, running.name, running.desc)
 			&& compareInsn(insns1[2], IFEQ)) {
-				start = new LabelNode();
-				run.instructions.insertBefore(insn1, start);
-				JumpInsnNode jmp = (JumpInsnNode) insns1[2];
-				end = previousInsn(jmp.label); // GOTO outside of loop
+				start = labelBefore(insn1);
+				// run.instructions.insertBefore(insn1, start);
+				// JumpInsnNode jmp = (JumpInsnNode) insns1[2];
+				// end = previousInsn(jmp.label);
 				for(TryCatchBlockNode tryCatch : run.tryCatchBlocks) {
 					if(afterCatch == null && tryCatch.type != null && !tryCatch.type.startsWith("java/lang/")) {
 						afterCatch = tryCatch;
@@ -137,6 +137,13 @@ public class ClassicCrashScreen extends InjectionWithContext<MinecraftGetter> {
 						}
 					}
 				}
+			}
+			insn1 = nextInsn(insn1);
+		}
+		insn1 = run.instructions.getFirst();
+		while(insn1 != null) {
+			if(insn1.getType() == AbstractInsnNode.JUMP_INSN && ((JumpInsnNode)insn1).label == start) {
+				end = insn1;
 			}
 			insn1 = nextInsn(insn1);
 		}
@@ -332,7 +339,7 @@ public class ClassicCrashScreen extends InjectionWithContext<MinecraftGetter> {
 		}
 		if(setWorld == null && cleanup == null) {
 			return false;
-		} 
+		}
 
 		int n = getFreeIndex(run.instructions);
 		InsnList handle = new InsnList();

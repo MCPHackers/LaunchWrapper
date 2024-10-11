@@ -3,6 +3,7 @@ package org.mcphackers.launchwrapper.tweak.injection.legacy;
 import static org.mcphackers.rdi.util.InsnHelper.*;
 import static org.objectweb.asm.Opcodes.*;
 
+import org.mcphackers.launchwrapper.Launch;
 import org.mcphackers.launchwrapper.LaunchConfig;
 import org.mcphackers.launchwrapper.tweak.injection.InjectionWithContext;
 import org.mcphackers.launchwrapper.util.ClassNodeSource;
@@ -127,7 +128,6 @@ public class AddMain extends InjectionWithContext<LegacyTweakContext> {
 		final int appletIndex = 1;
 		final int frameIndex = 2;
 		final int mcIndex = 3;
-		final int threadIndex = 4;
 
 		final String listenerClass = "org/mcphackers/launchwrapper/inject/WindowListener";
 
@@ -214,14 +214,9 @@ public class AddMain extends InjectionWithContext<LegacyTweakContext> {
 			insns.add(new FieldInsnNode(PUTFIELD, minecraft.name, context.appletMode.name, context.appletMode.desc));
 		}
 		if(config.lwjglFrame.get()) {
-			insns.add(new TypeInsnNode(NEW, "java/lang/Thread"));
-			insns.add(new InsnNode(DUP));
 			insns.add(new VarInsnNode(ALOAD, mcIndex));
-			insns.add(new LdcInsnNode("Minecraft main thread"));
-			insns.add(new MethodInsnNode(INVOKESPECIAL, "java/lang/Thread", "<init>", "(Ljava/lang/Runnable;Ljava/lang/String;)V"));
-			insns.add(new VarInsnNode(ASTORE, threadIndex));
-		}
-		if(!config.lwjglFrame.get()) {
+			insns.add(new MethodInsnNode(INVOKEINTERFACE, "java/lang/Runnable", "run", "()V"));
+		} else {
 			insns.add(new VarInsnNode(ALOAD, frameIndex));
 			insns.add(new InsnNode(ICONST_1));
 			insns.add(new MethodInsnNode(INVOKEVIRTUAL, "java/awt/Frame", "setVisible", "(Z)V"));
@@ -232,9 +227,6 @@ public class AddMain extends InjectionWithContext<LegacyTweakContext> {
 			insns.add(new MethodInsnNode(INVOKESPECIAL, listenerClass, "<init>", "(L" + minecraft.name + ";)V"));
 			insns.add(new MethodInsnNode(INVOKEVIRTUAL, "java/awt/Frame", "addWindowListener", "(Ljava/awt/event/WindowListener;)V"));
 			createWindowListener(source, listenerClass);
-		} else {
-			insns.add(new VarInsnNode(ALOAD, threadIndex));
-			insns.add(new MethodInsnNode(INVOKEVIRTUAL, "java/lang/Thread", "start", "()V"));
 		}
 		insns.add(new InsnNode(RETURN));
 		return node;
@@ -422,15 +414,15 @@ public class AddMain extends InjectionWithContext<LegacyTweakContext> {
 				} else if(i == 1) {
 					insns.add(intInsn(config.height.get()));
 				} else {
+					Launch.LOGGER.logErr("Unexpected Minecraft constructor: " + init.desc);
 					return null;
-					// throw new IllegalStateException("Unexpected constructor: " + init.desc);
 				}
 				i++;
 			} else if(desc.equals("Z")) {
 				insns.add(booleanInsn(config.fullscreen.get()));
 			} else {
+				Launch.LOGGER.logErr("Unexpected Minecraft constructor: " + init.desc);
 				return null;
-				// throw new IllegalStateException("Unexpected constructor: " + init.desc);
 			}
 		}
 		insns.add(new MethodInsnNode(INVOKESPECIAL, minecraftImpl.name, "<init>", init.desc));

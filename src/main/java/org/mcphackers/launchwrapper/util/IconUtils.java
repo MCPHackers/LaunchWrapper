@@ -44,7 +44,9 @@ public class IconUtils {
                 if(!favIcon) {
                     return new ByteBuffer[] {
                         loadIcon("/icon_16x16.png"),
-                        loadIcon("/icon_32x32.png") };
+                        loadIcon("/icon_32x32.png"),
+                        loadIcon("/icon_48x48.png"),
+                        loadIcon("/icon_256x256.png") };
                 }
                 else {
                     return new ByteBuffer[] {
@@ -94,7 +96,7 @@ public class IconUtils {
 		}
         try {
             if(!favIcon) {
-                return getIcon("/icon_32x32.png");
+                return getIcon("/icon_256x256.png");
             } else {
                 return getIcon("/favicon.png");
             }

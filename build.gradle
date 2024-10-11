@@ -42,12 +42,13 @@ subprojects {
     
     dependencies {
         implementation rootProject
+        runtimeOnly rootProject.sourceSets.test.output
     }
 }
 
 allprojects {
     apply plugin: 'java'
-    apply plugin: 'maven-publish' 
+    apply plugin: 'maven-publish'
 
     repositories {
         maven {
