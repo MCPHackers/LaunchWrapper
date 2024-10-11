@@ -273,7 +273,7 @@ public class SkinRequests {
 		File capeFile = new File(localSkinDirectory, "cape/" + name + ".png");
 		if(capeFile.exists()) {
 			try {
-				return Util.readStream(new FileInputStream(capeFile));
+				return convertCape(Util.readStream(new FileInputStream(capeFile)), skinType);
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
@@ -286,7 +286,9 @@ public class SkinRequests {
 		File skinFile = new File(localSkinDirectory, name + ".png");
 		if(skinFile.exists()) {
 			try {
-				return new Skin(Util.readStream(new FileInputStream(skinFile)), false);
+				byte[] data = Util.readStream(new FileInputStream(skinFile));
+				data = convertSkin(data, false, skinType, skinOptions);
+				return new Skin(data, false);
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
@@ -295,7 +297,9 @@ public class SkinRequests {
 		skinFile = new File(localSkinDirectory, name + ".slim.png");
 		if(skinFile.exists()) {
 			try {
-				return new Skin(Util.readStream(new FileInputStream(skinFile)), true);
+				byte[] data = Util.readStream(new FileInputStream(skinFile));
+				data = convertSkin(data, true, skinType, skinOptions);
+				return new Skin(data, true);
 			} catch (IOException e) {
 				e.printStackTrace();
 			}

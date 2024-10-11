@@ -44,9 +44,6 @@ public class Launch {
 			return;
 		}
 		mainTweak.transformResources(loader);
-		if(config.discordRPC.get()) {
-			setupDiscordRPC();
-		}
 		LaunchTarget target = mainTweak.getLaunchTarget();
 		if(target == null) {
 			LOGGER.logErr("Could not find launch target");
@@ -62,10 +59,6 @@ public class Launch {
 
 	public LaunchClassLoader getLoader() {
 		return CLASS_LOADER;
-	}
-	
-	protected void setupDiscordRPC() {
-		// TODO
 	}
 	
 	public static Launch getInstance() {

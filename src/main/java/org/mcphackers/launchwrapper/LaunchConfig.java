@@ -60,7 +60,6 @@ public class LaunchConfig {
 	public LaunchParameterString title 				= new LaunchParameterString("title", null, true);
 	public LaunchParameterSwitch oneSixFlag 		= new LaunchParameterSwitch("oneSixFlag", false, true);
 	public LaunchParameterString tweakClass 		= new LaunchParameterString("tweakClass", null, true);
-	public LaunchParameterSwitch discordRPC 		= new LaunchParameterSwitch("discordRPC", false, true);
 	public LaunchParameterString brand				= new LaunchParameterString("brand", "launchwrapper", true);
 	public LaunchParameterSwitch creative	 		= new LaunchParameterSwitch("creative", false);
 	public LaunchParameterSwitch survival	 		= new LaunchParameterSwitch("survival", false);

@@ -13,6 +13,7 @@ import java.net.URLClassLoader;
 import java.security.CodeSource;
 import java.security.ProtectionDomain;
 import java.security.cert.Certificate;
+import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -53,7 +54,7 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 	private File debugOutput;
 
 	public LaunchClassLoader(ClassLoader parent) {
-		super(new URL[0], null);
+		super(getInitialURLs(parent), null);
 		this.parent = parent;
 		addExclusion("java");
 		addExclusion("javax");
@@ -62,6 +63,24 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 		addExclusion("org.mcphackers.launchwrapper");
 		addExclusion("org.objectweb.asm");
 		addExclusion("org.json");
+	}
+
+	private static URL[] getInitialURLs(ClassLoader parent) {
+		if(parent instanceof URLClassLoader) {
+			return ((URLClassLoader)parent).getURLs();
+		}
+		List<URL> urls = new ArrayList<URL>();
+        String classpath = System.getProperty("java.class.path");
+        String[] classpathSplit = classpath.split(File.pathSeparator);
+
+        for (String singlePath : classpathSplit) {
+            try {
+                urls.add(new File(singlePath).toURI().toURL());
+            } catch (Throwable e) {
+                e.printStackTrace();
+            }
+        }
+		return urls.toArray(new URL[urls.size()]);
 	}
 
 	public void setDebugOutput(File directory) {
@@ -105,15 +124,6 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 		} catch (MalformedURLException e) {
 		}
 		return null;
-	}
-
-	@Override
-	public URL[] getURLs() {
-		if(parent instanceof URLClassLoader) {
-			return ((URLClassLoader)parent).getURLs();
-		}
-		//TODO get classpath list on modern java
-		return super.getURLs();
 	}
 
 	public Enumeration<URL> findResources(String name) throws IOException {
