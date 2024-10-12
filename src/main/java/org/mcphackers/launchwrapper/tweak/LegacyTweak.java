@@ -14,6 +14,7 @@ import javax.imageio.ImageIO;
 
 import org.mcphackers.launchwrapper.Launch;
 import org.mcphackers.launchwrapper.LaunchConfig;
+import org.mcphackers.launchwrapper.loader.LaunchClassLoader;
 import org.mcphackers.launchwrapper.protocol.LegacyURLStreamHandler;
 import org.mcphackers.launchwrapper.protocol.URLStreamHandlerProxy;
 import org.mcphackers.launchwrapper.target.AppletLaunchTarget;
@@ -58,6 +59,7 @@ public class LegacyTweak extends Tweak {
 			"com/mojang/minecraft/MinecraftApplet"
 	};
 	protected LegacyTweakContext context = new LegacyTweakContext();
+	protected ClassicCrashScreen crashPatch = new ClassicCrashScreen(context);
 
 	public LegacyTweak(LaunchConfig config) {
 		super(config);
@@ -66,7 +68,7 @@ public class LegacyTweak extends Tweak {
 	public List<Injection> getInjections() {
 		return Arrays.asList(
 			context,
-			new ClassicCrashScreen(context),
+			crashPatch,
 			new ClassicLoadingFix(context),
 			new UnlicensedCopyText(context),
 			new FixSplashScreen(context),
@@ -79,7 +81,7 @@ public class LegacyTweak extends Tweak {
 			new MouseFix(context),
 			new ReplaceGameDir(context),
 			new OptionsLoadFix(context),
-			new FixClassicSession(context),
+			// new FixClassicSession(context),
 			new GameModeSwitch(context),
 			new AddMain(context),
 			new ForgeVersionCheck(),
@@ -89,6 +91,13 @@ public class LegacyTweak extends Tweak {
 
 	public List<LazyTweaker> getLazyTweakers() {
 		return Collections.<LazyTweaker>singletonList(new Java5LazyTweaker());
+	}
+
+	public boolean handleError(LaunchClassLoader loader, Throwable t) {
+		if(config.isom.get()) {
+			return false;
+		}
+		return crashPatch.injectErrorAtInit(loader, t);
 	}
 
 	private void downloadServer() {

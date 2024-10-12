@@ -5,6 +5,7 @@ import static org.objectweb.asm.Opcodes.*;
 
 import org.mcphackers.launchwrapper.LaunchConfig;
 import org.mcphackers.launchwrapper.tweak.injection.InjectionWithContext;
+import org.mcphackers.launchwrapper.tweak.injection.MinecraftGetter;
 import org.mcphackers.launchwrapper.util.ClassNodeSource;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.InsnList;
@@ -17,9 +18,9 @@ import org.objectweb.asm.tree.TypeInsnNode;
 /**
  * Fixes Z-fighting issues on certain graphics drivers by increasing bit depth to 24
  */
-public class BitDepthFix extends InjectionWithContext<LegacyTweakContext> {
+public class BitDepthFix extends InjectionWithContext<MinecraftGetter> {
 
-    public BitDepthFix(LegacyTweakContext storage) {
+    public BitDepthFix(MinecraftGetter storage) {
         super(storage);
     }
 

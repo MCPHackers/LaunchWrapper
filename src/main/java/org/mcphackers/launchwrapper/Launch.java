@@ -39,9 +39,18 @@ public class Launch {
 			return;
 		}
 		mainTweak.prepare(loader);
-		if(!mainTweak.transform(loader)) {
-			LOGGER.logErr("Tweak could not be applied");
-			return;
+		try {
+			if(!mainTweak.transform(loader)) {
+				LOGGER.logErr("Tweak could not be applied");
+				if(!mainTweak.handleError(loader, null)) { // if handled successfully, continue
+					return;
+				}
+			}
+		} catch(Throwable t) {
+			LOGGER.logErr("Tweak could not be applied", t);
+			if(!mainTweak.handleError(loader, t)) { // if handled successfully, continue
+				return;
+			}
 		}
 		mainTweak.transformResources(loader);
 		LaunchTarget target = mainTweak.getLaunchTarget();
@@ -80,7 +89,7 @@ public class Launch {
 			System.err.println("[LaunchWrapper] " + String.format(format, args));
 		}
 
-		public void logErr(String msg, Exception e) {
+		public void logErr(String msg, Throwable e) {
 			System.err.println("[LaunchWrapper] " + msg);
 			e.printStackTrace(System.err);
 		}

@@ -5,6 +5,7 @@ import java.util.Collections;
 import java.util.List;
 
 import org.mcphackers.launchwrapper.LaunchConfig;
+import org.mcphackers.launchwrapper.loader.LaunchClassLoader;
 import org.mcphackers.launchwrapper.protocol.LegacyURLStreamHandler;
 import org.mcphackers.launchwrapper.protocol.URLStreamHandlerProxy;
 import org.mcphackers.launchwrapper.target.LaunchTarget;
@@ -20,6 +21,7 @@ public class VanillaTweak extends Tweak {
 	public static final String MAIN_CLASS = "net/minecraft/client/main/Main";
 
 	protected VanillaTweakContext context = new VanillaTweakContext();
+	protected ClassicCrashScreen crashPatch = new ClassicCrashScreen(context);
 
 	public VanillaTweak(LaunchConfig launch) {
 		super(launch);
@@ -28,11 +30,15 @@ public class VanillaTweak extends Tweak {
 	public List<Injection> getInjections() {
 		return Arrays.<Injection>asList(
 			context,
+			crashPatch,
 			new OutOfFocusFullscreen(context),
-			new ClassicCrashScreen(context),
 			new OneSixAssetsFix(context),
 			new ChangeBrand()
 		);
+	}
+
+	public boolean handleError(LaunchClassLoader loader, Throwable t) {
+		return crashPatch.injectErrorAtInit(loader, t);
 	}
 
 	public LaunchTarget getLaunchTarget() {

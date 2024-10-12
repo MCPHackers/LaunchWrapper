@@ -35,6 +35,8 @@ public class MicroMixinInjection implements Injection {
     
     private Collection<MixinMod> mixinMods;
     private MicroMixinTweak mixinTweak;
+
+    public Exception exception;
     
     public MicroMixinInjection(Collection<MixinMod> mixinMods, MicroMixinTweak mixinTweak) {
         this.mixinMods = mixinMods;
@@ -113,7 +115,7 @@ public class MicroMixinInjection implements Injection {
                         // remapper2.remapNode(mixin, sharedSB);
                         source.overrideClass(mixin);
                     } catch (Exception e) {
-                        e.printStackTrace();
+                        exception = e;
                         return false;
                     }
                 }
@@ -128,7 +130,12 @@ public class MicroMixinInjection implements Injection {
                 }
             }
 
-            mixinTweak.transformer.addMixin(source, mixinConfig);
+            try {
+                mixinTweak.transformer.addMixin(source, mixinConfig);
+            } catch (IllegalStateException e) {
+                exception = e;
+                return false;
+            }
         }
 
         return true;

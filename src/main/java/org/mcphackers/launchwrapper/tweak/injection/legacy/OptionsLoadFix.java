@@ -5,6 +5,7 @@ import static org.objectweb.asm.Opcodes.*;
 
 import org.mcphackers.launchwrapper.LaunchConfig;
 import org.mcphackers.launchwrapper.tweak.injection.InjectionWithContext;
+import org.mcphackers.launchwrapper.tweak.injection.MinecraftGetter;
 import org.mcphackers.launchwrapper.util.ClassNodeSource;
 import org.mcphackers.rdi.util.NodeHelper;
 import org.objectweb.asm.tree.AbstractInsnNode;
@@ -24,9 +25,9 @@ import org.objectweb.asm.tree.VarInsnNode;
  * Prevents bad options from crashing the game.
  * (This does not include ArrayIndexOutOfBoundsException errors when viewing these options in options menu)
  */
-public class OptionsLoadFix extends InjectionWithContext<LegacyTweakContext> {
+public class OptionsLoadFix extends InjectionWithContext<MinecraftGetter> {
     
-	public OptionsLoadFix(LegacyTweakContext storage) {
+	public OptionsLoadFix(MinecraftGetter storage) {
         super(storage);
     }
 

@@ -34,7 +34,9 @@ import org.objectweb.asm.tree.VarInsnNode;
  * Note that some crashes related to rendering may break Tesselator which will make it stuck in an exception loop
  */
 public class ClassicCrashScreen extends InjectionWithContext<MinecraftGetter> {
-
+	private ClassNode errScreen;
+	private ClassNode button;
+	
 	public ClassicCrashScreen(MinecraftGetter context) {
 		super(context);
 	}
@@ -49,7 +51,7 @@ public class ClassicCrashScreen extends InjectionWithContext<MinecraftGetter> {
 		return false;
 	}
 
-	public MethodNode getOpenScreen() {
+	private MethodNode getOpenScreen() {
 		ClassNode minecraft = context.getMinecraft();
 
 		for(MethodNode m : minecraft.methods) {
@@ -83,6 +85,72 @@ public class ClassicCrashScreen extends InjectionWithContext<MinecraftGetter> {
 			}
 		}
 		return null;
+	}
+
+	public boolean injectErrorAtInit(ClassNodeSource source, Throwable t) {
+		if(errScreen == null) {
+			// Error was either caused too early or we couldn't patch error screen
+			return false;
+		}
+		MethodNode openScreen = getOpenScreen();
+		if(openScreen == null) {
+			return false;
+		}
+		MethodNode initScreen = null;
+		for(MethodNode m : errScreen.methods) {
+			if(!m.desc.equals("()V") || m.name.equals("<init>")) {
+				continue;
+			}
+			initScreen = m;
+			break;
+		}
+		if(initScreen == null) {
+			return false;
+		}
+		ClassNode minecraft = context.getMinecraft();
+		MethodNode init = context.getInit();
+		MethodNode run = context.getRun();
+		FieldInsnNode screen = null;
+		for(AbstractInsnNode insn = openScreen.instructions.getFirst(); insn != null; insn = nextInsn(insn)) {
+			if(compareInsn(insn, ALOAD, 1)
+			&& compareInsn(nextInsn(insn), PUTFIELD, minecraft.name, null, "L" + errScreen.superName + ";")) {
+				screen = (FieldInsnNode)nextInsn(insn);
+			}
+		}
+		for(AbstractInsnNode insn = run.instructions.getFirst(); insn != null; insn = nextInsn(insn)) {
+			if(compareInsn(insn, INVOKEVIRTUAL, minecraft.name, init.name, init.desc)
+			|| compareInsn(insn, INVOKESPECIAL, minecraft.name, init.name, init.desc)) {
+				InsnList handle = new InsnList();
+				handle.add(new VarInsnNode(ALOAD, 0));
+				handle.add(new TypeInsnNode(NEW, errScreen.name));
+				handle.add(new InsnNode(DUP));
+				handle.add(new LdcInsnNode("LaunchWrapper error"));
+				handle.add(new LdcInsnNode(t == null ? "Required tweaks failed to apply" : "[" + t.getClass().getName() + "]"));
+				handle.add(new MethodInsnNode(INVOKESPECIAL, errScreen.name, "<init>", "(Ljava/lang/String;Ljava/lang/String;)V"));
+				handle.add(new MethodInsnNode(INVOKEVIRTUAL, minecraft.name, openScreen.name, openScreen.desc));
+				run.instructions.insert(insn, handle);
+				LabelNode skip = new LabelNode();
+				handle = new InsnList();
+				handle.add(new VarInsnNode(ALOAD, 0));
+				handle.add(new FieldInsnNode(GETFIELD, minecraft.name, screen.name, screen.desc));
+				handle.add(new JumpInsnNode(IFNULL, skip));
+				handle.add(new VarInsnNode(ALOAD, 0));
+				handle.add(new FieldInsnNode(GETFIELD, minecraft.name, screen.name, screen.desc));
+				handle.add(new TypeInsnNode(INSTANCEOF, errScreen.name));
+				handle.add(new JumpInsnNode(IFEQ, skip));
+				handle.add(new InsnNode(RETURN));
+				handle.add(skip);
+				openScreen.instructions.insert(handle);
+				handle = new InsnList();
+				handle.add(new InsnNode(RETURN));
+				initScreen.instructions = handle; 
+				return true;
+			}
+			if(insn.getType() == AbstractInsnNode.METHOD_INSN) {
+				return false;
+			}
+		}
+		return false;
 	}
 
 	@Override
@@ -153,7 +221,6 @@ public class ClassicCrashScreen extends InjectionWithContext<MinecraftGetter> {
 		MethodNode setWorld = getWorldSetter(putWorld);
 
 		ClassNode titleScreen = null;
-		ClassNode errScreen = null;
 		MethodNode openScreen = getOpenScreen();
 		if(openScreen == null) {
 			return false;
@@ -251,6 +318,8 @@ public class ClassicCrashScreen extends InjectionWithContext<MinecraftGetter> {
 				insn = nextInsn(insn);
 			}
 		}
+		MethodInsnNode translateInvoke = null;
+
 		if(errScreen == null && titleScreen != null) {
 			ClassNode worldSelectScreen = null;
 			methods:
@@ -315,6 +384,12 @@ public class ClassicCrashScreen extends InjectionWithContext<MinecraftGetter> {
 									for(AbstractInsnNode insn2 = m2.instructions.getFirst(); insn2 != null; insn2 = nextInsn(insn2)) {
 										if(compareInsn(insn2, LDC, "selectWorld.unable_to_load")
 										|| compareInsn(insn2, LDC, "Unable to load worlds")) {
+											AbstractInsnNode[] insns3 = fill(nextInsn(insn2), 3);
+											if(compareInsn(insns3[0], ICONST_0)
+											&& compareInsn(insns3[1], ANEWARRAY)
+											&& compareInsn(insns3[2], INVOKESTATIC, null, null, "(Ljava/lang/String;[Ljava/lang/Object;)Ljava/lang/String;")) {
+												translateInvoke = (MethodInsnNode)insns3[2];
+											}
 											AbstractInsnNode[] insns2 = fillBackwards(insn2, 3);
 											if(compareInsn(insns2[0], NEW)
 											&& compareInsn(insns2[1], DUP)) {
@@ -334,7 +409,7 @@ public class ClassicCrashScreen extends InjectionWithContext<MinecraftGetter> {
 		if(errScreen == null) {
 			return false;
 		}
-		if(patchErrorScreen(source, errScreen, openScreen) && instanceOf != null) {
+		if(patchErrorScreen(source, errScreen, openScreen, translateInvoke) && instanceOf != null) {
 			openScreen.instructions.set(instanceOf, new InsnNode(ICONST_0));
 		}
 		if(setWorld == null && cleanup == null) {
@@ -437,7 +512,7 @@ public class ClassicCrashScreen extends InjectionWithContext<MinecraftGetter> {
 		return setWorld;
 	}
 
-	public boolean patchErrorScreen(ClassNodeSource source, ClassNode errScreen, MethodNode openScreen) {
+	public boolean patchErrorScreen(ClassNodeSource source, ClassNode errScreen, MethodNode openScreen, MethodInsnNode translate) {
 		boolean needCancelButton = true;
 		String[] fields = {"message", "description"};
 		MethodNode init = NodeHelper.getMethod(errScreen, "<init>", "(Ljava/lang/String;Ljava/lang/String;)V");
@@ -543,7 +618,7 @@ public class ClassicCrashScreen extends InjectionWithContext<MinecraftGetter> {
 				buttonClicked = m;
 				break;
 			}
-			ClassNode button = source.getClass(buttonType);
+			button = source.getClass(buttonType);
 			if(button != null) {
 				if(NodeHelper.getMethod(button, "<init>", "(IIILjava/lang/String;)V") == null) {
 					break cancelButton;
@@ -609,7 +684,14 @@ public class ClassicCrashScreen extends InjectionWithContext<MinecraftGetter> {
 			list.add(intInsn(100));
 			list.add(new InsnNode(ISUB));
 			list.add(intInsn(140));
-			list.add(new LdcInsnNode("Cancel")); // TODO translate string?
+			if(translate != null) {
+				list.add(new LdcInsnNode("gui.cancel"));
+				list.add(new InsnNode(ICONST_0));
+				list.add(new InsnNode(ANEWARRAY));
+				list.add(new MethodInsnNode(INVOKESTATIC, translate.owner, translate.name, translate.desc));
+			} else {
+				list.add(new LdcInsnNode("Cancel"));
+			}
 			list.add(new MethodInsnNode(INVOKESPECIAL, buttonType, "<init>", "(IIILjava/lang/String;)V"));
 			list.add(new MethodInsnNode(INVOKEINTERFACE, "java/util/List", "add", "(Ljava/lang/Object;)Z"));
 			list.add(new InsnNode(POP));

@@ -13,4 +13,6 @@ public interface MinecraftGetter {
     MethodNode getRun();
 
     FieldNode getIsRunning();
+    
+    MethodNode getInit();
 }

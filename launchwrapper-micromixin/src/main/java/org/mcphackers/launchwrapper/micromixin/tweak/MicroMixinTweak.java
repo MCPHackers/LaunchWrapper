@@ -29,8 +29,10 @@ public class MicroMixinTweak extends Tweak {
     private static final boolean ACCESS_FIXER = Boolean.parseBoolean(System.getProperty("launchwrapper.accessfixer", "false"));
     public static final boolean DEV = Boolean.parseBoolean(System.getProperty("launchwrapper.dev", "false"));
     
-    private List<MixinMod> mods = new ArrayList<MixinMod>();
-    private Tweak baseTweak;
+    protected List<MixinMod> mods = new ArrayList<MixinMod>();
+    protected Tweak baseTweak;
+    protected MicroMixinInjection microMixinInjection = new MicroMixinInjection(mods, this);
+
     public MicroMixinTweak(LaunchConfig launch, Tweak tweak) {
         super(launch);
         baseTweak = tweak;
@@ -91,7 +93,7 @@ public class MicroMixinTweak extends Tweak {
             }
         }
         injects.addAll(baseTweak.getInjections());
-        injects.add(new MicroMixinInjection(mods, this));
+        injects.add(microMixinInjection);
         return injects;
     }
 
@@ -103,6 +105,10 @@ public class MicroMixinTweak extends Tweak {
         }
         list.add(new MicroMixinLoaderTweak(transformer));
         return list;
+    }
+
+    public boolean handleError(LaunchClassLoader loader, Throwable t) {
+        return baseTweak.handleError(loader, microMixinInjection.exception == null ? t : microMixinInjection.exception);
     }
 
     @Override

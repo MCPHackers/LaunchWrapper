@@ -44,6 +44,20 @@ public class VanillaTweakContext implements Injection, MinecraftGetter {
         return running;
     }
 
+	public MethodNode getInit() {
+		for(AbstractInsnNode insn : run.instructions) {
+			if(insn.getType() == AbstractInsnNode.METHOD_INSN) {
+				MethodInsnNode invoke = (MethodInsnNode) insn;
+				if(invoke.owner.equals(minecraft.name)) {
+					return NodeHelper.getMethod(minecraft, invoke.name, invoke.desc);
+				} else {
+					return null;
+				}
+			}
+		}
+		return null;
+	}
+
     @Override
     public String name() {
         return "VanillaTweak init";

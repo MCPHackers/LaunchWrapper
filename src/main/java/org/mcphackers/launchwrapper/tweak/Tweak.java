@@ -41,6 +41,13 @@ public abstract class Tweak {
 	// Any classpath changes required for transformers can be set here
 	public void prepare(LaunchClassLoader loader) {
 	}
+
+	public boolean handleError(LaunchClassLoader loader, Throwable t) {
+		if(t != null) {
+			t.printStackTrace();
+		}
+		return false;
+	}
 	
 	public final boolean transform(ClassNodeSource source) {
 		if(!clean) {
