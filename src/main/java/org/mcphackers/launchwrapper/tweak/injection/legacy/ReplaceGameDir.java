@@ -1,13 +1,13 @@
 package org.mcphackers.launchwrapper.tweak.injection.legacy;
 
-import static org.mcphackers.rdi.util.InsnHelper.*;
+import static org.mcphackers.launchwrapper.util.asm.InsnHelper.*;
 import static org.objectweb.asm.Opcodes.*;
 
 import org.mcphackers.launchwrapper.LaunchConfig;
 import org.mcphackers.launchwrapper.tweak.LegacyTweak;
 import org.mcphackers.launchwrapper.tweak.injection.InjectionWithContext;
 import org.mcphackers.launchwrapper.util.ClassNodeSource;
-import org.mcphackers.rdi.util.NodeHelper;
+import org.mcphackers.launchwrapper.util.asm.NodeHelper;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldInsnNode;
@@ -27,26 +27,23 @@ import org.objectweb.asm.tree.VarInsnNode;
  */
 public class ReplaceGameDir extends InjectionWithContext<LegacyTweakContext> {
 
-    public ReplaceGameDir(LegacyTweakContext storage) {
-        super(storage);
-    }
+	public ReplaceGameDir(LegacyTweakContext storage) {
+		super(storage);
+	}
 
-    @Override
-    public String name() {
-        return "Replace game directory";
-    }
+	public String name() {
+		return "Replace game directory";
+	}
 
-    @Override
 	public boolean required() {
 		return false;
 	}
 
-    @Override
-    public boolean apply(ClassNodeSource source, LaunchConfig config) {
+	public boolean apply(ClassNodeSource source, LaunchConfig config) {
 		patchIsom(source, config);
 		// Only use Minecraft as patch result
 		return patchMinecraft(source, config);
-    }
+	}
 
 	private InsnList getGameDirectory(LaunchConfig config) {
 		InsnList insns = new InsnList();
@@ -61,29 +58,29 @@ public class ReplaceGameDir extends InjectionWithContext<LegacyTweakContext> {
 		ClassNode isomApplet = null;
 		ClassNode isomCanvas = null;
 		FieldNode mcDirIsom = null;
-        
+
 		isomApplet = source.getClass(LegacyTweak.MAIN_ISOM);
-		if(isomApplet != null) {
-			for(FieldNode f : isomApplet.fields) {
+		if (isomApplet != null) {
+			for (FieldNode f : isomApplet.fields) {
 				String desc = f.desc;
-				if(!desc.startsWith("L") || !desc.endsWith(";")) {
+				if (!desc.startsWith("L") || !desc.endsWith(";")) {
 					continue;
 				}
 				isomCanvas = source.getClass(desc.substring(1, desc.length() - 1));
-				if(isomCanvas == null) {
+				if (isomCanvas == null) {
 					continue;
 				}
-				for(FieldNode field : isomCanvas.fields) {
-					if(field.desc.equals("Ljava/io/File;")) {
+				for (FieldNode field : isomCanvas.fields) {
+					if (field.desc.equals("Ljava/io/File;")) {
 						mcDirIsom = field;
 						break;
 					}
 				}
-				if(mcDirIsom == null) {
+				if (mcDirIsom == null) {
 					continue;
 				}
-				for(MethodNode m : isomCanvas.methods) {
-					if(m.name.equals("<init>")) {
+				for (MethodNode m : isomCanvas.methods) {
+					if (m.name.equals("<init>")) {
 						InsnList insns = new InsnList();
 						insns.add(new VarInsnNode(ALOAD, 0));
 						insns.add(getGameDirectory(config));
@@ -96,22 +93,21 @@ public class ReplaceGameDir extends InjectionWithContext<LegacyTweakContext> {
 			}
 		}
 		return false;
-
 	}
 
 	public boolean patchMinecraft(ClassNodeSource source, LaunchConfig config) {
 		ClassNode minecraft = context.getMinecraft();
 		MethodNode init = context.getInit();
 		FieldNode mcDir = context.mcDir;
-        InsnList insnList = init.instructions;
-		AbstractInsnNode insn = insnList.getFirst();
+		InsnList insnList = init.instructions;
+		AbstractInsnNode insn = getFirst(insnList);
 		boolean found = false;
-		while(insn != null) {
+		while (insn != null) {
 			AbstractInsnNode[] insns = fill(insn, 6);
 			// Indev game dir patch
-			if(mcDir != null && config.gameDir.get() != null
-			&& compareInsn(insns[1], PUTFIELD, minecraft.name, mcDir.name, mcDir.desc)
-			&& compareInsn(insns[0], ALOAD)) {
+			if (mcDir != null && config.gameDir.get() != null &&
+				compareInsn(insns[1], PUTFIELD, minecraft.name, mcDir.name, mcDir.desc) &&
+				compareInsn(insns[0], ALOAD)) {
 				insnList.remove(insns[0]);
 				insnList.insertBefore(insns[1], getGameDirectory(config));
 				insn = insns[1];
@@ -119,21 +115,21 @@ public class ReplaceGameDir extends InjectionWithContext<LegacyTweakContext> {
 				found = true;
 			}
 			// Classic game dir patch
-			if(mcDir == null
-			&& compareInsn(insns[0], ALOAD)
-			&& compareInsn(insns[1], INVOKEVIRTUAL, "java/io/File", "exists", "()Z")
-			&& compareInsn(insns[2], IFNE)
-			&& compareInsn(insns[3], ALOAD)
-			&& compareInsn(insns[4], INVOKEVIRTUAL, "java/io/File", "mkdirs", "()Z")
-			&& compareInsn(insns[5], IFNE)) {
-				LabelNode lbl = ((JumpInsnNode) insns[2]).label;
-				int index = ((VarInsnNode) insns[0]).var;
+			if (mcDir == null &&
+				compareInsn(insns[0], ALOAD) &&
+				compareInsn(insns[1], INVOKEVIRTUAL, "java/io/File", "exists", "()Z") &&
+				compareInsn(insns[2], IFNE) &&
+				compareInsn(insns[3], ALOAD) &&
+				compareInsn(insns[4], INVOKEVIRTUAL, "java/io/File", "mkdirs", "()Z") &&
+				compareInsn(insns[5], IFNE)) {
+				LabelNode lbl = ((JumpInsnNode)insns[2]).label;
+				int index = ((VarInsnNode)insns[0]).var;
 
-				if(lbl == ((JumpInsnNode) insns[5]).label && index == ((VarInsnNode) insns[3]).var) {
+				if (lbl == ((JumpInsnNode)insns[5]).label && index == ((VarInsnNode)insns[3]).var) {
 					AbstractInsnNode[] insns2 = fill(nextInsn(lbl), 2);
-					if(compareInsn(insns2[0], ALOAD)
-					&& compareInsn(insns2[1], ASTORE)) {
-						if(index == ((VarInsnNode) insns2[0]).var) {
+					if (compareInsn(insns2[0], ALOAD) &&
+						compareInsn(insns2[1], ASTORE)) {
+						if (index == ((VarInsnNode)insns2[0]).var) {
 							insnList.remove(insns2[0]);
 							insnList.insertBefore(insns2[1], getGameDirectory(config));
 							source.overrideClass(minecraft);
@@ -144,10 +140,10 @@ public class ReplaceGameDir extends InjectionWithContext<LegacyTweakContext> {
 			}
 			insn = nextInsn(insn);
 		}
-		if(mcDir != null && config.gameDir.get() != null) {
-			if(NodeHelper.isStatic(mcDir)) {
+		if (mcDir != null && config.gameDir.get() != null) {
+			if (NodeHelper.isStatic(mcDir)) {
 				MethodNode clinit = NodeHelper.getMethod(minecraft, "<clinit>", "()V");
-				if(clinit != null) {
+				if (clinit != null) {
 					InsnList insns = new InsnList();
 					insns.add(getGameDirectory(config));
 					insns.add(new FieldInsnNode(PUTSTATIC, minecraft.name, mcDir.name, mcDir.desc));
@@ -156,20 +152,19 @@ public class ReplaceGameDir extends InjectionWithContext<LegacyTweakContext> {
 					found = true;
 				}
 			} else {
-				for(MethodNode m : minecraft.methods) {
-					if(m.name.equals("<init>")) {
+				for (MethodNode m : minecraft.methods) {
+					if (m.name.equals("<init>")) {
 						InsnList insns = new InsnList();
 						insns.add(new VarInsnNode(ALOAD, 0));
 						insns.add(getGameDirectory(config));
 						insns.add(new FieldInsnNode(PUTFIELD, minecraft.name, mcDir.name, mcDir.desc));
 						m.instructions.insertBefore(getLastReturn(m.instructions.getLast()), insns);
 						source.overrideClass(minecraft);
-                        found = true;
+						found = true;
 					}
 				}
 			}
 		}
-        return found;
+		return found;
 	}
-    
 }

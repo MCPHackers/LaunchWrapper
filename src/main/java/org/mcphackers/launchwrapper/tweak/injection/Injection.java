@@ -8,24 +8,25 @@ import org.mcphackers.launchwrapper.util.ClassNodeSource;
  */
 public interface Injection {
 
-    /**
-     * Used when printing information about applied tweaks
-     * @return Injection name
-     */
-    String name();
+	/**
+	 * Used when printing information about applied tweaks
+	 *
+	 * @return Injection name
+	 */
+	String name();
 
-    /**
-     * Whenever failure to apply this injection should prevent game execution
-     * @return
-     */
-    boolean required();
+	/**
+	 * @return Whenever failure to apply this injection should prevent game execution
+	 */
+	boolean required();
 
-    /**
-     * Called when ClassNodeSource is being transformed
-     * For any modified class you must call source.overrideClass(node);
-     * @param source
-     * @param config
-     * @return whenever this injection succeeded to apply. Depending on injection, you may return true if the injection got partially applied.
-     */
-    boolean apply(ClassNodeSource source, LaunchConfig config);
+	/**
+	 * Called when ClassNodeSource is being transformed
+	 * For any modified class you must call source.overrideClass(node);
+	 *
+	 * @param source
+	 * @param config
+	 * @return whenever this injection succeeded to apply. Depending on injection, you may return true if the injection got partially applied.
+	 */
+	boolean apply(ClassNodeSource source, LaunchConfig config);
 }

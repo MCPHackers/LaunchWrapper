@@ -6,7 +6,7 @@ import java.util.Collection;
 
 public interface ClasspathAdapter extends Closeable {
 
-    InputStream getResource(String entry);
-    
-    Collection<String> getClasses();
+	InputStream getResource(String entry);
+
+	Collection<String> getClasses();
 }

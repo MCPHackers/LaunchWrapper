@@ -2,99 +2,148 @@ package net.minecraft.launchwrapper;
 
 import java.io.IOException;
 import java.net.URL;
-import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import org.mcphackers.launchwrapper.tweak.LegacyLauncherTweak;
-import org.mcphackers.launchwrapper.util.UnsafeUtils;
-import org.mcphackers.rdi.injector.data.Exceptions;
+import java.util.jar.Manifest;
 
 @SuppressWarnings("unused")
-public class LaunchClassLoader extends URLClassLoader {
+public class LaunchClassLoader extends org.mcphackers.launchwrapper.loader.LaunchClassLoader {
 
-    private org.mcphackers.launchwrapper.loader.LaunchClassLoader classLoader;
-    private LegacyLauncherTweak tweak;
-    private List<URL> sources = new ArrayList<URL>();
+	private final List<URL> sources = new ArrayList<URL>();
 
-    private final Map<String, Class<?>> cachedClasses = Collections.<String, Class<?>>emptyMap();
-    private final Set<String> invalidClasses = new HashSet<String>();
-    private final Set<String> classLoaderExceptions;
-    private final Set<String> transformerExceptions;
+	private final Map<String, Class<?>> cachedClasses = Collections.<String, Class<?>>emptyMap();
+	private final Set<String> invalidClasses = new HashSet<String>();
+	private final Set<String> classLoaderExceptions;
+	private final Set<String> transformerExceptions = new HashSet<String>();
+	private final List<IClassTransformer> transformers = new ArrayList<IClassTransformer>();
+	public IClassNameTransformer renameTransformer;
 
-    @SuppressWarnings("unchecked")
-    public LaunchClassLoader(org.mcphackers.launchwrapper.loader.LaunchClassLoader classLoader, LegacyLauncherTweak tweak) {
-        super(new URL[0]);
-        this.classLoader = classLoader;
-        this.tweak = tweak;
-        try {
-            classLoaderExceptions = (Set<String>)UnsafeUtils.getObject(classLoader, classLoader.getClass().getDeclaredField("exclusions"));
-            transformerExceptions = (Set<String>)UnsafeUtils.getObject(classLoader, classLoader.getClass().getDeclaredField("transformExclusions"));
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
+	// Avoids exceptions with mods like FoamFix and CensoredASM
+	@Deprecated
+	private static final Manifest EMPTY = new Manifest();
+	@Deprecated
+	private Map<Package, Manifest> packageManifests = null;
 
-    public void registerTransformer(String transformerClassName) {
-        tweak.registerTransformer(transformerClassName);
-    }
+	public LaunchClassLoader(ClassLoader parent) {
+		super(parent);
+		// Some mods refer to these fields via reflection
+		classLoaderExceptions = exclusions;
+	}
 
-    public List<IClassTransformer> getTransformers() {
-        return tweak.getTransformers();
-    }
+	public void registerTransformer(String transformerClassName) {
+		try {
+			IClassTransformer transformer = (IClassTransformer)Launch.classLoader.loadClass(transformerClassName).newInstance();
+			transformers.add(transformer);
+			if (transformer instanceof IClassNameTransformer && renameTransformer == null) {
+				renameTransformer = (IClassNameTransformer)transformer;
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
 
-    public void addClassLoaderExclusion(String toExclude) {
-        classLoader.addExclusion(toExclude);
-    }
+	public List<IClassTransformer> getTransformers() {
+		return Collections.unmodifiableList(transformers);
+	}
 
-    public void addTransformerExclusion(String toExclude) {
-        classLoader.addTransformExclusion(toExclude);
-    }
+	public void addClassLoaderExclusion(String pkg) {
+		addExclusion(pkg);
+	}
 
-    private String untransformName(final String name) {
-        if (tweak.renameTransformer != null) {
-            return tweak.renameTransformer.unmapClassName(name);
-        }
+	public void addTransformerExclusion(String pkg) {
+		transformerExceptions.add(pkg + (pkg.endsWith(".") ? "" : "."));
+	}
 
-        return name;
-    }
+	private String untransformName(final String name) {
+		if (renameTransformer != null) {
+			return renameTransformer.unmapClassName(name);
+		}
+		return name;
+	}
 
-    private String transformName(final String name) {
-        if (tweak.renameTransformer != null) {
-            return tweak.renameTransformer.remapClassName(name);
-        }
+	private String transformName(final String name) {
+		if (renameTransformer != null) {
+			return renameTransformer.remapClassName(name);
+		}
+		return name;
+	}
 
-        return name;
-    }
+	/**
+	 * Foundation API extension
+	 * used by Cleanroom
+	 *
+	 * @param name class name
+	 * @return
+	 */
+	public boolean isClassLoaded(String name) {
+		return getLoadedClass(name) != null;
+	}
 
-    @Override
-    public Class<?> findClass(String name) throws ClassNotFoundException {
-        return classLoader.findClass(name);
-    }
+	/**
+	 * TODO Foundation API extension
+	 * used by Cleanroom
+	 *
+	 * @param transformerClassName
+	 */
+	public void registerSuperTransformer(String transformerClassName) {
+		registerTransformer(transformerClassName);
+	}
 
-    @Override
-    public Class<?> loadClass(String name) throws ClassNotFoundException {
-        return classLoader.loadClass(name);
-    }
+	@Override
+	public void addURL(URL url) {
+		super.addURL(url);
+		sources.add(url);
+	}
 
-    public void addURL(URL url) {
-        classLoader.addURL(url);
-        sources.add(url);
-    }
+	public List<URL> getSources() {
+		return sources;
+	}
 
-    public List<URL> getSources() {
-        return sources;
-    }
+	public void clearNegativeEntries(Set<String> entriesToClear) {
+		invalidClasses.clear();
+	}
 
-    public byte[] getClassBytes(String name) throws IOException {
-        return classLoader.getClassBytes(name);
-    }
-    
-    public void clearNegativeEntries(Set<String> entriesToClear) {
-        invalidClasses.clear();
-    }
+	/**
+	 * Called by Cleanroom loader
+	 *
+	 * @param name
+	 * @param transformedName
+	 * @param data
+	 * @return
+	 */
+	public byte[] runTrasformers(String name, String transformedName, byte[] data) {
+		byte[] transformed = data;
+		for (IClassTransformer transformer : transformers) {
+			transformed = transformer.transform(name, transformedName, transformed);
+		}
+		return transformed;
+	}
+
+	@Override
+	public byte[] getTransformedClass(String name) throws IOException {
+		String untransformedName = untransformName(name);
+		String transformedName = transformName(name);
+		byte[] classData = getClassBytes(untransformedName);
+		for (final String exception : transformerExceptions) {
+			if (name.startsWith(exception)) {
+				return classData;
+			}
+		}
+		return runTrasformers(untransformedName, transformedName, classData);
+	}
+
+	@Override
+	public String getTransformedName(String name) {
+		return transformName(name);
+	}
+
+	public static LaunchClassLoader instantiate() {
+		LaunchClassLoader loader = new LaunchClassLoader(LaunchClassLoader.class.getClassLoader());
+		Thread.currentThread().setContextClassLoader(loader);
+		return loader;
+	}
 }

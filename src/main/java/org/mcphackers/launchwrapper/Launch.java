@@ -8,13 +8,13 @@ public class Launch {
 
 	public static final String VERSION = "1.0";
 	public static final Logger LOGGER = new Logger();
-	
+
 	/**
 	 * Class loader where overwritten classes will be stored
 	 */
-	private static final LaunchClassLoader CLASS_LOADER = LaunchClassLoader.instantiate();
+	private static LaunchClassLoader CLASS_LOADER;
 	private static Launch INSTANCE;
-	
+
 	public final LaunchConfig config;
 
 	protected Launch(LaunchConfig config) {
@@ -30,8 +30,8 @@ public class Launch {
 	public void launch() {
 		LaunchClassLoader loader = getLoader();
 		Tweak mainTweak = getTweak();
-		if(mainTweak == null) {
-			if(config.tweakClass.get() == null) {
+		if (mainTweak == null) {
+			if (config.tweakClass.get() == null) {
 				LOGGER.logErr("No suitable tweak found. Is Minecraft on classpath?");
 			} else {
 				LOGGER.logErr("Specified tweak does not exist.");
@@ -40,36 +40,39 @@ public class Launch {
 		}
 		mainTweak.prepare(loader);
 		try {
-			if(!mainTweak.transform(loader)) {
+			if (!mainTweak.transform(loader)) {
 				LOGGER.logErr("Tweak could not be applied");
-				if(!mainTweak.handleError(loader, null)) { // if handled successfully, continue
+				if (!mainTweak.handleError(loader, null)) { // if handled successfully, continue
 					return;
 				}
 			}
-		} catch(Throwable t) {
+		} catch (Throwable t) {
 			LOGGER.logErr("Tweak could not be applied", t);
-			if(!mainTweak.handleError(loader, t)) { // if handled successfully, continue
+			if (!mainTweak.handleError(loader, t)) {
 				return;
 			}
 		}
 		mainTweak.transformResources(loader);
 		LaunchTarget target = mainTweak.getLaunchTarget();
-		if(target == null) {
+		if (target == null) {
 			LOGGER.logErr("Could not find launch target");
 			return;
 		}
-		loader.setLoaderTweakers(mainTweak.getLazyTweakers());
+		loader.setLoaderTweakers(mainTweak.getTweakers());
 		target.launch(loader);
 	}
 
 	protected Tweak getTweak() {
-		return Tweak.get(CLASS_LOADER, config);
+		return Tweak.get(getLoader(), config);
 	}
 
 	public LaunchClassLoader getLoader() {
+		if (CLASS_LOADER == null) {
+			CLASS_LOADER = LaunchClassLoader.instantiate();
+		}
 		return CLASS_LOADER;
 	}
-	
+
 	public static Launch getInstance() {
 		return INSTANCE;
 	}
@@ -80,7 +83,7 @@ public class Launch {
 
 	public static class Logger {
 		private static final boolean DEBUG = Boolean.parseBoolean(System.getProperty("launchwrapper.log", "false"));
-		
+
 		public void log(String format, Object... args) {
 			System.out.println("[LaunchWrapper] " + String.format(format, args));
 		}
@@ -95,7 +98,7 @@ public class Launch {
 		}
 
 		public void logDebug(String format, Object... args) {
-			if(!DEBUG) {
+			if (!DEBUG) {
 				return;
 			}
 			System.out.println("[LaunchWrapper] " + String.format(format, args));

@@ -1,6 +1,6 @@
 package org.mcphackers.launchwrapper.tweak.injection.legacy;
 
-import static org.mcphackers.rdi.util.InsnHelper.*;
+import static org.mcphackers.launchwrapper.util.asm.InsnHelper.*;
 import static org.objectweb.asm.Opcodes.*;
 
 import org.mcphackers.launchwrapper.LaunchConfig;
@@ -20,33 +20,30 @@ import org.objectweb.asm.tree.TypeInsnNode;
  */
 public class BitDepthFix extends InjectionWithContext<MinecraftGetter> {
 
-    public BitDepthFix(MinecraftGetter storage) {
-        super(storage);
-    }
+	public BitDepthFix(MinecraftGetter storage) {
+		super(storage);
+	}
 
-    @Override
-    public String name() {
-        return "BitDepthFix";
-    }
+	public String name() {
+		return "BitDepthFix";
+	}
 
-    @Override
 	public boolean required() {
 		return false;
 	}
 
-    @Override
-    public boolean apply(ClassNodeSource source, LaunchConfig config) {
-        MethodNode init = context.getInit();
-		for(TryCatchBlockNode tryCatch : init.tryCatchBlocks) {
-			if(!"org/lwjgl/LWJGLException".equals(tryCatch.type)) {
+	public boolean apply(ClassNodeSource source, LaunchConfig config) {
+		MethodNode init = context.getInit();
+		for (TryCatchBlockNode tryCatch : init.tryCatchBlocks) {
+			if (!"org/lwjgl/LWJGLException".equals(tryCatch.type)) {
 				continue;
 			}
 			AbstractInsnNode insn = tryCatch.end;
-			while(insn != null && insn != tryCatch.start) {
-				if(compareInsn(insn, INVOKESTATIC, "org/lwjgl/opengl/Display", "create", "(Lorg/lwjgl/opengl/PixelFormat;)V")) {
+			while (insn != null && insn != tryCatch.start) {
+				if (compareInsn(insn, INVOKESTATIC, "org/lwjgl/opengl/Display", "create", "(Lorg/lwjgl/opengl/PixelFormat;)V")) {
 					return false;
 				}
-				if(compareInsn(insn, INVOKESTATIC, "org/lwjgl/opengl/Display", "create", "()V")) {
+				if (compareInsn(insn, INVOKESTATIC, "org/lwjgl/opengl/Display", "create", "()V")) {
 					InsnList insert = new InsnList();
 					insert.add(new TypeInsnNode(NEW, "org/lwjgl/opengl/PixelFormat"));
 					insert.add(new InsnNode(DUP));

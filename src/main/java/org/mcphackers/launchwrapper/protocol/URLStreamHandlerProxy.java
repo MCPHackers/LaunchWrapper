@@ -23,6 +23,7 @@ public abstract class URLStreamHandlerProxy extends URLStreamHandler {
 		return openConnection(url);
 	}
 
+	@Override
 	protected URLConnection openConnection(URL url) throws IOException {
 		return openDirectConnection(url);
 	}
@@ -38,13 +39,13 @@ public abstract class URLStreamHandlerProxy extends URLStreamHandler {
 
 	private static URLStreamHandler getDefaultURLStreamHandler(String protocol) {
 		URLStreamHandler handler = DEFAULT_HANDLERS.get(protocol);
-		if(handler != null) {
+		if (handler != null) {
 			return handler;
 		}
 		try {
 			URL url = new URL(protocol + ":");
 			Field handlerField = URL.class.getDeclaredField("handler");
-			handler = (URLStreamHandler) UnsafeUtils.getObject(url, handlerField);
+			handler = (URLStreamHandler)UnsafeUtils.getObject(url, handlerField);
 			DEFAULT_HANDLERS.put(protocol, handler);
 			return handler;
 		} catch (Exception e) {
@@ -55,7 +56,7 @@ public abstract class URLStreamHandlerProxy extends URLStreamHandler {
 
 	public static URLStreamHandler getURLStreamHandler(String protocol) {
 		URLStreamHandler handler = DEFAULT_HANDLERS.get(protocol);
-		if(handler == null) {
+		if (handler == null) {
 			return getDefaultURLStreamHandler(protocol);
 		}
 		return HANDLERS.get(protocol);
@@ -65,7 +66,7 @@ public abstract class URLStreamHandlerProxy extends URLStreamHandler {
 	private static Hashtable<String, URLStreamHandler> getHandlers() {
 		try {
 			Field handlersField = URL.class.getDeclaredField("handlers");
-			return (Hashtable<String, URLStreamHandler>) UnsafeUtils.getStaticObject(handlersField);
+			return (Hashtable<String, URLStreamHandler>)UnsafeUtils.getStaticObject(handlersField);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

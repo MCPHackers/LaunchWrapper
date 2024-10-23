@@ -38,6 +38,7 @@ public class AppletLaunchTarget implements LaunchTarget {
 		return this;
 	}
 
+	@Override
 	public void launch(LaunchClassLoader classLoader) {
 		Class<? extends Applet> appletClass;
 		try {

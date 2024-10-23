@@ -5,11 +5,11 @@ import java.util.List;
 
 public interface ITweaker {
 
-    void acceptOptions(List<String> args, File gameDir, final File assetsDir, String profile);
+	void acceptOptions(List<String> args, File gameDir, final File assetsDir, String profile);
 
-    void injectIntoClassLoader(LaunchClassLoader classLoader);
+	void injectIntoClassLoader(LaunchClassLoader classLoader);
 
-    String getLaunchTarget();
+	String getLaunchTarget();
 
-    String[] getLaunchArguments();
+	String[] getLaunchArguments();
 }

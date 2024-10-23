@@ -38,6 +38,7 @@ public class BasicResponseURLConnection extends HttpURLConnection {
 		return new ByteArrayInputStream(responseMessage.getBytes());
 	}
 
+	@Override
 	public int getResponseCode() {
 		return responseCode;
 	}

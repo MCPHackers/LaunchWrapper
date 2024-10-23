@@ -27,30 +27,31 @@ public class VanillaTweak extends Tweak {
 		super(launch);
 	}
 
+	@Override
 	public List<Injection> getInjections() {
 		return Arrays.<Injection>asList(
 			context,
 			crashPatch,
 			new OutOfFocusFullscreen(context),
 			new OneSixAssetsFix(context),
-			new ChangeBrand()
-		);
-	}
-
-	public boolean handleError(LaunchClassLoader loader, Throwable t) {
-		return crashPatch.injectErrorAtInit(loader, t);
-	}
-
-	public LaunchTarget getLaunchTarget() {
-		URLStreamHandlerProxy.setURLStreamHandler("http", new LegacyURLStreamHandler(config));
-		URLStreamHandlerProxy.setURLStreamHandler("https", new LegacyURLStreamHandler(config));
-		MainLaunchTarget target = new MainLaunchTarget(MAIN_CLASS, context.args);
-		return target;
+			new ChangeBrand());
 	}
 
 	@Override
-	public List<LazyTweaker> getLazyTweakers() {
-		return Collections.emptyList();
+	public List<Tweaker> getTweakers() {
+		return Collections.<Tweaker>singletonList(new Java5LazyTweaker());
 	}
 
+	@Override
+	public boolean handleError(LaunchClassLoader loader, Throwable t) {
+		super.handleError(loader, t);
+		return crashPatch.injectErrorAtInit(loader, t);
+	}
+
+	@Override
+	public LaunchTarget getLaunchTarget() {
+		URLStreamHandlerProxy.setURLStreamHandler("http", new LegacyURLStreamHandler(config));
+		URLStreamHandlerProxy.setURLStreamHandler("https", new LegacyURLStreamHandler(config));
+		return new MainLaunchTarget(MAIN_CLASS, context.args);
+	}
 }

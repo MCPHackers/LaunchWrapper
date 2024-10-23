@@ -26,7 +26,7 @@ public class SkinRequests {
 	private static HashMap<String, Profile> profileMap = new HashMap<String, Profile>();
 
 	// No skins and capes for you. Sorry guys
-	private static final String[] BLACKLISTED_NAMES = {"Player", "DemoUser"}; 
+	private static final String[] BLACKLISTED_NAMES = { "Player", "DemoUser" };
 
 	private SkinType skinType;
 	private List<SkinOption> skinOptions;
@@ -51,18 +51,18 @@ public class SkinRequests {
 	}
 
 	public static String getUUIDfromName(String username) {
-		for(String s : BLACKLISTED_NAMES) {
-			if(s.equals(username)) {
+		for (String s : BLACKLISTED_NAMES) {
+			if (s.equals(username)) {
 				return null;
 			}
 		}
 		String cachedUUID = nameToUUID.get(username);
 
-		if(cachedUUID != null) {
+		if (cachedUUID != null) {
 			return cachedUUID;
 		} else {
 			JSONObject obj = requestUUIDfromName(username);
-			if(obj != null) {
+			if (obj != null) {
 				String uuid = obj.optString("id");
 
 				nameToUUID.put(username, uuid);
@@ -77,7 +77,7 @@ public class SkinRequests {
 		try {
 			URL profileURL = new URL("https://api.mojang.com/users/profiles/minecraft/" + name);
 			HttpURLConnection connection = (HttpURLConnection)openDirectConnection(profileURL);
-			if(connection.getResponseCode() == 404) {
+			if (connection.getResponseCode() == 404) {
 				return null;
 			}
 			InputStream connStream = connection.getInputStream();
@@ -112,12 +112,12 @@ public class SkinRequests {
 		}
 
 		public Skin getSkin() {
-			if(skinTex == null) {
+			if (skinTex == null) {
 				return null;
 			}
 			try {
 				File localSkin = new File(assetsSkinCache, skinTex.substring(0, 2) + "/" + skinTex);
-				if(localSkin.exists()) {
+				if (localSkin.exists()) {
 					return new Skin(Util.readStream(new FileInputStream(localSkin)), slim);
 				}
 				URL skinURL = new URL("http://textures.minecraft.net/texture/" + skinTex);
@@ -129,12 +129,12 @@ public class SkinRequests {
 		}
 
 		public byte[] getCape() {
-			if(capeTex == null) {
+			if (capeTex == null) {
 				return null;
 			}
 			try {
 				File localSkin = new File(assetsSkinCache, capeTex.substring(0, 2) + "/" + capeTex);
-				if(localSkin.exists()) {
+				if (localSkin.exists()) {
 					return Util.readStream(new FileInputStream(localSkin));
 				}
 				URL capeURL = new URL("http://textures.minecraft.net/texture/" + capeTex);
@@ -151,19 +151,19 @@ public class SkinRequests {
 			URL uuidtoprofileURL = new URL("https://sessionserver.mojang.com/session/minecraft/profile/" + uuid);
 			JSONObject profileJson = new JSONObject(new String(Util.readStream(openDirectConnection(uuidtoprofileURL).getInputStream()), "UTF-8"));
 			JSONArray properties = profileJson.optJSONArray("properties");
-			if(properties == null) {
+			if (properties == null) {
 				return null;
 			}
 			String texjsonstr = null;
-			for(int i = 0; i < properties.length(); i++) {
-				if(!"textures".equals(properties.getJSONObject(i).optString("name"))) {
+			for (int i = 0; i < properties.length(); i++) {
+				if (!"textures".equals(properties.getJSONObject(i).optString("name"))) {
 					continue;
 				}
 				String base64tex = properties.getJSONObject(i).optString("value");
 				texjsonstr = new String(Base64.decode(base64tex), "UTF-8");
 			}
 			String name = profileJson.optString("name", null);
-			if(texjsonstr == null) {
+			if (texjsonstr == null) {
 				return new Profile(profileJson, name, uuid, null, null, false);
 			}
 			boolean slim = false;
@@ -172,18 +172,18 @@ public class SkinRequests {
 
 			JSONObject texjson = new JSONObject(texjsonstr);
 			JSONObject txts = texjson.optJSONObject("textures");
-			if(txts != null) {
+			if (txts != null) {
 				JSONObject skinjson = txts.optJSONObject("SKIN");
-				if(skinjson != null) {
+				if (skinjson != null) {
 					JSONObject metadata = skinjson.optJSONObject("metadata");
-					if(metadata != null) {
+					if (metadata != null) {
 						slim = "slim".equals(metadata.optString("model"));
 					}
 					String skinURLstr = skinjson.optString("url");
 					skinHash = skinURLstr.substring(skinURLstr.lastIndexOf('/') + 1);
 				}
 				skinjson = txts.optJSONObject("CAPE");
-				if(skinjson != null) {
+				if (skinjson != null) {
 					String skinURLstr = skinjson.optString("url");
 					capeHash = skinURLstr.substring(skinURLstr.lastIndexOf('/') + 1);
 				}
@@ -202,11 +202,11 @@ public class SkinRequests {
 
 	private JSONObject getTexturesObj(JSONObject profile) {
 		JSONArray properties = profile.optJSONArray("properties");
-		if(properties == null) {
+		if (properties == null) {
 			return null;
 		}
-		for(int i = 0; i < properties.length(); i++) {
-			if(!"textures".equals(properties.getJSONObject(i).optString("name"))) {
+		for (int i = 0; i < properties.length(); i++) {
+			if (!"textures".equals(properties.getJSONObject(i).optString("name"))) {
 				continue;
 			}
 			return properties.getJSONObject(i);
@@ -217,35 +217,35 @@ public class SkinRequests {
 	private void appendLocalSkins(Profile p) throws IOException {
 		Skin skin = getLocalSkin(p.name);
 		byte[] cape = getLocalCape(p.name);
-		if(skin != null || cape != null) {
+		if (skin != null || cape != null) {
 			JSONObject obj = getTexturesObj(p.json);
 			String base64Str = obj.optString("value", null);
-			if(base64Str == null) {
+			if (base64Str == null) {
 				return;
 			}
 			JSONObject texjson = new JSONObject(new String(Base64.decode(base64Str), "UTF-8"));
 			JSONObject txts = texjson.optJSONObject("textures");
-			if(txts != null) {
+			if (txts != null) {
 				JSONObject skinjson = txts.optJSONObject("SKIN");
-				if(skin != null && skinjson != null) {
+				if (skin != null && skinjson != null) {
 					JSONObject metadata = skinjson.optJSONObject("metadata");
-					if(skin.slim) {
-						if(metadata != null) {
+					if (skin.slim) {
+						if (metadata != null) {
 							metadata.put("model", "slim");
 						} else {
 							metadata = new JSONObject();
 							skinjson.put("metadata", metadata);
 							metadata.put("model", "slim");
 						}
-					} else if(metadata != null) {
+					} else if (metadata != null) {
 						metadata.remove("model");
 					}
 				}
 			}
 			texjson.put("timestamp", System.currentTimeMillis() / 1000L);
-			if(skin != null) {
+			if (skin != null) {
 				JSONObject skinjson = txts.optJSONObject("SKIN");
-				if(skinjson == null) {
+				if (skinjson == null) {
 					skinjson = new JSONObject();
 					txts.put("SKIN", skinjson);
 				}
@@ -254,9 +254,9 @@ public class SkinRequests {
 				profileMap.put(sha256, p);
 				p.skinTex = sha256;
 			}
-			if(cape != null) {
+			if (cape != null) {
 				JSONObject capejson = txts.optJSONObject("CAPE");
-				if(capejson == null) {
+				if (capejson == null) {
 					capejson = new JSONObject();
 					txts.put("CAPE", capejson);
 				}
@@ -271,7 +271,7 @@ public class SkinRequests {
 
 	public byte[] getLocalCape(String name) {
 		File capeFile = new File(localSkinDirectory, "cape/" + name + ".png");
-		if(capeFile.exists()) {
+		if (capeFile.exists()) {
 			try {
 				return convertCape(Util.readStream(new FileInputStream(capeFile)), skinType);
 			} catch (IOException e) {
@@ -282,9 +282,9 @@ public class SkinRequests {
 	}
 
 	public Skin getLocalSkin(String name) {
-		
+
 		File skinFile = new File(localSkinDirectory, name + ".png");
-		if(skinFile.exists()) {
+		if (skinFile.exists()) {
 			try {
 				byte[] data = Util.readStream(new FileInputStream(skinFile));
 				data = convertSkin(data, false, skinType, skinOptions);
@@ -293,9 +293,9 @@ public class SkinRequests {
 				e.printStackTrace();
 			}
 		}
-		
+
 		skinFile = new File(localSkinDirectory, name + ".slim.png");
-		if(skinFile.exists()) {
+		if (skinFile.exists()) {
 			try {
 				byte[] data = Util.readStream(new FileInputStream(skinFile));
 				data = convertSkin(data, true, skinType, skinOptions);
@@ -309,22 +309,22 @@ public class SkinRequests {
 
 	public byte[] getCape(String name) {
 		byte[] cape = getLocalCape(name);
-		if(cape != null) {
+		if (cape != null) {
 			return cape;
 		}
 		String uuid = getUUIDfromName(name);
-		if(uuid == null) {
+		if (uuid == null) {
 			return null;
 		}
 		return getCape(getProfile(uuid));
 	}
 
 	public byte[] getCape(Profile p) {
-		if(p == null) {
+		if (p == null) {
 			return null;
 		}
 		byte[] cape = getLocalCape(p.name);
-		if(cape != null) {
+		if (cape != null) {
 			return cape;
 		}
 		return convertCape(p.getCape(), skinType);
@@ -332,26 +332,26 @@ public class SkinRequests {
 
 	public byte[] getSkin(String name) {
 		Skin skinData = getLocalSkin(name);
-		if(skinData != null) {
+		if (skinData != null) {
 			return skinData.data;
 		}
 		String uuid = getUUIDfromName(name);
-		if(uuid == null) {
+		if (uuid == null) {
 			return null;
 		}
 		return getSkin(getProfile(uuid));
 	}
 
 	public byte[] getSkin(Profile p) {
-		if(p == null) {
+		if (p == null) {
 			return null;
 		}
 		Skin skin = getLocalSkin(p.name);
-		if(skin != null) {
+		if (skin != null) {
 			return skin.data;
 		}
 		skin = p.getSkin();
-		if(skin == null) {
+		if (skin == null) {
 			return null;
 		}
 		return convertSkin(skin.data, p.slim, skinType, skinOptions);
@@ -363,47 +363,47 @@ public class SkinRequests {
 	}
 
 	public static byte[] convertSkin(byte[] skin, boolean slim, SkinType skinType, List<SkinOption> skinOptions) {
-		if(skin == null) {
+		if (skin == null) {
 			return skin;
 		}
 		try {
 			ByteArrayInputStream bis = new ByteArrayInputStream(skin);
 			ImageUtils imgu = new ImageUtils(bis);
-			switch(skinType) {
+			switch (skinType) {
 				case PRE_19A:
 				case CLASSIC:
 				case PRE_B1_9:
 				case PRE_1_8:
 				case PRE_1_9:
-					if(skinOptions.contains(SkinOption.REMOVE_HAT))
+					if (skinOptions.contains(SkinOption.REMOVE_HAT))
 						imgu.clearArea(32, 0, 32, 16);
-					if(!skinOptions.contains(SkinOption.IGNORE_LAYERS))
+					if (!skinOptions.contains(SkinOption.IGNORE_LAYERS))
 						fixLayerAlpha(imgu);
 					break;
 				case DEFAULT:
-					if(skinOptions.contains(SkinOption.REMOVE_HAT))
+					if (skinOptions.contains(SkinOption.REMOVE_HAT))
 						imgu.clearArea(32, 0, 32, 16);
 					break;
 			}
 
-			switch(skinType) {
+			switch (skinType) {
 				case PRE_19A:
 				case CLASSIC:
-					if(!skinOptions.contains(SkinOption.IGNORE_LAYERS))
+					if (!skinOptions.contains(SkinOption.IGNORE_LAYERS))
 						overlayHeadLayer(imgu);
 				case PRE_B1_9:
 				case PRE_1_8:
-					if(skinOptions.contains(SkinOption.USE_LEFT_ARM))
+					if (skinOptions.contains(SkinOption.USE_LEFT_ARM))
 						useLeftArm(imgu, true);
-					if(skinOptions.contains(SkinOption.USE_LEFT_LEG))
+					if (skinOptions.contains(SkinOption.USE_LEFT_LEG))
 						useLeftLeg(imgu, true);
-					if(imgu.getImage().getHeight() == 64 && !skinOptions.contains(SkinOption.IGNORE_LAYERS))
+					if (imgu.getImage().getHeight() == 64 && !skinOptions.contains(SkinOption.IGNORE_LAYERS))
 						overlayBodyLayers(imgu);
-					if(slim && !skinOptions.contains(SkinOption.IGNORE_ALEX))
+					if (slim && !skinOptions.contains(SkinOption.IGNORE_ALEX))
 						alexToSteve(imgu);
-					if(skinType == SkinType.PRE_B1_9 || skinType == SkinType.CLASSIC || skinType == SkinType.PRE_19A)
+					if (skinType == SkinType.PRE_B1_9 || skinType == SkinType.CLASSIC || skinType == SkinType.PRE_19A)
 						rotateBottomTX(imgu);
-					if(skinType == SkinType.PRE_19A)
+					if (skinType == SkinType.PRE_19A)
 						flipSkin(imgu);
 					imgu = imgu.crop(0, 0, 64, 32);
 				case PRE_1_9:
@@ -420,52 +420,52 @@ public class SkinRequests {
 	private static void fixLayerAlpha(ImageUtils imgu) {
 		BufferedImage img = imgu.getImage();
 		// Head
-		for(int i = 0; i < 32; i++) {
-			for(int j = 0; j < 16; j++) {
+		for (int i = 0; i < 32; i++) {
+			for (int j = 0; j < 16; j++) {
 				int color1 = img.getRGB(i, j);
-				int color2 = img.getRGB(i+32, j);
+				int color2 = img.getRGB(i + 32, j);
 				int alpha = color2 >> 24;
-				if(alpha != -1 && alpha != 0x00) {
+				if (alpha != -1 && alpha != 0x00) {
 					img.setRGB(i, j, ImageUtils.mergeColor(color1, color2));
-					img.setRGB(i+32, j, 0);
+					img.setRGB(i + 32, j, 0);
 				}
 			}
 		}
-		if(img.getHeight() <= 32) {
+		if (img.getHeight() <= 32) {
 			return;
 		}
 		// Body
-		for(int i = 0; i < 56; i++) {
-			for(int j = 16; j < 32; j++) {
+		for (int i = 0; i < 56; i++) {
+			for (int j = 16; j < 32; j++) {
 				int color1 = img.getRGB(i, j);
-				int color2 = img.getRGB(i, j+16);
+				int color2 = img.getRGB(i, j + 16);
 				int alpha = color2 >> 24;
-				if(alpha != -1 && alpha != 0x00) {
+				if (alpha != -1 && alpha != 0x00) {
 					img.setRGB(i, j, ImageUtils.mergeColor(color1, color2));
-					img.setRGB(i, j+16, 0);
+					img.setRGB(i, j + 16, 0);
 				}
 			}
 		}
 		// Left leg
-		for(int i = 0; i < 16; i++) {
-			for(int j = 48; j < 64; j++) {
-				int color1 = img.getRGB(i+16, j);
+		for (int i = 0; i < 16; i++) {
+			for (int j = 48; j < 64; j++) {
+				int color1 = img.getRGB(i + 16, j);
 				int color2 = img.getRGB(i, j);
 				int alpha = color2 >> 24;
-				if(alpha != -1 && alpha != 0x00) {
-					img.setRGB(i+16, j, ImageUtils.mergeColor(color1, color2));
+				if (alpha != -1 && alpha != 0x00) {
+					img.setRGB(i + 16, j, ImageUtils.mergeColor(color1, color2));
 					img.setRGB(i, j, 0);
 				}
 			}
 		}
 		// Left arm
-		for(int i = 0; i < 16; i++) {
-			for(int j = 48; j < 64; j++) {
-				int color1 = img.getRGB(i+16, j);
+		for (int i = 0; i < 16; i++) {
+			for (int j = 48; j < 64; j++) {
+				int color1 = img.getRGB(i + 16, j);
 				int color2 = img.getRGB(i, j);
 				int alpha = color2 >> 24;
-				if(alpha != -1 && alpha != 0x00) {
-					img.setRGB(i+16, j, ImageUtils.mergeColor(color1, color2));
+				if (alpha != -1 && alpha != 0x00) {
+					img.setRGB(i + 16, j, ImageUtils.mergeColor(color1, color2));
 					img.setRGB(i, j, 0);
 				}
 			}
@@ -553,7 +553,7 @@ public class SkinRequests {
 		// arm layer
 		imgu.setArea(40, 16, imgu.crop(32, 48, 16, 16).flip(false, false).getImage());
 		// arm
-		
+
 		imgu.setArea(40, 32, imgu.crop(48, 48, 16, 16).flip(false, false).getImage());
 		imgu.setArea(44, 16, imgu.crop(44, 16, 4, 16).flip(true, false).getImage());
 		imgu.setArea(48, 16, imgu.crop(48, 16, 4, 4).flip(true, false).getImage());

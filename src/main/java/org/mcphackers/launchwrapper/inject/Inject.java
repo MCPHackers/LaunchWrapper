@@ -6,7 +6,6 @@ import java.io.IOException;
 import org.mcphackers.launchwrapper.Launch;
 import org.mcphackers.launchwrapper.protocol.SaveRequests;
 import org.mcphackers.launchwrapper.tweak.AppletWrapper;
-import org.mcphackers.launchwrapper.tweak.injection.legacy.IndevSaving;
 
 /**
  * Static utility methods for injections

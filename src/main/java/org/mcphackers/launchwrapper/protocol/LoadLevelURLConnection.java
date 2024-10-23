@@ -15,7 +15,7 @@ import org.mcphackers.launchwrapper.util.Util;
 
 public class LoadLevelURLConnection extends HttpURLConnection {
 
-	private File levelsDir;
+	private final File levelsDir;
 
 	public LoadLevelURLConnection(URL url, File levelsDir) {
 		super(url);
@@ -42,7 +42,7 @@ public class LoadLevelURLConnection extends HttpURLConnection {
 		Exception exception = null;
 		try {
 			Map<String, String> query = Util.queryMap(url);
-			if(!query.containsKey("id")) {
+			if (!query.containsKey("id")) {
 				throw new MalformedURLException("Query is missing \"id\" parameter");
 			}
 			int levelId = Integer.parseInt(query.get("id"));
@@ -53,7 +53,7 @@ public class LoadLevelURLConnection extends HttpURLConnection {
 		} catch (Exception e) {
 			exception = e;
 		}
-		if(exception != null) {
+		if (exception != null) {
 			try {
 				Thread.sleep(100L); // Needs some sleep because it won't display error message if it's too fast
 			} catch (InterruptedException e) {

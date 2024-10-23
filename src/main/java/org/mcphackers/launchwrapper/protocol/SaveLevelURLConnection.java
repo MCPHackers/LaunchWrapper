@@ -52,7 +52,7 @@ public class SaveLevelURLConnection extends HttpURLConnection {
 		} catch (Exception e) {
 			exception = e;
 		}
-		if(exception != null) {
+		if (exception != null) {
 			try {
 				Thread.sleep(100L); // Needs some sleep because it won't display error message if it's too fast
 			} catch (InterruptedException e) {

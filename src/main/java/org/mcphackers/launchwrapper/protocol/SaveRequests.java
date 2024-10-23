@@ -9,31 +9,32 @@ import java.io.OutputStream;
 
 import org.mcphackers.launchwrapper.util.Util;
 
-public class SaveRequests {
+public final class SaveRequests {
 	public static final String EMPTY_LEVEL = "-";
 	public static final int MAX_LEVELS = 5;
 
+	private SaveRequests() {
+	}
+
 	public static String[] getLevelNames(File levelsDir) throws IOException {
 		String[] lvlNames = new String[MAX_LEVELS];
-		for(int i = 0; i < MAX_LEVELS; i++) {
+		for (int i = 0; i < MAX_LEVELS; i++) {
 			lvlNames[i] = EMPTY_LEVEL;
 			File level = new File(levelsDir, "level" + i + ".dat");
-			if(level.isFile()) {
+			if (level.isFile()) {
 				lvlNames[i] = "Unnamed level";
 			}
 		}
-		for(int i = 0; i < MAX_LEVELS; i++) {
-		}
 		File levelNames = new File(levelsDir, "levels.txt");
-		if(!levelNames.exists()) {
+		if (!levelNames.exists()) {
 			return lvlNames;
 		}
 		FileInputStream levelNamesStream = new FileInputStream(levelNames);
 		try {
 			String[] fileStrings = new String(Util.readStream(levelNamesStream)).split(";");
-			for(int i = 0; i < MAX_LEVELS && i < fileStrings.length; i++) {
+			for (int i = 0; i < MAX_LEVELS && i < fileStrings.length; i++) {
 				File level = new File(levelsDir, "level" + i + ".dat");
-				if(level.isFile()) {
+				if (level.isFile()) {
 					lvlNames[i] = fileStrings[i];
 				}
 			}
@@ -42,10 +43,10 @@ public class SaveRequests {
 		}
 		return lvlNames;
 	}
-	
+
 	public static void updateLevelNames(File levelsDir, String[] lvlNames) throws IOException {
 		StringBuilder lvls = new StringBuilder();
-		for(int i = 0; i < MAX_LEVELS; i++) {
+		for (int i = 0; i < MAX_LEVELS; i++) {
 			lvls.append(lvlNames[i]).append(";");
 		}
 		byte[] lvlsData = lvls.toString().getBytes();
@@ -56,9 +57,10 @@ public class SaveRequests {
 			outputNames.close();
 		}
 	}
+
 	public static byte[] loadLevel(File levelsDir, int index) throws IOException {
 		File level = new File(levelsDir, "level" + index + ".dat");
-		if(!level.exists()) {
+		if (!level.exists()) {
 			throw new FileNotFoundException("Level doesn't exist");
 		}
 		FileInputStream in = new FileInputStream(level);
@@ -72,13 +74,13 @@ public class SaveRequests {
 		String[] lvlNames = getLevelNames(levelsDir);
 		lvlNames[index] = levelName;
 		File level = new File(levelsDir, "level" + index + ".dat");
-		
+
 		// Since minecraft doesn't have a delete button on levels, just save a new one with this name and it'll get deleted
-		if(levelName.equals("---") /* Can't be "-" because save button is active at 3>= characters */ ) {
+		if (levelName.equals("---") /* Can't be "-" because save button is active at 3>= characters */) {
 			level.delete();
 			lvlNames[index] = EMPTY_LEVEL;
 		} else {
-			if(!levelsDir.exists()) {
+			if (!levelsDir.exists()) {
 				levelsDir.mkdirs();
 			}
 			OutputStream fileOutput = new FileOutputStream(level);

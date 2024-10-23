@@ -19,29 +19,31 @@ import org.mcphackers.launchwrapper.Launch;
 
 public final class Util {
 
+	private Util() {
+	}
+
 	public static void closeSilently(Closeable closeable) {
-		if(closeable != null) {
+		if (closeable != null) {
 			try {
 				closeable.close();
 			} catch (IOException ignored) {
 			}
 		}
 	}
-	
+
 	public static File getSource(URL resource, String resPath) {
-		if(resource.getProtocol().equals("jar")) {
+		if (resource.getProtocol().equals("jar")) {
 			String path = resource.getPath();
-			if(path.startsWith("file:")) {
+			if (path.startsWith("file:")) {
 				path = path.substring("file:".length());
 				int i = path.lastIndexOf('!');
-				if(i != -1) {
+				if (i != -1) {
 					path = path.substring(0, i);
 				}
 			}
 			return new File(path);
-			
 		}
-		if(resource.getPath().endsWith(resPath)) {
+		if (resource.getPath().endsWith(resPath)) {
 			return new File(resource.getPath().substring(0, resource.getPath().length() - resPath.length() - 1));
 		}
 		return null;
@@ -53,7 +55,7 @@ public final class Util {
 		} catch (IOException e) {
 			return null;
 		}
-	} 
+	}
 
 	public static byte[] readStream(InputStream stream) throws IOException {
 		ByteArrayOutputStream buffer = new ByteArrayOutputStream();
@@ -61,7 +63,7 @@ public final class Util {
 		int nRead;
 		byte[] data = new byte[16384];
 
-		while((nRead = stream.read(data, 0, data.length)) != -1) {
+		while ((nRead = stream.read(data, 0, data.length)) != -1) {
 			buffer.write(data, 0, nRead);
 		}
 		stream.close();
@@ -72,7 +74,7 @@ public final class Util {
 		int nRead;
 		byte[] data = new byte[16384];
 
-		while((nRead = stream1.read(data, 0, data.length)) != -1) {
+		while ((nRead = stream1.read(data, 0, data.length)) != -1) {
 			stream2.write(data, 0, nRead);
 		}
 		stream1.close();
@@ -90,13 +92,13 @@ public final class Util {
 		byte[] buffer = new byte[1024];
 		int bytesRead;
 
-		while((bytesRead = bs.read(buffer, 0, buffer.length)) != -1) {
+		while ((bytesRead = bs.read(buffer, 0, buffer.length)) != -1) {
 			md.update(buffer, 0, bytesRead);
 		}
 		byte[] digest = md.digest();
 
 		StringBuilder sb = new StringBuilder();
-		for(byte bite : digest) {
+		for (byte bite : digest) {
 			sb.append(Integer.toString((bite & 255) + 256, 16).substring(1).toLowerCase());
 		}
 		bs.close();
@@ -114,13 +116,13 @@ public final class Util {
 		byte[] buffer = new byte[1024];
 		int bytesRead;
 
-		while((bytesRead = bs.read(buffer, 0, buffer.length)) != -1) {
+		while ((bytesRead = bs.read(buffer, 0, buffer.length)) != -1) {
 			md.update(buffer, 0, bytesRead);
 		}
 		byte[] digest = md.digest();
 
 		StringBuilder sb = new StringBuilder();
-		for(byte bite : digest) {
+		for (byte bite : digest) {
 			sb.append(Integer.toString((bite & 255) + 256, 16).substring(1).toLowerCase());
 		}
 		bs.close();
@@ -130,9 +132,9 @@ public final class Util {
 	public static Map<String, String> queryMap(URL url) throws UnsupportedEncodingException {
 		Map<String, String> queryMap = new HashMap<String, String>();
 		String query = url.getQuery();
-		if(query != null) {
+		if (query != null) {
 			String[] pairs = query.split("&");
-			for(String pair : pairs) {
+			for (String pair : pairs) {
 				final int idx = pair.indexOf("=");
 				final String key = idx > 0 ? URLDecoder.decode(pair.substring(0, idx), "UTF-8") : pair;
 				final String value = idx > 0 && pair.length() > idx + 1 ? URLDecoder.decode(pair.substring(idx + 1), "UTF-8") : null;
@@ -141,5 +143,4 @@ public final class Util {
 		}
 		return queryMap;
 	}
-
 }

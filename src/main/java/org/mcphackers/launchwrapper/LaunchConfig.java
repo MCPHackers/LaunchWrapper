@@ -17,62 +17,69 @@ import org.mcphackers.launchwrapper.util.OS;
 
 @SuppressWarnings("unused")
 public class LaunchConfig {
-	private static final File defaultGameDir = getDefaultGameDir();
-	private Map<String, LaunchParameter<?>> parameters = new HashMap<String, LaunchParameter<?>>();
-	private List<String> extraParameters = new ArrayList<String>();
+	private static final File DEFAULT_GAME_DIR = getDefaultGameDir();
+	private final Map<String, LaunchParameter<?>> parameters = new HashMap<String, LaunchParameter<?>>();
+	// If we won't find any of the parameters from below, they're going into this list
+	private final List<String> extraParameters = new ArrayList<String>();
 
-	public LaunchParameterSwitch demo 				= new LaunchParameterSwitch("demo");
-	public LaunchParameterSwitch fullscreen 		= new LaunchParameterSwitch("fullscreen");
-	public LaunchParameterString server 			= new LaunchParameterString("server");
-	public LaunchParameterNumber port 				= new LaunchParameterNumber("port", 25565);
-	public LaunchParameterFile gameDir 				= new LaunchParameterFile("gameDir", defaultGameDir).altName("workDir");
-	public LaunchParameterFile assetsDir 			= new LaunchParameterFile("assetsDir");
-	public LaunchParameterFile resourcePackDir 		= new LaunchParameterFile("resourcePackDir");
-	public LaunchParameterString username 			= new LaunchParameterString("username", "Player");
-	public LaunchParameterString session 			= new LaunchParameterString("session", "-").altName("sessionid");
-	public LaunchParameterString password 			= new LaunchParameterString("password");
-	public LaunchParameterString uuid 				= new LaunchParameterString("uuid");
-	public LaunchParameterString accessToken 		= new LaunchParameterString("accessToken");
-	public LaunchParameterString version 			= new LaunchParameterString("version");
-	public LaunchParameterNumber width 				= new LaunchParameterNumber("width", 854);
-	public LaunchParameterNumber height 			= new LaunchParameterNumber("height", 480);
-	public LaunchParameterString userProperties 	= new LaunchParameterString("userProperties");
-	public LaunchParameterString profileProperties 	= new LaunchParameterString("profileProperties");
-	public LaunchParameterString assetIndex 		= new LaunchParameterString("assetIndex");
-	public LaunchParameterString userType 			= new LaunchParameterString("userType");
-	public LaunchParameterString versionType 		= new LaunchParameterString("versionType");
-	public LaunchParameterSwitch applet 			= new LaunchParameterSwitch("applet", false);
-	private LaunchParameterSwitch haspaid			= new LaunchParameterSwitch("haspaid", true);
-	public LaunchParameterSwitch unlicensedCopy		= new LaunchParameterSwitchReverse("unlicensedCopy", haspaid);
-	public LaunchParameterString loadmap_user 		= new LaunchParameterString("loadmap_user");
-	public LaunchParameterNumber loadmap_id 		= new LaunchParameterNumber("loadmap_id");
-	public LaunchParameterString mppass 			= new LaunchParameterString("mppass", "");
-	public LaunchParameterSwitch lwjglFrame 		= new LaunchParameterSwitch("lwjglFrame", true, true);
-	private LaunchParameterSwitch awtFrame 			= new LaunchParameterSwitchReverse("awtFrame", lwjglFrame);
-	public LaunchParameterSwitch isom 				= new LaunchParameterSwitch("isom", false, true);
-	public LaunchParameterSwitch forceVsync 		= new LaunchParameterSwitch("forceVsync", false, true);
-	public LaunchParameterSwitch forceResizable 	= new LaunchParameterSwitch("forceResizable", false, true);
-	public LaunchParameterEnum<SkinType> skinProxy 	= new LaunchParameterEnum<SkinType>("skinProxy", SkinType.DEFAULT, true);
-	public LaunchParameterSkinOptions skinOptions	= new LaunchParameterSkinOptions("skinOptions");
-	public LaunchParameterString serverURL 			= new LaunchParameterString("serverURL", null, true);
-	public LaunchParameterString serverSHA1 		= new LaunchParameterString("serverSHA1", null, true);
-	public LaunchParameterFileList icon 			= new LaunchParameterFileList("icon", null, true);
-	public LaunchParameterString title 				= new LaunchParameterString("title", null, true);
-	public LaunchParameterSwitch oneSixFlag 		= new LaunchParameterSwitch("oneSixFlag", false, true);
-	public LaunchParameterString tweakClass 		= new LaunchParameterString("tweakClass", null, true);
-	public LaunchParameterString brand				= new LaunchParameterString("brand", "launchwrapper", true);
-	public LaunchParameterSwitch creative	 		= new LaunchParameterSwitch("creative", false);
-	public LaunchParameterSwitch survival	 		= new LaunchParameterSwitch("survival", false);
+	// clang-format off
+
+	// Minecraft options
+	public final LaunchParameterSwitch demo 				= new LaunchParameterSwitch("demo");
+	public final LaunchParameterSwitch fullscreen			= new LaunchParameterSwitch("fullscreen");
+	public final LaunchParameterString server 				= new LaunchParameterString("server");
+	public final LaunchParameterNumber port 				= new LaunchParameterNumber("port", 25565);
+	public final LaunchParameterFile gameDir 				= new LaunchParameterFile("gameDir", DEFAULT_GAME_DIR).altName("workDir");
+	public final LaunchParameterFile assetsDir 				= new LaunchParameterFile("assetsDir");
+	public final LaunchParameterFile resourcePackDir 		= new LaunchParameterFile("resourcePackDir");
+	public final LaunchParameterString username 			= new LaunchParameterString("username", "Player");
+	public final LaunchParameterString session 				= new LaunchParameterString("session", "-").altName("sessionid");
+	public final LaunchParameterString password 			= new LaunchParameterString("password");
+	public final LaunchParameterString uuid 				= new LaunchParameterString("uuid");
+	public final LaunchParameterString accessToken 			= new LaunchParameterString("accessToken");
+	public final LaunchParameterString version 				= new LaunchParameterString("version");
+	public final LaunchParameterNumber width 				= new LaunchParameterNumber("width", 854);
+	public final LaunchParameterNumber height 				= new LaunchParameterNumber("height", 480);
+	public final LaunchParameterString userProperties 		= new LaunchParameterString("userProperties");
+	public final LaunchParameterString profileProperties 	= new LaunchParameterString("profileProperties");
+	public final LaunchParameterString assetIndex 			= new LaunchParameterString("assetIndex");
+	public final LaunchParameterString userType 			= new LaunchParameterString("userType");
+	public final LaunchParameterString versionType 			= new LaunchParameterString("versionType");
+	// Applet arguments
+	private final LaunchParameterSwitch haspaid				= new LaunchParameterSwitch("haspaid", true);
+	public final LaunchParameterString loadmapUser	 		= new LaunchParameterString("loadmap_user");
+	public final LaunchParameterNumber loadmapId 			= new LaunchParameterNumber("loadmap_id");
+	public final LaunchParameterString mppass 				= new LaunchParameterString("mppass", "");
+	// Built-in wrapper options
+	public final LaunchParameterString tweakClass 			= new LaunchParameterString("tweakClass", null, true);
+	public final LaunchParameterString brand				= new LaunchParameterString("brand", "launchwrapper", true);
+	public final LaunchParameterSwitch lwjglFrame	 		= new LaunchParameterSwitch("lwjglFrame", true, true);
+	private final LaunchParameterSwitch awtFrame 			= new LaunchParameterSwitchReverse("awtFrame", lwjglFrame);
+	public final LaunchParameterEnum<SkinType> skinProxy 	= new LaunchParameterEnum<SkinType>("skinProxy", SkinType.DEFAULT, true);
+	public final LaunchParameterSkinOptions skinOptions		= new LaunchParameterSkinOptions("skinOptions");
+	public final LaunchParameterSwitch isom 				= new LaunchParameterSwitch("isom", false, true);
+	public final LaunchParameterFileList icon 				= new LaunchParameterFileList("icon", null, true);
+	public final LaunchParameterString title 				= new LaunchParameterString("title", null, true);
+	public final LaunchParameterSwitch vsync 				= new LaunchParameterSwitch("vsync", false, true);
+	public final LaunchParameterSwitch resizable 			= new LaunchParameterSwitch("resizable", false, true);
+	public final LaunchParameterSwitch applet 				= new LaunchParameterSwitch("applet", false);
+	public final LaunchParameterSwitch oneSixFlag 			= new LaunchParameterSwitch("oneSixFlag", false, true);
+	public final LaunchParameterSwitch unlicensedCopy		= new LaunchParameterSwitchReverse("unlicensedCopy", haspaid);
+	public final LaunchParameterSwitch creative	 			= new LaunchParameterSwitch("creative", false);
+	public final LaunchParameterSwitch survival	 			= new LaunchParameterSwitch("survival", false);
+	public final LaunchParameterString serverURL 			= new LaunchParameterString("serverURL", null, true);
+	public final LaunchParameterString serverSHA1 			= new LaunchParameterString("serverSHA1", null, true);
+	// clang-format on
 
 	private static File getDefaultGameDir() {
 		String game = "minecraft";
 		String homeDir = System.getProperty("user.home", ".");
 		File gameDir;
-		switch(OS.getOs()) {
+		switch (OS.getOs()) {
 			case LINUX:
 			case SOLARIS:
 				String dataHome = System.getProperty("XDG_DATA_HOME");
-				if(dataHome != null) {
+				if (dataHome != null) {
 					gameDir = new File(dataHome, "." + game + '/');
 				} else {
 					gameDir = new File(homeDir, ".local/share/" + game + '/');
@@ -80,7 +87,7 @@ public class LaunchConfig {
 				break;
 			case WINDOWS:
 				String appdata = System.getenv("APPDATA");
-				if(appdata != null) {
+				if (appdata != null) {
 					gameDir = new File(appdata, "." + game + '/');
 				} else {
 					gameDir = new File(homeDir, '.' + game + '/');
@@ -93,7 +100,7 @@ public class LaunchConfig {
 				gameDir = new File(homeDir, game + '/');
 		}
 
-		if(!gameDir.exists() && !gameDir.mkdirs()) {
+		if (!gameDir.exists() && !gameDir.mkdirs()) {
 			throw new RuntimeException("The working directory could not be created: " + gameDir);
 		} else {
 			return gameDir;
@@ -101,12 +108,13 @@ public class LaunchConfig {
 	}
 
 	@SuppressWarnings("unchecked")
+	@Override
 	public LaunchConfig clone() {
 		LaunchConfig newConfig = new LaunchConfig();
 		newConfig.extraParameters.addAll(extraParameters);
-		for(Map.Entry<String, LaunchParameter<?>> entry : parameters.entrySet()) {
+		for (Map.Entry<String, LaunchParameter<?>> entry : parameters.entrySet()) {
 			LaunchParameter<Object> param = (LaunchParameter<Object>)newConfig.parameters.get(entry.getKey());
-			if(param == null) {
+			if (param == null) {
 				continue;
 			}
 			param.set(entry.getValue().get());
@@ -118,30 +126,30 @@ public class LaunchConfig {
 	}
 
 	public LaunchConfig(String[] args) {
-		for(int i = 0; i < args.length; i++) {
-			if(!args[i].startsWith("--")) {
+		for (int i = 0; i < args.length; i++) {
+			if (!args[i].startsWith("--")) {
 				extraParameters.add(args[i]);
 				continue;
 			}
 			String paramName = args[i].substring(2);
 			LaunchParameter<?> param = parameters.get(paramName);
-			if(param == null) {
+			if (param == null) {
 				extraParameters.add(args[i]);
 				continue;
 			}
-			if(param.isSwitch()) {
-				((LaunchParameterSwitch) param).setFlag();
+			if (param.isSwitch()) {
+				((LaunchParameterSwitch)param).setFlag();
 				continue;
 			}
-			if(i + 1 < args.length) {
+			if (i + 1 < args.length) {
 				try {
 					param.setString(args[i + 1]);
 					i++;
-				} catch (IllegalArgumentException e) {
+				} catch (IllegalArgumentException ignored) {
 				}
 			}
 		}
-		if(uuid.get() == null && username.get() != null) {
+		if (uuid.get() == null && username.get() != null) {
 			// Resolve profile UUID if we only provide username
 			uuid.set(SkinRequests.getUUIDfromName(username.get()));
 		}
@@ -149,8 +157,8 @@ public class LaunchConfig {
 
 	public List<LaunchParameter<?>> getParamsAsList() {
 		List<LaunchParameter<?>> list = new ArrayList<LaunchParameter<?>>();
-		for(LaunchParameter<?> param : parameters.values()) {
-			if(!param.wrapperOnly && param.get() != null && param.get() != Boolean.FALSE) {
+		for (LaunchParameter<?> param : parameters.values()) {
+			if (!param.wrapperOnly && param.get() != null && param.get() != Boolean.FALSE) {
 				list.add(param);
 			}
 		}
@@ -159,9 +167,9 @@ public class LaunchConfig {
 
 	public Map<String, String> getArgsAsMap() {
 		Map<String, String> map = new HashMap<String, String>();
-		for(String key : parameters.keySet()) {
+		for (String key : parameters.keySet()) {
 			LaunchParameter<?> param = parameters.get(key);
-			if(!param.wrapperOnly && param.get() != null && param.get() != Boolean.FALSE) {
+			if (!param.wrapperOnly && param.get() != null && param.get() != Boolean.FALSE) {
 				map.put(key, param.getString());
 			}
 		}
@@ -170,20 +178,21 @@ public class LaunchConfig {
 
 	public String[] getArgs() {
 		List<String> list = new ArrayList<String>();
-		for(String key : parameters.keySet()) {
+		for (String key : parameters.keySet()) {
 			LaunchParameter<?> param = parameters.get(key);
-			if(!param.wrapperOnly && param.get() != null) {
-				if(param.isSwitch()) {
-					if(param.get().equals(true))
+			if (!param.wrapperOnly && param.get() != null) {
+				if (param.isSwitch()) {
+					if (param.get().equals(true)) {
 						list.add("--" + key);
+					}
 				} else {
 					list.add("--" + key);
 					list.add(param.getString());
 				}
 			}
 		}
-		for(String param : extraParameters) {
-			if(param == null) {
+		for (String param : extraParameters) {
+			if (param == null) {
 				continue;
 			}
 			list.add(param);
@@ -250,15 +259,17 @@ public class LaunchConfig {
 			super(name, defaultValue, wrapper);
 		}
 
+		@Override
 		public LaunchParameterFile altName(String altName) {
 			super.altName(altName);
 			return this;
-		} 
+		}
 
 		@Override
 		public String getString() {
-			if(value == null)
+			if (value == null) {
 				return null;
+			}
 			return this.value.getAbsolutePath();
 		}
 
@@ -283,42 +294,47 @@ public class LaunchConfig {
 
 		@Override
 		public String getString() {
-			if(value == null)
+			if (value == null) {
 				return null;
-			String s = "";
-			for(int i = 0; i < value.length; i++) {
-				if(i != 0) {
-					s += File.pathSeparator;
-				}
-				s += value[i].getAbsolutePath();
 			}
-			return s;
+			StringBuilder s = new StringBuilder();
+			for (int i = 0; i < value.length; i++) {
+				if (i != 0) {
+					s.append(File.pathSeparator);
+				}
+				s.append(value[i].getAbsolutePath());
+			}
+			return s.toString();
 		}
 
 		@Override
 		public void setString(String argument) {
 			String[] paths = argument.split(Pattern.quote(File.pathSeparator));
 			File[] newValue = new File[paths.length];
-			for(int i = 0; i < paths.length; i++) {
+			for (int i = 0; i < paths.length; i++) {
 				newValue[i] = new File(paths[i]);
 			}
 			this.value = newValue;
 		}
 	}
+
 	public class LaunchParameterSwitchReverse extends LaunchParameterSwitch {
 		LaunchParameterSwitch parent;
+
 		public LaunchParameterSwitchReverse(String name, LaunchParameterSwitch parent) {
 			super(name, !parent.defaultValue, true);
 			this.parent = parent;
 		}
 
+		@Override
 		public void set(Boolean b) {
 			super.set(b);
 			parent.value = !value;
 		}
 
+		@Override
 		public Boolean get() {
-			return(!parent.value);
+			return (!parent.value);
 		}
 	}
 
@@ -335,6 +351,7 @@ public class LaunchConfig {
 			super(name, defaultVal, wrapper);
 		}
 
+		@Override
 		public boolean isSwitch() {
 			return true;
 		}
@@ -371,6 +388,7 @@ public class LaunchConfig {
 			super(name, defaultValue, wrapper);
 		}
 
+		@Override
 		public LaunchParameterString altName(String altName) {
 			super.altName(altName);
 			return this;
@@ -418,27 +436,28 @@ public class LaunchConfig {
 
 		@Override
 		public String getString() {
-			if(value == null)
+			if (value == null) {
 				return null;
-			String s = "";
+			}
+			StringBuilder s = new StringBuilder();
 			int i = 0;
-			for(SkinOption option : value) {
-				if(i != 0) {
-					s += ',';
+			for (SkinOption option : value) {
+				if (i != 0) {
+					s.append(',');
 				}
-				s += option.name;
+				s.append(option.name);
 				i++;
 			}
-			return s;
+			return s.toString();
 		}
 
 		@Override
 		public void setString(String argument) {
 			String[] optionStrings = argument.split(Pattern.quote(","));
 			ArrayList<SkinOption> newValue = new ArrayList<SkinOption>();
-			for(int i = 0; i < optionStrings.length; i++) {
-				SkinOption opt = SkinOption.getEnum(optionStrings[i]);
-				if(opt != null) {
+			for (String optionString : optionStrings) {
+				SkinOption opt = SkinOption.getEnum(optionString);
+				if (opt != null) {
 					newValue.add(opt);
 				}
 			}
@@ -447,7 +466,7 @@ public class LaunchConfig {
 	}
 
 	public class LaunchParameterEnum<T extends Enum<T>> extends LaunchParameter<T> {
-		private Class<T> enumType;
+		private final Class<T> enumType;
 
 		@SuppressWarnings("unchecked")
 		public LaunchParameterEnum(String name, Enum<T> defaultValue) {
@@ -471,14 +490,13 @@ public class LaunchConfig {
 		public void setString(String argument) {
 			try {
 				Method getEnumFromString = enumType.getDeclaredMethod("getEnum", String.class);
-				if((getEnumFromString.getModifiers() & Modifier.STATIC) != 0) {
+				if ((getEnumFromString.getModifiers() & Modifier.STATIC) != 0) {
 					this.value = (T)getEnumFromString.invoke(null, argument);
 					return;
 				}
-			} catch (Exception e) {
+			} catch (Exception ignored) {
 			}
 			this.value = Enum.valueOf(enumType, argument);
 		}
 	}
-
 }

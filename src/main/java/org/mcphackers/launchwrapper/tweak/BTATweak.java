@@ -22,10 +22,9 @@ public class BTATweak extends LegacyTweak {
 	@Override
 	public List<Injection> getInjections() {
 		return Arrays.<Injection>asList(
-				context,
-				new FixSplashScreen(context),
-				new FixShutdown(context),
-				new ReplaceGameDir(context));
+			context,
+			new FixSplashScreen(context),
+			new FixShutdown(context),
+			new ReplaceGameDir(context));
 	}
-
 }

@@ -15,14 +15,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-import org.mcphackers.launchwrapper.Launch;
-import org.mcphackers.launchwrapper.LaunchConfig;
-import org.mcphackers.launchwrapper.fabric.FabricBridge;
-import org.mcphackers.launchwrapper.target.MainLaunchTarget;
-import org.mcphackers.launchwrapper.tweak.FabricLoaderTweak;
-import org.mcphackers.launchwrapper.tweak.Tweak;
-import org.mcphackers.launchwrapper.util.ClassNodeSource;
-
 import net.fabricmc.api.EnvType;
 import net.fabricmc.loader.api.ObjectShare;
 import net.fabricmc.loader.api.VersionParsingException;
@@ -44,18 +36,26 @@ import net.fabricmc.loader.impl.util.Arguments;
 import net.fabricmc.loader.impl.util.ExceptionUtil;
 import net.fabricmc.loader.impl.util.SystemProperties;
 
+import org.mcphackers.launchwrapper.Launch;
+import org.mcphackers.launchwrapper.LaunchConfig;
+import org.mcphackers.launchwrapper.fabric.FabricBridge;
+import org.mcphackers.launchwrapper.target.MainLaunchTarget;
+import org.mcphackers.launchwrapper.tweak.FabricLoaderTweak;
+import org.mcphackers.launchwrapper.tweak.Tweak;
+import org.mcphackers.launchwrapper.util.ClassNodeSource;
+
 public class LWGameProvider implements GameProvider {
 
-    public LaunchConfig config = FabricBridge.getInstance().config;
-    public MainLaunchTarget target = null;
+	public LaunchConfig config = FabricBridge.getInstance().config;
+	public MainLaunchTarget target = null;
 
 	private Arguments arguments;
-    private Path gameJar;
-    private List<Path> lwjglJars = new ArrayList<>();
-    private Path launchwrapperJar;
-    private EnvType envType;
+	private Path gameJar;
+	private List<Path> lwjglJars = new ArrayList<>();
+	private Path launchwrapperJar;
+	private EnvType envType;
 	private final List<Path> miscGameLibraries = new ArrayList<>();
-    private final List<Path> validParentClassPath = new ArrayList<>();
+	private final List<Path> validParentClassPath = new ArrayList<>();
 	private McVersion versionData;
 	private boolean hasModLoader;
 	private final GameTransformer transformer = new LWGameTransformer(this);
@@ -63,11 +63,11 @@ public class LWGameProvider implements GameProvider {
 	public Tweak getTweak(ClassNodeSource source) {
 		return new FabricLoaderTweak(Tweak.get(source, config), config);
 	}
-    
-    @Override
+
+	@Override
 	public void launch(ClassLoader loader) {
-        String targetClass = target.targetClass;
-        String[] arguments = target.args;
+		String targetClass = target.targetClass;
+		String[] arguments = target.args;
 
 		MethodHandle invoker;
 
@@ -87,12 +87,12 @@ public class LWGameProvider implements GameProvider {
 
 	private Path getLaunchwrapperSource() {
 		CodeSource source = Launch.class.getProtectionDomain().getCodeSource();
-		if(source != null) {
+		if (source != null) {
 			String path = source.getLocation().getPath();
-			if(path.startsWith("file:")) {
+			if (path.startsWith("file:")) {
 				path = path.substring("file:".length());
 				int i = path.lastIndexOf('!');
-				if(i != -1) {
+				if (i != -1) {
 					path = path.substring(0, i);
 				}
 			}
@@ -106,7 +106,7 @@ public class LWGameProvider implements GameProvider {
 		this.envType = launcher.getEnvironmentType();
 		this.arguments = new Arguments();
 		arguments.parse(args);
-		
+
 		String entrypoint = null;
 		try {
 			LibClassifier<LWLib> classifier = new LibClassifier<>(LWLib.class, envType, this);
@@ -119,39 +119,42 @@ public class LWGameProvider implements GameProvider {
 			classifier.process(launcher.getClassPath());
 
 			envGameJar = classifier.getOrigin(envGameLib);
-			if (envGameJar == null) return false;
-			
+			if (envGameJar == null)
+				return false;
+
 			entrypoint = classifier.getClassName(envGameLib);
-			if(entrypoint == null) return false;
+			if (entrypoint == null)
+				return false;
 
 			gameJar = envGameJar;
 			launchwrapperJar = classifier.getOrigin(LWLib.LAUNCHWRAPPER);
-			if(launchwrapperJar == null) {
+			if (launchwrapperJar == null) {
 				launchwrapperJar = getLaunchwrapperSource();
 			}
-			if(classifier.has(LWLib.LWJGL)) {
+			if (classifier.has(LWLib.LWJGL)) {
 				lwjglJars.add(classifier.getOrigin(LWLib.LWJGL));
 			}
-			if(classifier.has(LWLib.LWJGL3)) {
+			if (classifier.has(LWLib.LWJGL3)) {
 				lwjglJars.add(classifier.getOrigin(LWLib.LWJGL3));
 			}
 			hasModLoader = classifier.has(LWLib.MODLOADER);
 			miscGameLibraries.addAll(lwjglJars);
 			miscGameLibraries.addAll(classifier.getUnmatchedOrigins());
-			if(launchwrapperJar != null) {
+			if (launchwrapperJar != null) {
 				validParentClassPath.add(launchwrapperJar);
 			}
 			validParentClassPath.addAll(classifier.getSystemLibraries());
 		} catch (IOException e) {
 			throw ExceptionUtil.wrap(e);
 		}
-		
+
 		ObjectShare share = FabricLoaderImpl.INSTANCE.getObjectShare();
 		share.put("fabric-loader:inputGameJar", gameJar); // deprecated
 		share.put("fabric-loader:inputGameJars", Collections.singletonList(gameJar));
 
 		String version = arguments.remove(Arguments.GAME_VERSION);
-		if (version == null) version = System.getProperty(SystemProperties.GAME_VERSION);
+		if (version == null)
+			version = System.getProperty(SystemProperties.GAME_VERSION);
 		versionData = McVersionLookup.getVersion(Collections.singletonList(gameJar), entrypoint, version);
 		return true;
 	}
@@ -171,15 +174,15 @@ public class LWGameProvider implements GameProvider {
 		return transformer;
 	}
 
-    @Override
-    public String getGameId() {
-        return "minecraft";
-    }
+	@Override
+	public String getGameId() {
+		return "minecraft";
+	}
 
-    @Override
-    public String getGameName() {
-        return "Minecraft";
-    }
+	@Override
+	public String getGameName() {
+		return "Minecraft";
+	}
 
 	@Override
 	public String getRawGameVersion() {
@@ -191,35 +194,35 @@ public class LWGameProvider implements GameProvider {
 		return versionData.getNormalized();
 	}
 
-    @Override
-    public Collection<BuiltinMod> getBuiltinMods() {
+	@Override
+	public Collection<BuiltinMod> getBuiltinMods() {
 		List<BuiltinMod> mods = new ArrayList<BuiltinMod>();
 		BuiltinModMetadata.Builder metadata = new BuiltinModMetadata.Builder(getGameId(), getNormalizedGameVersion())
-				.setName(getGameName());
+												  .setName(getGameName());
 
 		Map<String, String> contactInfo = new HashMap<String, String>();
-		contactInfo.put("homepage", "https://github.com/MCPHackers/LaunchWrapper"); 
+		contactInfo.put("homepage", "https://github.com/MCPHackers/LaunchWrapper");
 		contactInfo.put("sources", "https://github.com/MCPHackers/LaunchWrapper");
 		contactInfo.put("issues", "https://github.com/MCPHackers/LaunchWrapper/issues");
 		BuiltinModMetadata.Builder metadataLW = new BuiltinModMetadata.Builder("launchwrapper", Launch.VERSION)
-				.setName("LaunchWrapper")
-				.setEnvironment(ModEnvironment.CLIENT)
-				.setDescription("Launch wrapper for legacy Minecraft")
-				.addAuthor("lassebq", Collections.emptyMap())
-				.addIcon(0, "icon_256x256.png")
-				.addIcon(1, "icon_48x48.png")
-				.addIcon(2, "icon_32x32.png")
-				.addIcon(3, "icon_16x16.png")
-				.addLicense("MIT")
-				.setContact(new ContactInformationImpl(contactInfo));
+													.setName("LaunchWrapper")
+													.setEnvironment(ModEnvironment.CLIENT)
+													.setDescription("Launch wrapper for legacy Minecraft")
+													.addAuthor("lassebq", Collections.emptyMap())
+													.addIcon(0, "icon_256x256.png")
+													.addIcon(1, "icon_48x48.png")
+													.addIcon(2, "icon_32x32.png")
+													.addIcon(3, "icon_16x16.png")
+													.addLicense("MIT")
+													.setContact(new ContactInformationImpl(contactInfo));
 
 		BuiltinModMetadata.Builder metadataLWJGL = new BuiltinModMetadata.Builder("lwjgl", LWJGLVersionLookup.getVersion(lwjglJars))
-				.setName("LWJGL")
-				.setDescription("Lightweight Java Game Library");
+													   .setName("LWJGL")
+													   .setDescription("Lightweight Java Game Library");
 
 		if (versionData.getClassVersion().isPresent()) {
 			int version = versionData.getClassVersion().getAsInt() - 44;
-			
+
 			try {
 				metadataLW.addDependency(new ModDependencyImpl(ModDependency.Kind.DEPENDS, "minecraft", Collections.emptyList()));
 				metadata.addDependency(new ModDependencyImpl(ModDependency.Kind.DEPENDS, "java", Collections.singletonList(String.format(Locale.ENGLISH, ">=%d", version))));
@@ -228,78 +231,78 @@ public class LWGameProvider implements GameProvider {
 				throw new RuntimeException(e);
 			}
 		}
-		
+
 		mods.add(new BuiltinMod(Collections.singletonList(launchwrapperJar), metadataLW.build()));
 		mods.add(new BuiltinMod(lwjglJars, metadataLWJGL.build()));
 		mods.add(new BuiltinMod(Collections.singletonList(gameJar), metadata.build()));
 		return mods;
-    }
+	}
 
 	public Path getGameJar() {
 		return gameJar;
 	}
 
-    @Override
-    public boolean isObfuscated() {
-        return true;
-    }
+	@Override
+	public boolean isObfuscated() {
+		return true;
+	}
 
-    @Override
-    public boolean requiresUrlClassLoader() {
-        return hasModLoader;
-    }
+	@Override
+	public boolean requiresUrlClassLoader() {
+		return hasModLoader;
+	}
 
-    @Override
-    public boolean isEnabled() {
-        return true;
-    }
+	@Override
+	public boolean isEnabled() {
+		return true;
+	}
 
-    @Override
+	@Override
 	public boolean hasAwtSupport() {
-        return true;
-    }
+		return true;
+	}
 
-    @Override
-    public void initialize(FabricLauncher launcher) {
+	@Override
+	public void initialize(FabricLauncher launcher) {
 		launcher.setValidParentClassPath(validParentClassPath);
 
 		if (isObfuscated()) {
 			Map<String, Path> obfJars = new HashMap<>(1);
-            String clientSide = envType.name().toLowerCase(Locale.ENGLISH);
-            obfJars.put(clientSide, gameJar);
+			String clientSide = envType.name().toLowerCase(Locale.ENGLISH);
+			obfJars.put(clientSide, gameJar);
 
 			obfJars = GameProviderHelper.deobfuscate(obfJars,
-					getGameId(), getNormalizedGameVersion(),
-					getLaunchDirectory(),
-					launcher);
-            gameJar = obfJars.get(clientSide);
+													 getGameId(), getNormalizedGameVersion(),
+													 getLaunchDirectory(),
+													 launcher);
+			gameJar = obfJars.get(clientSide);
 		}
 
 		transformer.locateEntrypoints(launcher, Collections.singletonList(gameJar));
-    }
-
-    @Override
-    public void unlockClassPath(FabricLauncher launcher) {
-        for (Path lib : miscGameLibraries) {
-            launcher.addToClassPath(lib);
-		}
-        launcher.addToClassPath(gameJar);
-    }
+	}
 
 	@Override
-    public Arguments getArguments() {
-        Arguments args = new Arguments();
-        args.parse(config.getArgs());
-        return args;
-    }
+	public void unlockClassPath(FabricLauncher launcher) {
+		for (Path lib : miscGameLibraries) {
+			launcher.addToClassPath(lib);
+		}
+		launcher.addToClassPath(gameJar);
+	}
 
-    @Override
-    public String[] getLaunchArguments(boolean sanitize) {
-        return config.getArgs();
-    }
+	@Override
+	public Arguments getArguments() {
+		Arguments args = new Arguments();
+		args.parse(config.getArgs());
+		return args;
+	}
+
+	@Override
+	public String[] getLaunchArguments(boolean sanitize) {
+		return config.getArgs();
+	}
 
 	@Override
 	public boolean canOpenErrorGui() {
-        return envType == EnvType.CLIENT;
-    }
+		return envType == EnvType.CLIENT;
+	}
 }

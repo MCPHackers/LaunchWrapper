@@ -38,27 +38,29 @@ public class SkinURLConnection extends HttpURLConnection {
 		String username = queryMap.get("user");
 		String path = url.getPath();
 
-		for(String template : CLOAKS) {
-			if(!path.startsWith(template)) {
+		for (String template : CLOAKS) {
+			if (!path.startsWith(template)) {
 				continue;
 			}
-			if(username == null)
+			if (username == null) {
 				username = path.substring(template.length(), path.length() - ".png".length());
+			}
 			byte[] skinData = skinRequests.getCape(username);
-			if(skinData != null) {
+			if (skinData != null) {
 				inputStream = new ByteArrayInputStream(skinData);
 				return;
 			}
 		}
 
-		for(String template : SKINS) {
-			if(!path.startsWith(template)) {
+		for (String template : SKINS) {
+			if (!path.startsWith(template)) {
 				continue;
 			}
-			if(username == null)
+			if (username == null) {
 				username = path.substring(template.length(), path.length() - ".png".length());
+			}
 			byte[] skinData = skinRequests.getSkin(username);
-			if(skinData != null) {
+			if (skinData != null) {
 				inputStream = new ByteArrayInputStream(skinData);
 				return;
 			}

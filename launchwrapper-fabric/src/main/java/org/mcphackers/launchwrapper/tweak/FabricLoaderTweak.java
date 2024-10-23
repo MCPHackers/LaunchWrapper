@@ -10,29 +10,28 @@ import org.mcphackers.launchwrapper.tweak.injection.fabric.FabricHook;
 
 public class FabricLoaderTweak extends Tweak {
 
-    protected Tweak baseTweak;
+	protected Tweak baseTweak;
 
-    public FabricLoaderTweak(Tweak baseTweak, LaunchConfig launch) {
-        super(launch);
-        this.baseTweak = baseTweak;
-    }
-
-    @Override
-	public List<Injection> getInjections() {
-		List<Injection> injects = new ArrayList<Injection>();
-        injects.addAll(baseTweak.getInjections());
-        injects.add(new FabricHook());
-        return injects;
+	public FabricLoaderTweak(Tweak baseTweak, LaunchConfig launch) {
+		super(launch);
+		this.baseTweak = baseTweak;
 	}
 
-    @Override
-    public List<LazyTweaker> getLazyTweakers() {
-        return baseTweak.getLazyTweakers();
-    }
+	@Override
+	public List<Injection> getInjections() {
+		List<Injection> injects = new ArrayList<Injection>();
+		injects.addAll(baseTweak.getInjections());
+		injects.add(new FabricHook());
+		return injects;
+	}
 
-    @Override
-    public LaunchTarget getLaunchTarget() {
-        return baseTweak.getLaunchTarget();
-    }
-    
+	@Override
+	public List<Tweaker> getTweakers() {
+		return baseTweak.getTweakers();
+	}
+
+	@Override
+	public LaunchTarget getLaunchTarget() {
+		return baseTweak.getLaunchTarget();
+	}
 }

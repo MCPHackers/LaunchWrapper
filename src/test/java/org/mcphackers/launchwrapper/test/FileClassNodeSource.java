@@ -21,20 +21,20 @@ import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.tree.ClassNode;
 
 public class FileClassNodeSource implements ClassNodeSource, ResourceSource, Closeable {
-    private final ZipFile source;
-	private Map<String, ClassNode> classNodeCache = new HashMap<String, ClassNode>();
+	private final ZipFile source;
+	private final Map<String, ClassNode> classNodeCache = new HashMap<String, ClassNode>();
 	private File debugOutput;
 
-    public FileClassNodeSource(File jarFile) throws ZipException, IOException {
-        source = new ZipFile(jarFile);
-    }
+	public FileClassNodeSource(File jarFile) throws ZipException, IOException {
+		source = new ZipFile(jarFile);
+	}
 
 	public void setDebugOutput(File directory) {
 		debugOutput = directory;
 	}
 
 	private void saveDebugClass(ClassNode node) {
-		if(debugOutput == null) {
+		if (debugOutput == null) {
 			return;
 		}
 		ClassWriter writer = new ClassWriter(COMPUTE_MAXS);
@@ -62,24 +62,25 @@ public class FileClassNodeSource implements ClassNodeSource, ResourceSource, Clo
 	private InputStream getClassAsStream(String name) throws IOException {
 		String className = classResourceName(name);
 		ZipEntry entry = source.getEntry(className);
-		if(entry == null) {
+		if (entry == null) {
 			return null;
 		}
 		InputStream is = source.getInputStream(entry);
-		if(is != null) {
+		if (is != null) {
 			return is;
 		}
 		return null;
 	}
 
+	@Override
 	public byte[] getResourceData(String path) {
 		ZipEntry entry = source.getEntry(path);
-		if(entry == null) {
+		if (entry == null) {
 			return null;
 		}
 		try {
 			InputStream is = source.getInputStream(entry);
-			if(is != null) {
+			if (is != null) {
 				return Util.readStream(is);
 			}
 		} catch (IOException e) {
@@ -88,14 +89,15 @@ public class FileClassNodeSource implements ClassNodeSource, ResourceSource, Clo
 		return null;
 	}
 
-    public ClassNode getClass(String name) {
+	@Override
+	public ClassNode getClass(String name) {
 		ClassNode node = classNodeCache.get(classNodeName(name));
-		if(node != null) {
+		if (node != null) {
 			return node;
 		}
 		try {
 			InputStream is = getClassAsStream(name);
-			if(is == null) {
+			if (is == null) {
 				return null;
 			}
 			ClassNode classNode = new ClassNode();
@@ -106,17 +108,19 @@ public class FileClassNodeSource implements ClassNodeSource, ResourceSource, Clo
 		} catch (IOException e) {
 			return null;
 		}
-    }
+	}
 
-    public void overrideClass(ClassNode node) {
+	@Override
+	public void overrideClass(ClassNode node) {
 		saveDebugClass(node);
-    }
+	}
 
-    public void overrideResource(String path, byte[] data) {
-    }
+	@Override
+	public void overrideResource(String path, byte[] data) {
+	}
 
-    public void close() throws IOException {
-        source.close();
-    }
-    
+	@Override
+	public void close() throws IOException {
+		source.close();
+	}
 }

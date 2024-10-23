@@ -1,6 +1,6 @@
 package org.mcphackers.launchwrapper.tweak.injection.vanilla;
 
-import static org.mcphackers.rdi.util.InsnHelper.*;
+import static org.mcphackers.launchwrapper.util.asm.InsnHelper.*;
 import static org.objectweb.asm.Opcodes.*;
 
 import java.io.File;
@@ -14,8 +14,8 @@ import org.mcphackers.launchwrapper.tweak.VanillaTweak;
 import org.mcphackers.launchwrapper.tweak.injection.Injection;
 import org.mcphackers.launchwrapper.tweak.injection.MinecraftGetter;
 import org.mcphackers.launchwrapper.util.ClassNodeSource;
-import org.mcphackers.rdi.util.IdentifyCall;
-import org.mcphackers.rdi.util.NodeHelper;
+import org.mcphackers.launchwrapper.util.asm.IdentifyCall;
+import org.mcphackers.launchwrapper.util.asm.NodeHelper;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.ClassNode;
@@ -29,26 +29,26 @@ public class VanillaTweakContext implements Injection, MinecraftGetter {
 	public ClassNode minecraft;
 	public MethodNode run;
 	public FieldNode running;
-    public Set<String> availableParameters = new HashSet<String>();
-    public String[] args;
+	public Set<String> availableParameters = new HashSet<String>();
+	public String[] args;
 
-    public ClassNode getMinecraft() {
-        return minecraft;
-    }
+	public ClassNode getMinecraft() {
+		return minecraft;
+	}
 
-    public MethodNode getRun() {
-        return run;
-    }
+	public MethodNode getRun() {
+		return run;
+	}
 
-    public FieldNode getIsRunning() {
-        return running;
-    }
+	public FieldNode getIsRunning() {
+		return running;
+	}
 
 	public MethodNode getInit() {
-		for(AbstractInsnNode insn : run.instructions) {
-			if(insn.getType() == AbstractInsnNode.METHOD_INSN) {
-				MethodInsnNode invoke = (MethodInsnNode) insn;
-				if(invoke.owner.equals(minecraft.name)) {
+		for (AbstractInsnNode insn : run.instructions) {
+			if (insn.getType() == AbstractInsnNode.METHOD_INSN) {
+				MethodInsnNode invoke = (MethodInsnNode)insn;
+				if (invoke.owner.equals(minecraft.name)) {
 					return NodeHelper.getMethod(minecraft, invoke.name, invoke.desc);
 				} else {
 					return null;
@@ -58,73 +58,70 @@ public class VanillaTweakContext implements Injection, MinecraftGetter {
 		return null;
 	}
 
-    @Override
-    public String name() {
-        return "VanillaTweak init";
-    }
+	public String name() {
+		return "VanillaTweak init";
+	}
 
-    @Override
 	public boolean required() {
 		return true;
 	}
-    
-    @Override
+
 	public boolean apply(ClassNodeSource source, LaunchConfig config) {
 		ClassNode minecraftMain = source.getClass(VanillaTweak.MAIN_CLASS);
-		if(minecraftMain == null) {
+		if (minecraftMain == null) {
 			return false;
 		}
 		MethodNode main = NodeHelper.getMethod(minecraftMain, "main", "([Ljava/lang/String;)V");
-		if(main == null) {
+		if (main == null) {
 			return false;
 		}
 		AbstractInsnNode insn = main.instructions.getLast();
-		while(insn != null) {
+		while (insn != null) {
 			// Last call inside of main is minecraft.run();
-			if(insn.getOpcode() == INVOKEVIRTUAL) {
-				MethodInsnNode invoke = (MethodInsnNode) insn;
+			if (insn.getOpcode() == INVOKEVIRTUAL) {
+				MethodInsnNode invoke = (MethodInsnNode)insn;
 				minecraft = source.getClass(invoke.owner);
 				run = NodeHelper.getMethod(minecraft, invoke.name, invoke.desc);
 				break;
 			}
 			insn = previousInsn(insn);
 		}
-		if(run == null) {
+		if (run == null) {
 			return false;
 		}
-		insn = run.instructions.getFirst();
-		while(insn != null) {
-			if(insn.getOpcode() == Opcodes.PUTFIELD) {
-				FieldInsnNode putField = (FieldInsnNode) insn;
-				if("Z".equals(putField.desc)) {
+		insn = getFirst(run.instructions);
+		while (insn != null) {
+			if (insn.getOpcode() == Opcodes.PUTFIELD) {
+				FieldInsnNode putField = (FieldInsnNode)insn;
+				if ("Z".equals(putField.desc)) {
 					running = NodeHelper.getField(minecraft, putField.name, putField.desc);
 				}
 				break;
 			}
 			insn = nextInsn(insn);
 		}
-		for(AbstractInsnNode insn2 = main.instructions.getFirst(); insn2 != null; insn2 = nextInsn(insn2)) {
-			if(compareInsn(insn2, INVOKEVIRTUAL, "joptsimple/OptionParser", "accepts", "(Ljava/lang/String;)Ljoptsimple/OptionSpecBuilder;")) {
-				if(insn2.getPrevious() != null && insn2.getPrevious().getType() == AbstractInsnNode.LDC_INSN) {
-					LdcInsnNode ldc = (LdcInsnNode) insn2.getPrevious();
-					if(ldc.cst instanceof String) {
-						availableParameters.add((String) ldc.cst);
+		for (AbstractInsnNode insn2 = getFirst(main.instructions); insn2 != null; insn2 = nextInsn(insn2)) {
+			if (compareInsn(insn2, INVOKEVIRTUAL, "joptsimple/OptionParser", "accepts", "(Ljava/lang/String;)Ljoptsimple/OptionSpecBuilder;")) {
+				if (insn2.getPrevious() != null && insn2.getPrevious().getType() == AbstractInsnNode.LDC_INSN) {
+					LdcInsnNode ldc = (LdcInsnNode)insn2.getPrevious();
+					if (ldc.cst instanceof String) {
+						availableParameters.add((String)ldc.cst);
 					}
 				}
 			}
 		}
 		String[] params = config.getArgs();
 		List<String> newArgs = new ArrayList<String>();
-		for(int i = 0; i < params.length; i++) {
-			if(!params[i].startsWith("--")) {
+		for (int i = 0; i < params.length; i++) {
+			if (!params[i].startsWith("--")) {
 				continue;
 			}
-			if(!availableParameters.contains(params[i].substring(2))) {
+			if (!availableParameters.contains(params[i].substring(2))) {
 				continue;
 			}
 			newArgs.add(params[i]);
-			if(i+1 < params.length && !params[i+1].startsWith("--")) {
-				newArgs.add(params[i+1]);
+			if (i + 1 < params.length && !params[i + 1].startsWith("--")) {
+				newArgs.add(params[i + 1]);
 				i++;
 			}
 		}
@@ -134,10 +131,10 @@ public class VanillaTweakContext implements Injection, MinecraftGetter {
 		MethodNode init = getInit(run);
 		boolean fixedTitle = replaceTitle(init, config);
 		boolean fixedIcon = replaceIcon(init, config);
-		for(MethodNode m : minecraft.methods) {
+		for (MethodNode m : minecraft.methods) {
 			fixedTitle = fixedTitle || replaceTitle(m, config);
 			fixedIcon = fixedIcon || replaceIcon(m, config);
-			if(fixedTitle && fixedIcon) {
+			if (fixedTitle && fixedIcon) {
 				break;
 			}
 		}
@@ -146,14 +143,13 @@ public class VanillaTweakContext implements Injection, MinecraftGetter {
 	}
 
 	private boolean replaceTitle(MethodNode m, LaunchConfig config) {
-		AbstractInsnNode insn = m.instructions.getFirst();
-		while(insn != null) {
+		AbstractInsnNode insn = getFirst(m.instructions);
+		while (insn != null) {
 			AbstractInsnNode[] insns = fill(insn, 2);
-			if(compareInsn(insns[0], LDC)
-			&& compareInsn(insns[1], INVOKESTATIC, "org/lwjgl/opengl/Display", "setTitle", "(Ljava/lang/String;)V")) {
-				LdcInsnNode ldc = (LdcInsnNode) insn;
-				if(ldc.cst instanceof String) {
-					if(config.title.get() != null) {
+			if (compareInsn(insns[0], LDC) && compareInsn(insns[1], INVOKESTATIC, "org/lwjgl/opengl/Display", "setTitle", "(Ljava/lang/String;)V")) {
+				LdcInsnNode ldc = (LdcInsnNode)insn;
+				if (ldc.cst instanceof String) {
+					if (config.title.get() != null) {
 						ldc.cst = config.title.get();
 						return true;
 					}
@@ -165,12 +161,11 @@ public class VanillaTweakContext implements Injection, MinecraftGetter {
 	}
 
 	private boolean replaceIcon(MethodNode m, LaunchConfig config) {
-		AbstractInsnNode insn = m.instructions.getFirst();
-		while(insn != null) {
-			if(config.icon.get() != null && hasIcon(config.icon.get())
-			&& compareInsn(insn, INVOKESTATIC, "org/lwjgl/opengl/Display", "setIcon", "([Ljava/nio/ByteBuffer;)I")) {
-				IdentifyCall call = new IdentifyCall((MethodInsnNode) insn);
-				for(AbstractInsnNode[] arg : call.getArguments()) {
+		AbstractInsnNode insn = getFirst(m.instructions);
+		while (insn != null) {
+			if (config.icon.get() != null && hasIcon(config.icon.get()) && compareInsn(insn, INVOKESTATIC, "org/lwjgl/opengl/Display", "setIcon", "([Ljava/nio/ByteBuffer;)I")) {
+				IdentifyCall call = new IdentifyCall((MethodInsnNode)insn);
+				for (AbstractInsnNode[] arg : call.getArguments()) {
 					remove(m.instructions, arg);
 				}
 				MethodInsnNode insert = new MethodInsnNode(INVOKESTATIC, "org/mcphackers/launchwrapper/util/IconUtils", "loadIcon", "()[Ljava/nio/ByteBuffer;");
@@ -183,8 +178,8 @@ public class VanillaTweakContext implements Injection, MinecraftGetter {
 	}
 
 	private boolean hasIcon(File[] icons) {
-		for(File f : icons) {
-			if(f.exists()) {
+		for (File f : icons) {
+			if (f.exists()) {
 				return true;
 			}
 		}
@@ -192,15 +187,14 @@ public class VanillaTweakContext implements Injection, MinecraftGetter {
 	}
 
 	private MethodNode getInit(MethodNode run) {
-		for(AbstractInsnNode insn = run.instructions.getFirst(); insn != null; insn = nextInsn(insn)) {
-			if(insn.getType() == AbstractInsnNode.METHOD_INSN) {
-				MethodInsnNode invoke = (MethodInsnNode) insn;
-				if(invoke.owner.equals(minecraft.name)) {
+		for (AbstractInsnNode insn = getFirst(run.instructions); insn != null; insn = nextInsn(insn)) {
+			if (insn.getType() == AbstractInsnNode.METHOD_INSN) {
+				MethodInsnNode invoke = (MethodInsnNode)insn;
+				if (invoke.owner.equals(minecraft.name)) {
 					return NodeHelper.getMethod(minecraft, invoke.name, invoke.desc);
 				}
 			}
 		}
 		return run;
 	}
-    
 }

@@ -25,7 +25,9 @@ out
 *.iml
 *.ipr
 *.iws
-.idea/
+.idea/*
+!.idea/codeStyles
+.run/
 
 # generated
 repo/

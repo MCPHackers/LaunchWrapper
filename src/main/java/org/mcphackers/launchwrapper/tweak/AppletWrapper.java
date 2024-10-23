@@ -17,7 +17,7 @@ import java.util.Map;
 public class AppletWrapper extends Applet implements AppletStub {
 	private static final long serialVersionUID = 1L;
 
-	private Map<String, String> args;
+	private final Map<String, String> args;
 
 	public AppletWrapper(Map<String, String> argsAsMap) {
 		args = argsAsMap;
@@ -63,9 +63,7 @@ public class AppletWrapper extends Applet implements AppletStub {
 	public static void startApplet(Class<? extends Applet> appletClass, int width, int height, String title, Image icon) {
 		try {
 			final Applet applet = appletClass.newInstance();
-			if(applet != null) {
-				applet.setStub(new AppletWrapper(Collections.<String, String>emptyMap()));
-			}
+			applet.setStub(new AppletWrapper(Collections.<String, String>emptyMap()));
 			final Frame frame = new Frame(title);
 			frame.setBackground(Color.BLACK);
 			frame.setIconImage(icon);
@@ -76,6 +74,7 @@ public class AppletWrapper extends Applet implements AppletStub {
 			frame.setLocationRelativeTo(null);
 			frame.setVisible(true);
 			frame.addWindowListener(new WindowAdapter() {
+				@Override
 				public void windowClosing(WindowEvent event) {
 					applet.stop();
 					frame.dispose();
@@ -84,6 +83,6 @@ public class AppletWrapper extends Applet implements AppletStub {
 			applet.start();
 		} catch (Exception e) {
 			e.printStackTrace();
-		} ;
+		}
 	}
 }

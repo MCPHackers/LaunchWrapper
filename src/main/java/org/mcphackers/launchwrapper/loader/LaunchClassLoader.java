@@ -22,10 +22,11 @@ import java.util.Map;
 import java.util.Set;
 
 import org.mcphackers.launchwrapper.Launch;
-import org.mcphackers.launchwrapper.tweak.LazyTweaker;
+import org.mcphackers.launchwrapper.tweak.Tweaker;
 import org.mcphackers.launchwrapper.util.ClassNodeSource;
 import org.mcphackers.launchwrapper.util.ResourceSource;
 import org.mcphackers.launchwrapper.util.Util;
+import org.mcphackers.launchwrapper.util.asm.NodeHelper;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.tree.ClassNode;
@@ -38,24 +39,38 @@ import org.objectweb.asm.tree.ClassNode;
 public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource, ResourceSource {
 
 	public static final int CLASS_VERSION = getSupportedClassVersion();
-	private static LaunchClassLoader INSTANCE;
 
-	private ClassLoader parent;
-	private RawBytecodeProvider bytecodeProvider;
-	private List<LazyTweaker> tweaks;
-	private Set<String> exclusions = new HashSet<String>();
-	private Set<String> transformExclusions = new HashSet<String>();
-	/** Keys should contain dots */
-	Map<String, ClassNode> overridenClasses = new HashMap<String, ClassNode>();
-	Map<String, byte[]> overridenResources = new HashMap<String, byte[]>();
-	Map<String, String> overridenSource = new HashMap<String, String>();
-	/** Keys should contain slashes */
-	private Map<String, ClassNode> classNodeCache = new HashMap<String, ClassNode>();
+	protected ClassLoader parent;
+	protected HighPriorityClassLoader urlClassLoader;
+	protected List<Tweaker> tweaks;
+	protected Set<String> exclusions = new HashSet<String>();
+	/**
+	 * Keys should contain dots
+	 */
+	protected Map<String, ClassNode> overridenClasses = new HashMap<String, ClassNode>();
+	protected Map<String, byte[]> overridenResources = new HashMap<String, byte[]>();
+	protected Map<String, String> overridenSource = new HashMap<String, String>();
+	/**
+	 * Keys should contain slashes
+	 */
+	protected Map<String, ClassNode> classNodeCache = new HashMap<String, ClassNode>();
 	private File debugOutput;
+
+	protected static class HighPriorityClassLoader extends URLClassLoader {
+		public HighPriorityClassLoader(URL[] urls) {
+			super(urls);
+		}
+
+		@Override
+		public void addURL(URL url) {
+			super.addURL(url);
+		}
+	}
 
 	public LaunchClassLoader(ClassLoader parent) {
 		super(getInitialURLs(parent), null);
 		this.parent = parent;
+		this.urlClassLoader = new HighPriorityClassLoader(new URL[0]);
 		addExclusion("java");
 		addExclusion("javax");
 		addExclusion("sun");
@@ -66,20 +81,20 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 	}
 
 	private static URL[] getInitialURLs(ClassLoader parent) {
-		if(parent instanceof URLClassLoader) {
+		List<URL> urls = new ArrayList<URL>();
+		if (parent instanceof URLClassLoader) {
 			return ((URLClassLoader)parent).getURLs();
 		}
-		List<URL> urls = new ArrayList<URL>();
-        String classpath = System.getProperty("java.class.path");
-        String[] classpathSplit = classpath.split(File.pathSeparator);
+		String classpath = System.getProperty("java.class.path");
+		String[] classpathSplit = classpath.split(File.pathSeparator);
 
-        for (String singlePath : classpathSplit) {
-            try {
-                urls.add(new File(singlePath).toURI().toURL());
-            } catch (Throwable e) {
-                e.printStackTrace();
-            }
-        }
+		for (String singlePath : classpathSplit) {
+			try {
+				urls.add(new File(singlePath).toURI().toURL());
+			} catch (Throwable e) {
+				e.printStackTrace();
+			}
+		}
 		return urls.toArray(new URL[urls.size()]);
 	}
 
@@ -87,55 +102,61 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 		debugOutput = directory;
 	}
 
-	public void setBytecodeProvider(RawBytecodeProvider provider) {
-		bytecodeProvider = provider;
+	public void addMod(URL url) {
 		classNodeCache.clear();
+		urlClassLoader.addURL(url);
 	}
 
-    public void addURL(URL url) {
-    	super.addURL(url);
-    }
+	@Override
+	public void addURL(URL url) {
+		super.addURL(url);
+	}
 
-	public URL findResource(String name) {
-		URL url = getOverridenResourceURL(name);
-		if(url != null) {
+	@Override
+	public URL findResource(String resource) {
+		URL url = getOverridenResourceURL(resource);
+		if (url != null) {
 			return url;
 		}
-		url = parent.getResource(name);
-		return url == null ? super.findResource(name) : url;
+		return getOriginalURL(resource);
 	}
 
-	public URL getResource(String name) {
-		URL url = getOverridenResourceURL(name);
-		if(url != null) {
+	private URL getOriginalURL(String resource) {
+		URL url = urlClassLoader.findResource(resource);
+		if (url != null) {
 			return url;
 		}
-		url = parent.getResource(name);
-		return url == null ? super.getResource(name) : url;
+		url = parent.getResource(resource);
+		return url == null ? super.findResource(resource) : url;
 	}
 
-	private URL getOverridenResourceURL(String name) {
+	private URL getOverridenResourceURL(String resource) {
 		try {
-			if(overridenResources.get(name) != null
-			|| overridenClasses.get(classNameFromResource(name)) != null) {
-				URL url = new URL("jar", "", -1, name, new ClassLoaderURLHandler(this));
-				return url;
+			if (overridenResources.get(resource) != null || overridenClasses.get(classNameFromResource(resource)) != null) {
+				URL originalUrl = getOriginalURL(resource);
+				if (originalUrl == null) {
+					return new URL("file", "", -1, resource, new ClassLoaderURLHandler(this));
+				}
+				return new URL(
+					originalUrl.getProtocol(),
+					originalUrl.getHost(),
+					originalUrl.getPort(),
+					originalUrl.getFile(),
+					new ClassLoaderURLHandler(this));
 			}
-		} catch (MalformedURLException e) {
+		} catch (MalformedURLException ignored) {
 		}
 		return null;
 	}
 
+	@Override
 	public Enumeration<URL> findResources(String name) throws IOException {
+		// TODO enumerate all resources, including overriden ones?
 		return parent.getResources(name);
 	}
 
 	public void addExclusion(String pkg) {
 		exclusions.add(pkg + (pkg.endsWith(".") ? "" : "."));
-	}
-
-	public void addTransformExclusion(String pkg) {
-		transformExclusions.add(pkg + (pkg.endsWith(".") ? "" : "."));
 	}
 
 	public void overrideClassSource(String name, String f) {
@@ -148,22 +169,27 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 
 	public byte[] getResourceData(String path) {
 		try {
-			return Util.readStream(this.getResourceAsStream(path));
-		} catch(IOException e) {
+			InputStream is = this.getResourceAsStream(path);
+			if (is == null) {
+				return null;
+			}
+			return Util.readStream(is);
+		} catch (IOException e) {
 			return null;
 		}
 	}
 
+	@Override
 	public Class<?> findClass(String name) throws ClassNotFoundException {
 		assert name.contains(".");
-		
+
 		// Force wrap inject package
-		if(name.startsWith("org.mcphackers.launchwrapper.inject.")) {
+		if (name.startsWith("org.mcphackers.launchwrapper.inject.")) {
 			return redefineClass(name);
 		}
 
-		for(String pkg : exclusions) {
-			if(name.startsWith(pkg)) {
+		for (String pkg : exclusions) {
+			if (name.startsWith(pkg)) {
 				return parent.loadClass(name);
 			}
 		}
@@ -173,9 +199,9 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 	public void invokeMain(String launchTarget, String... args) {
 		try {
 			Class<?> mainClass = loadClass(launchTarget);
-			mainClass.getDeclaredMethod("main", String[].class).invoke(null, (Object) args);
+			mainClass.getDeclaredMethod("main", String[].class).invoke(null, (Object)args);
 		} catch (InvocationTargetException e1) {
-			if(e1.getCause() != null) {
+			if (e1.getCause() != null) {
 				e1.getCause().printStackTrace();
 			}
 		} catch (Exception e) {
@@ -184,28 +210,29 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 	}
 
 	public void overrideClass(ClassNode node) {
-		if(node == null)
+		if (node == null) {
 			return;
+		}
 		overridenClasses.put(className(node.name), node);
 		classNodeCache.put(node.name, node);
 	}
 
 	// public void saveDebugDump(ClassNode node) {
-	// 	if(debugOutput == null) {
-	// 		return;
-	// 	}
-	// 	try {
-	// 		File cls = new File(debugOutput, node.name + ".dump");
-	// 		cls.getParentFile().mkdirs();
-	// 		org.objectweb.asm.util.TraceClassVisitor trace = new org.objectweb.asm.util.TraceClassVisitor(new java.io.PrintWriter(new File(debugOutput, node.name + ".dump")));
-	// 		node.accept(trace);
-	// 	} catch (IOException e) {
-	// 		e.printStackTrace();
-	// 	}
+	// if(debugOutput == null) {
+	// return;
+	// }
+	// try {
+	// File cls = new File(debugOutput, node.name + ".dump");
+	// cls.getParentFile().mkdirs();
+	// org.objectweb.asm.util.TraceClassVisitor trace = new org.objectweb.asm.util.TraceClassVisitor(new java.io.PrintWriter(new File(debugOutput, node.name + ".dump")));
+	// node.accept(trace);
+	// } catch (IOException e) {
+	// e.printStackTrace();
+	// }
 	// }
 
 	public void saveDebugClass(ClassNode node) {
-		if(debugOutput == null) {
+		if (debugOutput == null) {
 			return;
 		}
 		try {
@@ -227,24 +254,17 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 
 	/**
 	 * @param name name with slash separator
+	 *
 	 * @return parsed ClassNode
 	 */
 	public ClassNode getClass(String name) {
 		assert !name.contains(".");
 		ClassNode node = classNodeCache.get(name);
-		if(node != null) {
+		if (node != null) {
 			return node;
 		}
 		try {
-			byte[] data = getTransformedClass(name);
-			if(data == null) {
-				return null;
-			}
-			ClassNode classNode = new ClassNode();
-			ClassReader classReader = new ClassReader(data);
-			classReader.accept(classNode, ClassReader.SKIP_FRAMES);
-			classNodeCache.put(classNode.name, classNode);
-			return classNode;
+			return NodeHelper.readClass(getTransformedClass(name), ClassReader.SKIP_FRAMES);
 		} catch (IOException e) {
 			return null;
 		}
@@ -253,37 +273,47 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 	protected Class<?> redefineClass(String name) throws ClassNotFoundException {
 		assert name.contains(".");
 		String nodeName = classNodeName(name);
-		if(tweaks != null) {
+		if (tweaks != null) {
 			boolean modified = false;
-			for(LazyTweaker tweak : tweaks) {
+			for (Tweaker tweak : tweaks) {
 				modified |= tweak.tweakClass(this, nodeName);
 			}
-			if(modified) {
+			if (modified) {
+				overrideClass(getClass(nodeName));
 				Launch.LOGGER.logDebug("Applying lazy tweak to %s", nodeName);
 			}
 		}
 		ClassNode overridenNode = overridenClasses.get(name);
-		if(overridenNode != null) {
+		if (overridenNode != null) {
 			return redefineClass(overridenNode);
 		}
+		String transformedName = getTransformedName(name);
 		try {
-			Class<?> loadedClass = findLoadedClass(getTransformedName(name));
-			if(loadedClass != null) {
+			Class<?> loadedClass = findLoadedClass(transformedName);
+			if (loadedClass != null) {
 				Launch.LOGGER.logDebug("Attempted to reference unremapped class: %s", name);
 				return loadedClass;
 			}
-			byte[] data = getTransformedClass(name);
-			if(data == null) {
-				throw new ClassNotFoundException(name);
+			byte[] data = getTransformedClass(transformedName);
+			if (data == null) {
+				throw new ClassNotFoundException(transformedName);
 			}
-			return defineClass(getTransformedName(name), data);
+			return defineClass(transformedName, data);
 		} catch (IOException e) {
-			throw new ClassNotFoundException(name, e);
+			throw new ClassNotFoundException(transformedName, e);
 		}
 	}
 
+	public String getTransformedName(String name) {
+		return name;
+	}
+
+	public byte[] getTransformedClass(String name) throws IOException {
+		return getClassBytes(name);
+	}
+
 	private Class<?> redefineClass(ClassNode node) {
-		if(node == null) {
+		if (node == null) {
 			return null;
 		}
 		saveDebugClass(node);
@@ -293,25 +323,6 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 		return defineClass(className(node.name), writer.toByteArray());
 	}
 
-	public String getTransformedName(String name) {
-		if(bytecodeProvider != null) {
-			return bytecodeProvider.getClassName(name);
-		}
-		return name;
-	}
-	
-	public byte[] getTransformedClass(String name) throws IOException {
-		for(String pkg : transformExclusions) {
-			if(name.startsWith(pkg)) {
-				return getClassBytes(name);
-			}
-		}
-		if(bytecodeProvider != null) {
-			return bytecodeProvider.getClassBytecode(name);
-		}
-		return getClassBytes(name);
-	}
-
 	public Class<?> getLoadedClass(String name) {
 		return findLoadedClass(name);
 	}
@@ -319,16 +330,16 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 	public byte[] getClassBytes(String name) throws IOException {
 		String className = classResourceName(name);
 		InputStream is = this.getResourceAsStream(className);
-		if(is == null) {
+		if (is == null) {
 			is = parent.getResourceAsStream(className);
 		}
-		if(is == null) {
+		if (is == null) {
 			return null;
 		}
 		return Util.readStream(is);
 	}
 
-	public void setLoaderTweakers(List<LazyTweaker> classLoaderTweaks) {
+	public void setLoaderTweakers(List<Tweaker> classLoaderTweaks) {
 		tweaks = classLoaderTweaks;
 	}
 
@@ -336,7 +347,7 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 		int i = name.lastIndexOf('.');
 		if (i != -1) {
 			String pkgName = name.substring(0, i);
-			if(getPackage(pkgName) == null) {
+			if (getPackage(pkgName) == null) {
 				definePackage(pkgName, null, null, null, null, null, null, null);
 			}
 		}
@@ -345,20 +356,20 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 
 	private ProtectionDomain getProtectionDomain(String name) {
 		final URL resource = getResource(classResourceName(name));
-		if(resource == null) {
+		if (resource == null) {
 			return null;
 		}
 		CodeSource codeSource;
-		if(resource.getProtocol().equals("jar")) {
+		if (resource.getProtocol().equals("jar")) {
 			String path = resource.getPath();
-			if(path.startsWith("file:")) {
+			if (path.startsWith("file:")) {
 				path = path.substring("file:".length());
 				int i = path.lastIndexOf('!');
-				if(i != -1) {
+				if (i != -1) {
 					path = path.substring(0, i);
 				}
 			}
-			if(overridenSource.get(name) != null) {
+			if (overridenSource.get(name) != null) {
 				path = overridenSource.get(name);
 			}
 			try {
@@ -375,13 +386,11 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 
 	private static ClassNode getSystemClass(Class<?> cls) {
 		InputStream is = ClassLoader.getSystemResourceAsStream(classResourceName(cls.getName()));
-		if(is == null)
+		if (is == null) {
 			return null;
+		}
 		try {
-			ClassNode classNode = new ClassNode();
-			ClassReader classReader = new ClassReader(is);
-			classReader.accept(classNode, ClassReader.SKIP_FRAMES);
-			return classNode;
+			return NodeHelper.readClass(is, ClassReader.SKIP_FRAMES);
 		} catch (IOException e) {
 			Util.closeSilently(is);
 			return null;
@@ -390,16 +399,8 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 
 	private static int getSupportedClassVersion() {
 		ClassNode objectClass = getSystemClass(Object.class);
+		assert objectClass != null;
 		return objectClass.version;
-	}
-
-	public static LaunchClassLoader instantiate() {
-		if(INSTANCE != null) {
-			throw new IllegalStateException("Can only have one instance of LaunchClassLoader!");
-		}
-		INSTANCE = new LaunchClassLoader(getSystemClassLoader());
-		Thread.currentThread().setContextClassLoader(INSTANCE);
-		return INSTANCE;
 	}
 
 	public static String className(String nameWithSlashes) {
@@ -415,10 +416,15 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 	}
 
 	public static String classNameFromResource(String resource) {
-		if(resource.endsWith(".class")) {
+		if (resource.endsWith(".class")) {
 			return resource.substring(0, resource.length() - 6);
 		}
 		return resource;
 	}
 
+	public static LaunchClassLoader instantiate() {
+		LaunchClassLoader loader = new LaunchClassLoader(LaunchClassLoader.class.getClassLoader());
+		Thread.currentThread().setContextClassLoader(loader);
+		return loader;
+	}
 }

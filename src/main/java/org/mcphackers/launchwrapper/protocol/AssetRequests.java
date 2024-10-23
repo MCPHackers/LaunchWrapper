@@ -11,7 +11,7 @@ import org.mcphackers.launchwrapper.Launch;
 import org.mcphackers.launchwrapper.util.Util;
 
 public class AssetRequests {
-	public class AssetObject {
+	public static class AssetObject {
 		public File file;
 		public String path;
 		public String hash;
@@ -20,42 +20,42 @@ public class AssetRequests {
 
 		public AssetObject(File f, String name, String sha1, long s, String urlString) {
 			file = f;
-            path = name;
+			path = name;
 			hash = sha1;
 			size = s;
 			url = urlString;
 		}
 	}
 
-	private Map<String, AssetObject> mappedAssets = new HashMap<String, AssetObject>();
+	private final Map<String, AssetObject> mappedAssets = new HashMap<String, AssetObject>();
 
-    public AssetRequests(File assetsDir, String index) {
-		if(index == null || assetsDir == null) {
+	public AssetRequests(File assetsDir, String index) {
+		if (index == null || assetsDir == null) {
 			return;
 		}
 		try {
 			String inputString = new String(Util.readStream(new FileInputStream(new File(assetsDir, "indexes/" + index + ".json"))));
 
 			JSONObject objects = new JSONObject(inputString).getJSONObject("objects");
-			for(String s : objects.keySet()) {
+			for (String s : objects.keySet()) {
 				JSONObject entry = objects.optJSONObject(s);
-				if(entry == null) {
+				if (entry == null) {
 					continue;
 				}
 				String hash = entry.optString("hash");
 				long size = entry.optLong("size");
 				// Only resources in a folder are valid
-				if(!s.contains("/") || hash == null) {
+				if (!s.contains("/") || hash == null) {
 					Launch.LOGGER.logDebug("Invalid resource: " + s);
 					continue;
 				}
 				String url = null;
 				File object = new File(assetsDir, "objects/" + hash.substring(0, 2) + "/" + hash);
-				if(!object.exists() || object.length() != size /*|| !hash.equals(Util.getSHA1(new FileInputStream(object)))*/) {
+				if (!object.exists() || object.length() != size /* || !hash.equals(Util.getSHA1(new FileInputStream(object))) */) {
 					// Download if missing
 					// Some sounds in betacraft indexes are downloaded from custom url which isn't handled by other launchers
 
-					if(entry.has("custom_url")) {
+					if (entry.has("custom_url")) {
 						url = entry.getString("custom_url");
 					} else {
 						url = "https://resources.download.minecraft.net/" + hash.substring(0, 2) + "/" + hash;
@@ -63,18 +63,17 @@ public class AssetRequests {
 				}
 				AssetObject obj = new AssetObject(object, s, hash, size, url);
 				mappedAssets.put(s, obj);
-				
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-    }
+	}
 
-    public AssetObject get(String key) {
-        return mappedAssets.get(key);
-    }
+	public AssetObject get(String key) {
+		return mappedAssets.get(key);
+	}
 
-    public Collection<AssetObject> list() {
-        return mappedAssets.values();
-    }
+	public Collection<AssetObject> list() {
+		return mappedAssets.values();
+	}
 }

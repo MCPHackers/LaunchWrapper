@@ -16,8 +16,8 @@ public class MainLaunchTarget implements LaunchTarget {
 		args = arguments;
 	}
 
+	@Override
 	public void launch(LaunchClassLoader classLoader) {
 		classLoader.invokeMain(targetClass, args);
 	}
-
 }

@@ -9,7 +9,7 @@ import java.net.URLConnection;
 
 public class ListLevelsURLConnection extends URLConnection {
 
-	private File levelsDir;
+	private final File levelsDir;
 
 	public ListLevelsURLConnection(URL url, File levelsDir) {
 		super(url);
@@ -20,16 +20,16 @@ public class ListLevelsURLConnection extends URLConnection {
 	public void connect() throws IOException {
 	}
 
+	@Override
 	public InputStream getInputStream() throws IOException {
-		if(!levelsDir.exists()) {
+		if (!levelsDir.exists()) {
 			levelsDir.mkdirs();
 		}
 		String[] lvlNames = SaveRequests.getLevelNames(levelsDir);
 		StringBuilder lvls = new StringBuilder();
-		for(int i = 0; i < SaveRequests.MAX_LEVELS; i++) {
+		for (int i = 0; i < SaveRequests.MAX_LEVELS; i++) {
 			lvls.append(lvlNames[i]).append(";");
 		}
 		return new ByteArrayInputStream(lvls.toString().getBytes());
 	}
-
 }

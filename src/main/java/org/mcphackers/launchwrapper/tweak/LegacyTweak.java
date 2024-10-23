@@ -26,7 +26,6 @@ import org.mcphackers.launchwrapper.tweak.injection.legacy.AddMain;
 import org.mcphackers.launchwrapper.tweak.injection.legacy.BitDepthFix;
 import org.mcphackers.launchwrapper.tweak.injection.legacy.ClassicCrashScreen;
 import org.mcphackers.launchwrapper.tweak.injection.legacy.ClassicLoadingFix;
-import org.mcphackers.launchwrapper.tweak.injection.legacy.FixClassicSession;
 import org.mcphackers.launchwrapper.tweak.injection.legacy.FixGrayScreen;
 import org.mcphackers.launchwrapper.tweak.injection.legacy.FixShutdown;
 import org.mcphackers.launchwrapper.tweak.injection.legacy.FixSplashScreen;
@@ -42,21 +41,21 @@ import org.mcphackers.launchwrapper.tweak.injection.vanilla.ChangeBrand;
 import org.mcphackers.launchwrapper.tweak.injection.vanilla.OutOfFocusFullscreen;
 import org.mcphackers.launchwrapper.util.UnsafeUtils;
 import org.mcphackers.launchwrapper.util.Util;
-import org.mcphackers.rdi.util.NodeHelper;
+import org.mcphackers.launchwrapper.util.asm.NodeHelper;
 
 public class LegacyTweak extends Tweak {
 
 	public static final String MAIN_ISOM = "net/minecraft/isom/IsomPreviewApplet";
 
 	public static final String[] MAIN_CLASSES = {
-			"net/minecraft/client/Minecraft",
-			"com/mojang/minecraft/Minecraft",
-			"com/mojang/minecraft/RubyDung",
-			"com/mojang/rubydung/RubyDung"
+		"net/minecraft/client/Minecraft",
+		"com/mojang/minecraft/Minecraft",
+		"com/mojang/minecraft/RubyDung",
+		"com/mojang/rubydung/RubyDung"
 	};
 	public static final String[] MAIN_APPLETS = {
-			"net/minecraft/client/MinecraftApplet",
-			"com/mojang/minecraft/MinecraftApplet"
+		"net/minecraft/client/MinecraftApplet",
+		"com/mojang/minecraft/MinecraftApplet"
 	};
 	protected LegacyTweakContext context = new LegacyTweakContext();
 	protected ClassicCrashScreen crashPatch = new ClassicCrashScreen(context);
@@ -65,6 +64,7 @@ public class LegacyTweak extends Tweak {
 		super(config);
 	}
 
+	@Override
 	public List<Injection> getInjections() {
 		return Arrays.asList(
 			context,
@@ -81,37 +81,38 @@ public class LegacyTweak extends Tweak {
 			new MouseFix(context),
 			new ReplaceGameDir(context),
 			new OptionsLoadFix(context),
-			// new FixClassicSession(context),
 			new GameModeSwitch(context),
 			new AddMain(context),
 			new ForgeVersionCheck(),
-			new ChangeBrand()
-		);
+			new ChangeBrand());
 	}
 
-	public List<LazyTweaker> getLazyTweakers() {
-		return Collections.<LazyTweaker>singletonList(new Java5LazyTweaker());
+	@Override
+	public List<Tweaker> getTweakers() {
+		return Collections.<Tweaker>singletonList(new Java5LazyTweaker());
 	}
 
+	@Override
 	public boolean handleError(LaunchClassLoader loader, Throwable t) {
-		if(config.isom.get()) {
+		super.handleError(loader, t);
+		if (config.isom.get()) {
 			return false;
 		}
 		return crashPatch.injectErrorAtInit(loader, t);
 	}
 
 	private void downloadServer() {
-		if(config.serverURL.get() == null || config.gameDir.get() == null) {
+		if (config.serverURL.get() == null || config.gameDir.get() == null) {
 			return;
 		}
 		try {
 			File serverFolder = new File(config.gameDir.get(), "server");
 			File serverJar = new File(serverFolder, "minecraft_server.jar");
 			String sha1 = null;
-			if(serverJar.exists()) {
+			if (serverJar.exists()) {
 				sha1 = Util.getSHA1(new FileInputStream(serverJar));
 			}
-			if(config.serverSHA1.get() == null || !config.serverSHA1.get().equals(sha1)) {
+			if (config.serverSHA1.get() == null || !config.serverSHA1.get().equals(sha1)) {
 				URL url = new URL(config.serverURL.get());
 				serverFolder.mkdirs();
 				FileOutputStream fos = new FileOutputStream(serverJar);
@@ -148,11 +149,12 @@ public class LegacyTweak extends Tweak {
 		return launchTarget;
 	}
 
+	@Override
 	public LaunchTarget getLaunchTarget() {
-		if(config.isom.get()) {
+		if (config.isom.get()) {
 			return getIsomLaunchTarget();
 		}
-		if(context.getMinecraft() == null || NodeHelper.getMethod(context.getMinecraft(), "main", "([Ljava/lang/String;)V") == null) {
+		if (context.getMinecraft() == null || NodeHelper.getMethod(context.getMinecraft(), "main", "([Ljava/lang/String;)V") == null) {
 			return null;
 		}
 		downloadServer();

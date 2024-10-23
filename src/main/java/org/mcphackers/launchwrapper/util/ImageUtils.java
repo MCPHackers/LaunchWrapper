@@ -9,7 +9,7 @@ import javax.imageio.ImageIO;
 
 /**
  * use this for whatever you want
- * 
+ *
  * @author Moresteck
  */
 public class ImageUtils {
@@ -29,9 +29,9 @@ public class ImageUtils {
 		int bufHeight = this.bufImg.getHeight();
 
 		BufferedImage img = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
-		for(int i = 0; i < bufWidth; i++) {
-			for(int j = 0; j < bufHeight; j++) {
-				if(j >= y && j < y + height && i >= x && i < x + width) {
+		for (int i = 0; i < bufWidth; i++) {
+			for (int j = 0; j < bufHeight; j++) {
+				if (j >= y && j < y + height && i >= x && i < x + width) {
 					img.setRGB(i - x, j - y, pixels[i][j]);
 				}
 			}
@@ -51,16 +51,16 @@ public class ImageUtils {
 		int rx = (byte)(target >> 16) & 0xFF;
 		int gx = (byte)(target >> 8) & 0xFF;
 		int bx = (byte)(target) & 0xFF;
-		int out_r = (int)(r + (rx - r)*alpha);
-		int out_g = (int)(g + (gx - g)*alpha);
-		int out_b = (int)(b + (bx - b)*alpha);
+		int out_r = (int)(r + (rx - r) * alpha);
+		int out_g = (int)(g + (gx - g) * alpha);
+		int out_b = (int)(b + (bx - b) * alpha);
 		return 0xFF << 24 | out_r << 16 | out_g << 8 | out_b << 0;
 	}
 
 	public ImageUtils clearArea(int x, int y, int w, int h) {
-		for(int i = 0; i < w; i++) {
-			for(int j = 0; j < h; j++) {
-				this.bufImg.setRGB(x+i, y+j, 0);
+		for (int i = 0; i < w; i++) {
+			for (int j = 0; j < h; j++) {
+				this.bufImg.setRGB(x + i, y + j, 0);
 			}
 		}
 		return this;
@@ -71,13 +71,13 @@ public class ImageUtils {
 		int height = this.bufImg.getHeight();
 		int[][] pixels = new int[width][height];
 
-		for(int i = 0; i < width; i++) {
-			for(int j = 0; j < height; j++) {
+		for (int i = 0; i < width; i++) {
+			for (int j = 0; j < height; j++) {
 				int pixel = this.bufImg.getRGB(i, j);
-				if(j >= y && j < y + img.getHeight() && i >= x && i < x + img.getWidth()) {
+				if (j >= y && j < y + img.getHeight() && i >= x && i < x + img.getWidth()) {
 					int toset = img.getRGB(i - x, j - y);
-					if(!forceTransparent) {
-						if((toset >> 24) != 0x00) {
+					if (!forceTransparent) {
+						if ((toset >> 24) != 0x00) {
 							pixel = mergeColor(pixel, toset);
 						}
 					} else {
@@ -88,8 +88,8 @@ public class ImageUtils {
 			}
 		}
 
-		for(int i = 0; i < width; i++) {
-			for(int j = 0; j < height; j++) {
+		for (int i = 0; i < width; i++) {
+			for (int j = 0; j < height; j++) {
 
 				this.bufImg.setRGB(i, j, pixels[i][j]);
 			}
@@ -102,8 +102,8 @@ public class ImageUtils {
 		int width = this.bufImg.getWidth();
 		int height = this.bufImg.getHeight();
 
-		for(int i = 0; i < width; i++) {
-			for(int j = 0; j < height; j++) {
+		for (int i = 0; i < width; i++) {
+			for (int j = 0; j < height; j++) {
 				this.bufImg.setRGB(flipX ? width - 1 - i : i, flipY ? height - 1 - j : j, pixels[i][j]);
 			}
 		}
@@ -115,8 +115,8 @@ public class ImageUtils {
 		int height = this.bufImg.getHeight();
 		int[][] pixels = new int[width][height];
 
-		for(int i = 0; i < width; i++) {
-			for(int j = 0; j < height; j++) {
+		for (int i = 0; i < width; i++) {
+			for (int j = 0; j < height; j++) {
 				pixels[i][j] = this.bufImg.getRGB(i, j);
 			}
 		}

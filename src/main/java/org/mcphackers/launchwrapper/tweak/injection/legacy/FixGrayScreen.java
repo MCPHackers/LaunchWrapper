@@ -1,6 +1,6 @@
 package org.mcphackers.launchwrapper.tweak.injection.legacy;
 
-import static org.mcphackers.rdi.util.InsnHelper.*;
+import static org.mcphackers.launchwrapper.util.asm.InsnHelper.*;
 import static org.objectweb.asm.Opcodes.*;
 
 import org.mcphackers.launchwrapper.LaunchConfig;
@@ -17,45 +17,41 @@ import org.objectweb.asm.tree.MethodNode;
  */
 public class FixGrayScreen extends InjectionWithContext<MinecraftGetter> {
 
-    public FixGrayScreen(MinecraftGetter storage) {
-        super(storage);
-    }
+	public FixGrayScreen(MinecraftGetter storage) {
+		super(storage);
+	}
 
-    @Override
-    public String name() {
-        return "Fix gray screen";
-    }
+	public String name() {
+		return "Fix gray screen";
+	}
 
-    @Override
 	public boolean required() {
 		return false;
 	}
 
-    @Override
-    public boolean apply(ClassNodeSource source, LaunchConfig config) {
-		next:
-		for(MethodNode m : context.getMinecraft().methods) {
-			if(m.desc.equals("()V")) {
-				AbstractInsnNode insn = m.instructions.getFirst();
-				while(insn != null) {
-					if(compareInsn(insn, INVOKESTATIC, "org/lwjgl/opengl/Display", "setDisplayConfiguration", "(FFF)V")) {
+	public boolean apply(ClassNodeSource source, LaunchConfig config) {
+	next:
+		for (MethodNode m : context.getMinecraft().methods) {
+			if (m.desc.equals("()V")) {
+				AbstractInsnNode insn = getFirst(m.instructions);
+				while (insn != null) {
+					if (compareInsn(insn, INVOKESTATIC, "org/lwjgl/opengl/Display", "setDisplayConfiguration", "(FFF)V")) {
 						AbstractInsnNode[] insns = fillBackwards(insn, 4);
-						if(compareInsn(insns[0], FCONST_1)
-						&& compareInsn(insns[1], FCONST_0)
-						&& compareInsn(insns[2], FCONST_0)) {
+						if (compareInsn(insns[0], FCONST_1) &&
+							compareInsn(insns[1], FCONST_0) &&
+							compareInsn(insns[2], FCONST_0)) {
 							m.instructions.insertBefore(insns[0], new InsnNode(NOP));
 							removeRange(m.instructions, insns[0], insn);
 							return true;
 						}
 					}
-					if(insn.getOpcode() == INVOKESTATIC) {
+					if (insn.getOpcode() == INVOKESTATIC) {
 						continue next;
 					}
 					insn = nextInsn(insn);
 				}
 			}
 		}
-        return false;
-    }
-    
+		return false;
+	}
 }

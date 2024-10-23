@@ -57,8 +57,8 @@ For example: `--username DemoUser --width 1280 --height 720 --title "Minecraft D
 Arguments may be as follows:
 - `awtFrame` - disable LWJGL frame patch and use AWT (Not recommended)
 - `isom` - Launch IsomPreviewApplet
-- `forceVsync` - Launch the game with VSync enabled
-- `forceResizable` - Early Indev and Classic don't properly update viewport, so the wrapper disables frame resizing. To enable it anyway use this argument
+- `vsync` - Launch the game with VSync enabled
+- `resizable` - Early Indev and Classic don't properly update viewport, so the wrapper disables frame resizing. To enable it anyway use this argument
 - `skinProxy` - **pre-c0.0.19a** / **classic** / **pre-b1.9-pre4** / **pre-1.8** / **default** - convert the skin to one of these specified formats
 	- **pre-c0.0.19a** - flatten all skin layers, flip bottom textures, mirror entire skin and crop to 64x32
 	- **classic** - flatten all skin layers, flip bottom textures and crop to 64x32
@@ -78,6 +78,8 @@ Arguments may be as follows:
 - `applet` - Makes the game think you're running an applet which:
 	- Removes quit button in versions between Beta 1.0 and release 1.5.2
 	- Changes mouse input code in classic
+- `survival` - Patches classic creative versions to start in survival
+- `creative` - Patches classic survival versions to start in creative
 - `oneSixFlag` - Toggles notice about the release of 1.6 in 1.5.2
 - `serverSHA1` - Compare minecraft_server.jar in .minecraft/server against this hash
 - `serverURL` - URL to download the server from if the hash is mismatched or the jar is missing

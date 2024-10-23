@@ -16,7 +16,7 @@ import org.mcphackers.launchwrapper.protocol.AssetRequests.AssetObject;
 import org.mcphackers.launchwrapper.util.Util;
 
 public class AssetURLConnection extends URLConnection {
-	private AssetRequests assets;
+	private final AssetRequests assets;
 
 	public AssetURLConnection(URL url, AssetRequests assets) {
 		super(url);
@@ -25,13 +25,13 @@ public class AssetURLConnection extends URLConnection {
 
 	private InputStream getIndex(final boolean xml) throws IOException {
 		StringBuilder s = new StringBuilder();
-		if(xml) {
+		if (xml) {
 			s.append("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>");
 			s.append("<ListBucketResult>");
 		}
-		for(AssetObject asset : assets.list()) {
+		for (AssetObject asset : assets.list()) {
 			// path,size,last_updated_timestamp(unused)
-			if(xml) {
+			if (xml) {
 				s.append("<Contents>");
 				s.append("<Key>");
 				s.append(asset.path);
@@ -44,7 +44,7 @@ public class AssetURLConnection extends URLConnection {
 				s.append(asset.path + ',' + asset.size + ",0\n");
 			}
 		}
-		if(xml) {
+		if (xml) {
 			s.append("</ListBucketResult>");
 		}
 		return new ByteArrayInputStream(s.toString().getBytes());
@@ -54,13 +54,13 @@ public class AssetURLConnection extends URLConnection {
 	public InputStream getInputStream() throws IOException {
 		String key = url.getPath().replace("%20", " ").substring(1);
 		key = key.substring(key.indexOf('/') + 1);
-		if(key.length() == 0) {
+		if (key.length() == 0) {
 			boolean xml = url.getPath().startsWith("/MinecraftResources/");
 			return getIndex(xml);
 		}
 		AssetObject object = assets.get(key);
-		if(object != null) {
-			if(object.url != null) { // url is only set when the resource is requested to be re-downloaded
+		if (object != null) {
+			if (object.url != null) { // url is only set when the resource is requested to be re-downloaded
 				Launch.LOGGER.log("Downloading resource: " + object.path);
 				object.file.getParentFile().mkdirs();
 				Util.copyStream(openDirectConnection(new URL(object.url)).getInputStream(), new FileOutputStream(object.file));

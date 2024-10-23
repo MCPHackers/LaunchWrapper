@@ -1,26 +1,26 @@
 apply plugin: 'java'
 
 repositories {
-    maven {
-        url 'https://stianloader.org/maven'
-    }
-    maven {
-        url 'https://maven.fabricmc.net/' 
-    }
+	maven {
+		url 'https://stianloader.org/maven'
+	}
+	maven {
+		url 'https://maven.fabricmc.net/' 
+	}
 }
 
 compileJava {
-    sourceCompatibility = JavaVersion.VERSION_1_8
-    targetCompatibility = JavaVersion.VERSION_1_8
+	sourceCompatibility = JavaVersion.VERSION_1_8
+	targetCompatibility = JavaVersion.VERSION_1_8
 }
 
 dependencies {
-    implementation 'org.jetbrains:annotations-java5:24.1.0'
+	implementation 'org.jetbrains:annotations-java5:24.1.0'
 	implementation "org.stianloader:micromixin-transformer:0.6.5-a20240922"
 	implementation "org.stianloader:micromixin-runtime:0.6.5-a20240922"
 	implementation "org.stianloader:micromixin-annotations:0.6.5-a20240922"
 	implementation "org.stianloader:micromixin-remapper:0.2.0-a20240908" // For remapping mixin annotations
-    implementation "org.stianloader:stianloader-remapper:0.1.0-a20240601" // For remapping classes and references
+	implementation "org.stianloader:stianloader-remapper:0.1.0-a20240601" // For remapping classes and references
 	implementation "net.fabricmc:mapping-io:0.3.0"
 	implementation "net.fabricmc:access-widener:2.1.0"
 }

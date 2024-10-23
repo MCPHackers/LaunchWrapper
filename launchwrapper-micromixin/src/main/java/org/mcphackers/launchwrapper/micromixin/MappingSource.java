@@ -7,33 +7,33 @@ import org.mcphackers.launchwrapper.util.ClassNodeSource;
 
 public abstract class MappingSource implements Injection {
 
-    protected Mappings mappings = new Mappings();
+	protected Mappings mappings = new Mappings();
 
-    @Override
-    public String name() {
-        return null;
-    }
+	@Override
+	public String name() {
+		return null;
+	}
 
-    @Override
-    public boolean required() {
-        return true;
-    }
+	@Override
+	public boolean required() {
+		return true;
+	}
 
-    public Mappings getMappings() {
-        return mappings;
-    }
-    
-    public static MappingSource fromMappings(Mappings maps) {
-        return new MappingSource() {
-            @Override
-            public Mappings getMappings() {
-                return maps;
-            }
+	public Mappings getMappings() {
+		return mappings;
+	}
 
-            @Override
-            public boolean apply(ClassNodeSource source, LaunchConfig config) {
-                return true;
-            }
-        };
-    }
+	public static MappingSource fromMappings(Mappings maps) {
+		return new MappingSource() {
+			@Override
+			public Mappings getMappings() {
+				return maps;
+			}
+
+			@Override
+			public boolean apply(ClassNodeSource source, LaunchConfig config) {
+				return true;
+			}
+		};
+	}
 }

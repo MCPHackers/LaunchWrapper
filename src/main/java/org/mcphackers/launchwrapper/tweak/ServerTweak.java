@@ -12,40 +12,38 @@ import org.mcphackers.launchwrapper.tweak.injection.Injection;
 
 public class ServerTweak extends Tweak {
 	public static final String[] MAIN_CLASSES = {
-			"net/minecraft/server/MinecraftServer",
-			"com/mojang/minecraft/server/MinecraftServer"
+		"net/minecraft/server/MinecraftServer",
+		"com/mojang/minecraft/server/MinecraftServer"
 	};
 
-    public ServerTweak(LaunchConfig config) {
-        super(config);
-    }
+	public ServerTweak(LaunchConfig config) {
+		super(config);
+	}
 
-    @Override
+	@Override
 	public List<Injection> getInjections() {
-        return Collections.emptyList();
-    }
+		return Collections.emptyList();
+	}
 
-    @Override
-    public List<LazyTweaker> getLazyTweakers() {
+	@Override
+	public List<Tweaker> getTweakers() {
 		// return Collections.<LazyTweaker>singletonList(new Java5LazyTweaker());
-        return Collections.emptyList();
-    }
+		return Collections.emptyList();
+	}
 
-    @Override
-    public LaunchTarget getLaunchTarget() {
+	@Override
+	public LaunchTarget getLaunchTarget() {
 		URLStreamHandlerProxy.setURLStreamHandler("http", new LegacyURLStreamHandler(config));
 		URLStreamHandlerProxy.setURLStreamHandler("https", new LegacyURLStreamHandler(config));
-        return new LaunchTarget() {
-            @Override
-            public void launch(LaunchClassLoader classLoader) {
-                for(String main : MAIN_CLASSES) {
-                    if(classLoader.getClass(main) != null) {
-                        classLoader.invokeMain(main.replace('/', '.'), config.getArgs());
-                        return;
-                    }
-                }
-            }  
-        };
-    }
-    
+		return new LaunchTarget() {
+			public void launch(LaunchClassLoader classLoader) {
+				for (String main : MAIN_CLASSES) {
+					if (classLoader.getClass(main) != null) {
+						classLoader.invokeMain(main.replace('/', '.'), config.getArgs());
+						return;
+					}
+				}
+			}
+		};
+	}
 }

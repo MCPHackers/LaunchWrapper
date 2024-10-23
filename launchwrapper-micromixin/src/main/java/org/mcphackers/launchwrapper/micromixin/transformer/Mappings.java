@@ -11,19 +11,18 @@ public class Mappings {
 	public final Map<MemberRef, String> fields = new HashMap<MemberRef, String>();
 	public final Map<MemberRef, String> methods = new HashMap<MemberRef, String>();
 	public final Map<String, String> classes = new HashMap<String, String>();
-	private StringBuilder sb = new StringBuilder();
 
 	public boolean hasMappings(String clazz) {
-		if(classes.containsKey(clazz)) {
+		if (classes.containsKey(clazz)) {
 			return true;
 		}
-		for(MemberRef ref : fields.keySet()) {
-			if(ref.getOwner().equals(clazz)) {
+		for (MemberRef ref : fields.keySet()) {
+			if (ref.getOwner().equals(clazz)) {
 				return true;
 			}
 		}
-		for(MemberRef ref : methods.keySet()) {
-			if(ref.getOwner().equals(clazz)) {
+		for (MemberRef ref : methods.keySet()) {
+			if (ref.getOwner().equals(clazz)) {
 				return true;
 			}
 		}
@@ -44,27 +43,28 @@ public class Mappings {
 
 	public Mappings reverse() {
 		Mappings newMappings = new Mappings();
+		StringBuilder sb = new StringBuilder();
 		MappingProvider provider = new MappingProvider(this);
-		for(Entry<String, String> entry : classes.entrySet()) {
+		for (Entry<String, String> entry : classes.entrySet()) {
 			newMappings.classes.put(entry.getValue(), entry.getKey());
 		}
-		for(Entry<MemberRef, String> entry : methods.entrySet()) {
+		for (Entry<MemberRef, String> entry : methods.entrySet()) {
 			MemberRef ref = entry.getKey();
 			newMappings.methods.put(
 				new MemberRef(
 					classes.get(ref.getOwner()),
 					entry.getValue(),
-					Remapper.getRemappedMethodDescriptor(provider, ref.getDesc(), sb)
-				), ref.getName());
+					Remapper.getRemappedMethodDescriptor(provider, ref.getDesc(), sb)),
+				ref.getName());
 		}
-		for(Entry<MemberRef, String> entry : fields.entrySet()) {
+		for (Entry<MemberRef, String> entry : fields.entrySet()) {
 			MemberRef ref = entry.getKey();
 			newMappings.fields.put(
 				new MemberRef(
 					classes.get(ref.getOwner()),
 					entry.getValue(),
-					Remapper.getRemappedFieldDescriptor(provider, ref.getDesc(), sb)
-				), ref.getName());
+					Remapper.getRemappedFieldDescriptor(provider, ref.getDesc(), sb)),
+				ref.getName());
 		}
 		return newMappings;
 	}

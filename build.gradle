@@ -1,6 +1,7 @@
 plugins {
-    id 'java-library'
-    id 'maven-publish'
+	id 'java-library'
+	id 'maven-publish'
+	id 'checkstyle'
 }
 
 def ENV = System.getenv()
@@ -8,125 +9,131 @@ def ENV = System.getenv()
 group = 'org.mcphackers'
 version = 1.0
 if(!ENV.RELEASE.equals('1')) {
-    project.version += '-SNAPSHOT'
+	project.version += '-SNAPSHOT'
 }
 
 def asm_version = 9.7
 def depends = [
-    "org.mcphackers.rdi:rdi:1.0",
-    "org.ow2.asm:asm:${asm_version}",
-    "org.ow2.asm:asm-util:${asm_version}",
-    "org.ow2.asm:asm-tree:${asm_version}",
-    "org.json:json:20240303"
+	"org.ow2.asm:asm:${asm_version}",
+	"org.ow2.asm:asm-util:${asm_version}",
+	"org.ow2.asm:asm-tree:${asm_version}",
+	"org.json:json:20240303"
 ]
 
 dependencies {
-    testRuntimeOnly('org.junit.platform:junit-platform-launcher:1.5.2')
-    testImplementation 'org.junit.jupiter:junit-jupiter-engine:5.0.0'
+	testRuntimeOnly('org.junit.platform:junit-platform-launcher:1.5.2')
+	testImplementation 'org.junit.jupiter:junit-jupiter-engine:5.0.0'
+	if(JavaVersion.current().isJava9Compatible()) {
+		compileOnly "me.eigenraven.java8unsupported:java-8-unsupported-shim:1.0.0" // sun.misc.Unsafe
+	}
 }
 
 test {
-    useJUnitPlatform()
-    testLogging {
-        exceptionFormat = 'full'
-        events = ["passed", "failed", "skipped"]
-        showStandardStreams = true
-    }
+	useJUnitPlatform()
+	testLogging {
+		exceptionFormat = 'full'
+		events = ["passed", "failed", "skipped"]
+		// showStandardStreams = true
+	}
+}
+
+checkstyle {
+	configFile = file('checkstyle.xml')
 }
 
 subprojects {
-    apply plugin: 'java'
+	apply plugin: 'java'
 
-    project.group = rootProject.group
-    project.version = rootProject.version
-    
-    dependencies {
-        implementation rootProject
-        runtimeOnly rootProject.sourceSets.test.output
-    }
+	project.group = rootProject.group
+	project.version = rootProject.version
+	
+	dependencies {
+		implementation rootProject
+		runtimeOnly rootProject.sourceSets.test.output
+	}
 }
 
 allprojects {
-    apply plugin: 'java'
-    apply plugin: 'maven-publish'
+	apply plugin: 'java'
+	apply plugin: 'maven-publish'
 
-    repositories {
-        maven {
-            url "https://libraries.minecraft.net/"
-        }
-        maven {
-            url "https://maven.glass-launcher.net/releases"
-        }
-        mavenCentral()
-    }
-    dependencies {
-        depends.each { depend -> implementation depend }
-    }
+	repositories {
+		maven {
+			url "https://libraries.minecraft.net/"
+		}
+		maven {
+			url "https://maven.glass-launcher.net/releases"
+		}
+		mavenCentral()
+	}
+	dependencies {
+		depends.each { depend -> implementation depend }
+	}
 
-    task sourcesJar(type: Jar) {
-        archiveClassifier = 'sources'
-        from sourceSets.main.allSource
-    }
+	task sourcesJar(type: Jar) {
+		archiveClassifier = 'sources'
+		from sourceSets.main.allSource
+	}
 
-    artifacts {
-        archives jar
-        archives sourcesJar
-    }
+	artifacts {
+		archives jar
+		archives sourcesJar
+	}
 
-    java {
-        toolchain {
-            languageVersion = JavaLanguageVersion.of(8)
-        }
-    }
+	java {
+		if (JavaVersion.current().isJava9Compatible()) {
+			sourceCompatibility = JavaVersion.VERSION_1_8
+			targetCompatibility = JavaVersion.VERSION_1_8
+		} else {
+			// Minecraft is mostly compatible with java 5 up until the version we support, so why not?
+			sourceCompatibility = JavaVersion.VERSION_1_5
+			targetCompatibility = JavaVersion.VERSION_1_5
+		}
+	}
 
-    compileJava {
-        options.encoding = "UTF-8"
-        // needed to fix java.lang.NoSuchMethodError: java.nio.ByteBuffer.flip()Ljava/nio/ByteBuffer;
-        // but can't use it because of sun.misc.Unsafe
-        // If you are reading this, please use JDK 8 to compile
-        // if (JavaVersion.current().isJava9Compatible()) {
-		//     options.release.set(8)
-	    // }
+	compileJava {
+		options.encoding = "UTF-8"
+		options.compilerArgs += ["-Werror"]
+		options.fork = true
 
-        // Minecraft is mostly compatible with java 5 up until the version we support, so why not?
-        sourceCompatibility = JavaVersion.VERSION_1_5
-        targetCompatibility = JavaVersion.VERSION_1_5
-        // Target Java 8 on newer JDKs
-        if (JavaVersion.current().ordinal() > JavaVersion.VERSION_1_8.ordinal()) {
-            sourceCompatibility = JavaVersion.VERSION_1_8
-            targetCompatibility = JavaVersion.VERSION_1_8
-        }
-    }
+		// Target Java 8 on newer JDKs
+		if (JavaVersion.current().isJava9Compatible()) {
+			options.release.set(8)
+		} else {
+			// Suppress sun.misc.Unsafe and -target 1.5 warnings on Java 8
+			options.compilerArgs += ["-XDenableSunApiLintControl", "-Xlint:-options"]
+		}
+	}
 
-    compileTestJava {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
-    }
+	compileTestJava {
+		sourceCompatibility = JavaVersion.VERSION_1_8
+		targetCompatibility = JavaVersion.VERSION_1_8
+	}
 
-    afterEvaluate {
-        publishing {
-            publications {
-                mavenJava(MavenPublication) {
-                    artifact jar
-                    artifact sourcesJar
-                }
-            }
+	afterEvaluate {
+		publishing {
+			publications {
+				mavenJava(MavenPublication) {
+					artifact jar
+					artifact sourcesJar
+				}
+			}
 
-            repositories {
-                mavenLocal()
-                
-                if (ENV.MAVEN_URL) {
-                    maven {
-                        url ENV.MAVEN_URL
-                        if (ENV.MAVEN_USERNAME) {
-                            credentials {
-                                username ENV.MAVEN_USERNAME
-                                password ENV.MAVEN_PASSWORD
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
+			repositories {
+				mavenLocal()
+				
+				if (ENV.MAVEN_URL) {
+					maven {
+						url ENV.MAVEN_URL
+						if (ENV.MAVEN_USERNAME) {
+							credentials {
+								username ENV.MAVEN_USERNAME
+								password ENV.MAVEN_PASSWORD
+							}
+						}
+					}
+				}
+			}
+		}
+	}
 }
