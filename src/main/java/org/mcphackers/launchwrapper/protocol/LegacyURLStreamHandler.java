@@ -18,7 +18,7 @@ public class LegacyURLStreamHandler extends URLStreamHandlerProxy {
 		this.config = config;
 		this.assets = new AssetRequests(config.assetsDir.get(), config.assetIndex.get());
 		this.skins = new SkinRequests(config.gameDir.get(), config.skinOptions.get(), config.skinProxy.get());
-		this.levelSaveDir = new File(config.gameDir.get(), "levels");
+		this.levelSaveDir = config.levelsDir.get();
 	}
 
 	@Override

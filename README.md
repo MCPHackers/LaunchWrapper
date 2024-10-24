@@ -77,9 +77,10 @@ Arguments may be as follows:
 - `icon` - List of paths of icon PNGs separated by file system path separator (";" on windows, ":" on unix)
 - `applet` - Makes the game think you're running an applet which:
 	- Removes quit button in versions between Beta 1.0 and release 1.5.2
-	- Changes mouse input code in classic
-- `survival` - Patches classic creative versions to start in survival
-- `creative` - Patches classic survival versions to start in creative
+	- Changes mouse input code in Classic
+- `levelsDir` - Where to save Classic and Indev levels
+- `survival` - Patches Classic creative versions to start in survival
+- `creative` - Patches Classic survival versions to start in creative
 - `oneSixFlag` - Toggles notice about the release of 1.6 in 1.5.2
 - `serverSHA1` - Compare minecraft_server.jar in .minecraft/server against this hash
 - `serverURL` - URL to download the server from if the hash is mismatched or the jar is missing

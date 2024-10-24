@@ -57,6 +57,7 @@ public class LaunchConfig {
 	private final LaunchParameterSwitch awtFrame 			= new LaunchParameterSwitchReverse("awtFrame", lwjglFrame);
 	public final LaunchParameterEnum<SkinType> skinProxy 	= new LaunchParameterEnum<SkinType>("skinProxy", SkinType.DEFAULT, true);
 	public final LaunchParameterSkinOptions skinOptions		= new LaunchParameterSkinOptions("skinOptions");
+	public final LaunchParameterFile levelsDir				= new LaunchParameterFile("levelsDir", new File(DEFAULT_GAME_DIR, "levels"), true);
 	public final LaunchParameterSwitch isom 				= new LaunchParameterSwitch("isom", false, true);
 	public final LaunchParameterFileList icon 				= new LaunchParameterFileList("icon", null, true);
 	public final LaunchParameterString title 				= new LaunchParameterString("title", null, true);
@@ -65,8 +66,8 @@ public class LaunchConfig {
 	public final LaunchParameterSwitch applet 				= new LaunchParameterSwitch("applet", false);
 	public final LaunchParameterSwitch oneSixFlag 			= new LaunchParameterSwitch("oneSixFlag", false, true);
 	public final LaunchParameterSwitch unlicensedCopy		= new LaunchParameterSwitchReverse("unlicensedCopy", haspaid);
-	public final LaunchParameterSwitch creative	 			= new LaunchParameterSwitch("creative", false);
-	public final LaunchParameterSwitch survival	 			= new LaunchParameterSwitch("survival", false);
+	public final LaunchParameterSwitch creative	 			= new LaunchParameterSwitch("creative", false, true);
+	public final LaunchParameterSwitch survival	 			= new LaunchParameterSwitch("survival", false, true);
 	public final LaunchParameterString serverURL 			= new LaunchParameterString("serverURL", null, true);
 	public final LaunchParameterString serverSHA1 			= new LaunchParameterString("serverSHA1", null, true);
 	// clang-format on
