@@ -25,7 +25,7 @@ LaunchWrapper is bundled in [BetterJSONs](https://github.com/MCPHackers/BetterJS
 - Adds ability to launch classic and pre-classic at custom resolution or in fullscreen
 - Fixes TimSort crash when using Java 8+
 - **SkinFix** - Proxies all requests from old skin servers to the current skin API and converts skins to required format
-	- Skins don't work in Java versions before 8u181, due to the requrement of TLS 1.2 support
+	- Skins don't work in Java versions before 8u181, due to the requirement of TLS 1.2 support
 - Adds ability to customize built-in **LWJGL** frame
 	- Changing display title
 	- Setting icon
