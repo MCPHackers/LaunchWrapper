@@ -17,7 +17,7 @@ import org.objectweb.asm.tree.MethodNode;
  * Compatibility fixes for Java 5.
  * Replaces most of Java 6 API used by Minecraft with Java 5 alternative
  */
-public class Java5LazyTweaker implements Tweaker {
+public class Java5Tweaker implements Tweaker {
 
 	public boolean tweakClass(ClassNodeSource source, String name) {
 		ClassNode node = source.getClass(name);

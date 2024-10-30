@@ -14,6 +14,7 @@ import org.mcphackers.launchwrapper.LaunchConfig;
 import org.mcphackers.launchwrapper.target.LaunchTarget;
 import org.mcphackers.launchwrapper.target.MainLaunchTarget;
 import org.mcphackers.launchwrapper.tweak.Tweak;
+import org.mcphackers.launchwrapper.tweak.injection.forge.ForgeFix;
 
 public final class Launch extends org.mcphackers.launchwrapper.Launch {
 	public static File minecraftHome;
@@ -55,8 +56,9 @@ public final class Launch extends org.mcphackers.launchwrapper.Launch {
 		blackboard.put("ArgumentList", new ArrayList<String>());
 		minecraftHome = config.gameDir.get();
 		assetsDir = config.assetsDir.get();
-		runTweakers();
 		LaunchClassLoader loader = getLoader();
+		runPreInitTweaks(loader);
+		runTweakers(loader);
 		Tweak mainTweak = getTweak();
 		if (mainTweak == null) {
 			if (config.tweakClass.get() == null) {
@@ -103,9 +105,12 @@ public final class Launch extends org.mcphackers.launchwrapper.Launch {
 		return args;
 	}
 
+	private void runPreInitTweaks(LaunchClassLoader loader) {
+		new ForgeFix().apply(loader, config);
+	}
+
 	@SuppressWarnings("unchecked")
-	private void runTweakers() {
-		LaunchClassLoader loader = getLoader();
+	private void runTweakers(LaunchClassLoader loader) {
 		List<String> args = getArgs();
 		List<String> tweakClassNames = (List<String>)blackboard.get("TweakClasses");
 

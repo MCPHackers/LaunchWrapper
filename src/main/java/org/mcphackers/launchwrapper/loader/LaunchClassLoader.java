@@ -203,6 +203,8 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 		} catch (InvocationTargetException e1) {
 			if (e1.getCause() != null) {
 				e1.getCause().printStackTrace();
+			} else {
+				e1.printStackTrace();
 			}
 		} catch (Exception e) {
 			e.printStackTrace();

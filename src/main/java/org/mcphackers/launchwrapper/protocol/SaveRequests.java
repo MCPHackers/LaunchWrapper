@@ -71,18 +71,26 @@ public final class SaveRequests {
 	 * Used in level save screen
 	 */
 	public static void saveLevel(File levelsDir, int index, String levelName, byte[] data) throws IOException {
+		if (!levelsDir.exists()) {
+			levelsDir.mkdirs();
+		}
+		if (!levelsDir.isDirectory()) {
+			throw new IOException(levelsDir + " is not a directory");
+		}
 		String[] lvlNames = getLevelNames(levelsDir);
 		lvlNames[index] = levelName;
 		File level = new File(levelsDir, "level" + index + ".dat");
+		if (!levelsDir.exists()) {
+			levelsDir.mkdirs();
+		}
 
 		// Since minecraft doesn't have a delete button on levels, just save a new one with this name and it'll get deleted
 		if (levelName.equals("---") /* Can't be "-" because save button is active at 3>= characters */) {
-			level.delete();
+			if (level.exists()) {
+				level.delete();
+			}
 			lvlNames[index] = EMPTY_LEVEL;
 		} else {
-			if (!levelsDir.exists()) {
-				levelsDir.mkdirs();
-			}
 			OutputStream fileOutput = new FileOutputStream(level);
 			try {
 				fileOutput.write(data);

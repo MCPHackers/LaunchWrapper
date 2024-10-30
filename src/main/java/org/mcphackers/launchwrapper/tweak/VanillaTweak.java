@@ -39,7 +39,7 @@ public class VanillaTweak extends Tweak {
 
 	@Override
 	public List<Tweaker> getTweakers() {
-		return Collections.<Tweaker>singletonList(new Java5LazyTweaker());
+		return Collections.<Tweaker>singletonList(new Java5Tweaker());
 	}
 
 	@Override

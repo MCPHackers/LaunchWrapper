@@ -24,6 +24,6 @@ public class IndevTest extends TweakTest {
 	@Override
 	public TestFeatureBuilder getTests() {
 		return new TestFeatureBuilder()
-			.tweakInfoList("LegacyTweak init", "Fix Shutdown", "Indev save patch", "LWJGL Patch", "Replace game directory", "Options load fix", "Add main");
+			.tweakInfoList("LegacyTweak init", "Classic crash screen", "Fix Shutdown", "Indev save patch", "LWJGL Patch", "Replace game directory", "Options load fix", "Add main");
 	}
 }
