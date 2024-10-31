@@ -23,7 +23,6 @@ public class FabricBridge extends Launch {
 		if (resource == null) {
 			return null;
 		}
-		Launch.LOGGER.logDebug("Fabric compat jar: " + resource.getLocation().getPath());
 		return resource.getLocation().getPath();
 	}
 
@@ -34,6 +33,7 @@ public class FabricBridge extends Launch {
 
 	public void launch() {
 		LaunchClassLoader loader = getLoader();
+		System.setProperty("fabric.skipMcProvider", "true");
 		loader.overrideClassSource(FABRIC_KNOT, gameProdiverSource());
 		loader.overrideClassSource(FABRIC_KNOT_CLIENT, gameProdiverSource());
 		loader.invokeMain(FABRIC_KNOT_CLIENT.replace('/', '.'), config.getArgs());

@@ -16,6 +16,7 @@ import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 
 /**
+ * This patch makes it so game window stays fullscreen, even if you change focus via alt-tab
  * Part of LWJGLPatch, but for 1.6+ without need for deAWT
  */
 public class OutOfFocusFullscreen extends InjectionWithContext<MinecraftGetter> {

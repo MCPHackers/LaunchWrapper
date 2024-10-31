@@ -24,7 +24,7 @@ import org.mcphackers.launchwrapper.loader.SafeClassWriter;
 import org.mcphackers.launchwrapper.target.MainLaunchTarget;
 import org.mcphackers.launchwrapper.tweak.Tweak;
 import org.mcphackers.launchwrapper.util.ClassNodeSource;
-import org.objectweb.asm.ClassReader;
+import org.mcphackers.launchwrapper.util.asm.NodeHelper;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.tree.ClassNode;
 
@@ -55,14 +55,13 @@ public class LWGameTransformer extends GameTransformer implements ClassNodeSourc
 
 				try {
 					CpEntry entry = cp.getEntry(LoaderUtil.getClassFileName(name));
-					if (entry == null)
-						return null;
+					if (entry == null) {
+						// SafeClassWriter needs access to whole classpath
+						return NodeHelper.readClass(launcher.getResourceAsStream(LoaderUtil.getClassFileName(name)), 0);
+					}
 
 					try (InputStream is = entry.getInputStream()) {
-						node = new ClassNode();
-						ClassReader reader = new ClassReader(is);
-						reader.accept(node, 0);
-						return node;
+						return NodeHelper.readClass(is, 0);
 					} catch (IOException | ZipError e) {
 						throw new RuntimeException(String.format("error reading %s in %s: %s", name, LoaderUtil.normalizePath(entry.getOrigin()), e), e);
 					}
@@ -79,7 +78,7 @@ public class LWGameTransformer extends GameTransformer implements ClassNodeSourc
 			throw ExceptionUtil.wrap(e);
 		}
 
-		Log.debug(LogCategory.GAME_PATCH, "Patched %d class%s", modified.size(), modified.size() != 1 ? "s" : "");
+		Log.debug(LogCategory.GAME_PATCH, "Patched %d class%s", modified.size(), modified.size() != 1 ? "es" : "");
 		entrypointsLocated = true;
 	}
 

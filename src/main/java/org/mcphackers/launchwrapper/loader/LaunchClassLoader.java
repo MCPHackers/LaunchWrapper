@@ -156,10 +156,16 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 	}
 
 	public void addExclusion(String pkg) {
+		if (pkg == null) {
+			return;
+		}
 		exclusions.add(pkg + (pkg.endsWith(".") ? "" : "."));
 	}
 
 	public void overrideClassSource(String name, String f) {
+		if (f == null) {
+			return;
+		}
 		overridenSource.put(className(name), f);
 	}
 
@@ -184,7 +190,7 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 		assert name.contains(".");
 
 		// Force wrap inject package
-		if (name.startsWith("org.mcphackers.launchwrapper.inject.")) {
+		if (overridenSource.containsKey(name) || name.startsWith("org.mcphackers.launchwrapper.inject.")) {
 			return redefineClass(name);
 		}
 
@@ -371,7 +377,7 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 					path = path.substring(0, i);
 				}
 			}
-			if (overridenSource.get(name) != null) {
+			if (overridenSource.containsKey(name)) {
 				path = overridenSource.get(name);
 			}
 			try {
