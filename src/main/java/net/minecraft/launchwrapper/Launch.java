@@ -16,6 +16,7 @@ import org.mcphackers.launchwrapper.target.MainLaunchTarget;
 import org.mcphackers.launchwrapper.tweak.Tweak;
 import org.mcphackers.launchwrapper.tweak.injection.forge.ForgeFix;
 
+@Deprecated
 public final class Launch extends org.mcphackers.launchwrapper.Launch {
 	public static File minecraftHome;
 	public static File assetsDir;

@@ -3,6 +3,7 @@ package net.minecraft.launchwrapper;
 import java.io.File;
 import java.util.List;
 
+@Deprecated
 public interface ITweaker {
 
 	void acceptOptions(List<String> args, File gameDir, final File assetsDir, String profile);

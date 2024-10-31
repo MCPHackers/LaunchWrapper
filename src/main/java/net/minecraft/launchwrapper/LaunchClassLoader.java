@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.jar.Manifest;
 
+@Deprecated
 @SuppressWarnings("unused")
 public class LaunchClassLoader extends org.mcphackers.launchwrapper.loader.LaunchClassLoader {
 
