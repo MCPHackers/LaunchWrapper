@@ -133,7 +133,7 @@ public final class Launch extends org.mcphackers.launchwrapper.Launch {
 					LOGGER.log("Loading tweak class name %s", tweakName);
 
 					loader.addClassLoaderExclusion(tweakName.substring(0, tweakName.lastIndexOf('.')));
-					final ITweaker tweaker = (ITweaker)Class.forName(tweakName, true, getClass().getClassLoader()).newInstance();
+					final ITweaker tweaker = (ITweaker)Class.forName(tweakName, true, loader).newInstance();
 					tweakers.add(tweaker);
 
 					it.remove();

@@ -3,7 +3,12 @@ package org.mcphackers.launchwrapper.tweak.injection.legacy;
 import static org.mcphackers.launchwrapper.util.asm.InsnHelper.*;
 import static org.objectweb.asm.Opcodes.*;
 
+import java.io.File;
+import java.io.IOException;
+
+import org.mcphackers.launchwrapper.Launch;
 import org.mcphackers.launchwrapper.LaunchConfig;
+import org.mcphackers.launchwrapper.protocol.SaveRequests;
 import org.mcphackers.launchwrapper.tweak.injection.InjectionWithContext;
 import org.mcphackers.launchwrapper.tweak.injection.MinecraftGetter;
 import org.mcphackers.launchwrapper.util.ClassNodeSource;
@@ -127,7 +132,7 @@ public class IndevSaving extends InjectionWithContext<MinecraftGetter> {
 				InsnList insns = new InsnList();
 				insns.add(new VarInsnNode(ALOAD, 0));
 				insns.add(new VarInsnNode(ILOAD, 1));
-				insns.add(new MethodInsnNode(INVOKESTATIC, "org/mcphackers/launchwrapper/inject/Inject", "getLevelFile", "(I)Ljava/io/File;"));
+				insns.add(new MethodInsnNode(INVOKESTATIC, "org/mcphackers/launchwrapper/tweak/injection/legacy/IndevSaving", "getLevelFile", "(I)Ljava/io/File;"));
 				insns.add(new MethodInsnNode(INVOKEVIRTUAL, loadLevelMenu.name, openFileLoad.name, openFileLoad.desc));
 				m.instructions.insert(insns);
 				break;
@@ -197,7 +202,7 @@ public class IndevSaving extends InjectionWithContext<MinecraftGetter> {
 						before.add(new FieldInsnNode(GETFIELD, idField.owner, idField.name, idField.desc));
 						m.instructions.insertBefore(insn, before);
 						InsnList after = new InsnList();
-						after.add(new MethodInsnNode(INVOKESTATIC, "org/mcphackers/launchwrapper/inject/Inject", "saveLevel", "(ILjava/lang/String;)Ljava/io/File;"));
+						after.add(new MethodInsnNode(INVOKESTATIC, "org/mcphackers/launchwrapper/tweak/injection/legacy/IndevSaving", "saveLevel", "(ILjava/lang/String;)Ljava/io/File;"));
 						after.add(new MethodInsnNode(INVOKEVIRTUAL, nameLevelMenu.name, openFile.name, openFile.desc));
 						m.instructions.insert(insns2[2], after);
 					}
@@ -216,5 +221,35 @@ public class IndevSaving extends InjectionWithContext<MinecraftGetter> {
 		source.overrideClass(loadLevelMenu);
 		source.overrideClass(nameLevelMenu);
 		return true;
+	}
+
+	/**
+	 * Used in level load screen
+	 */
+	public static File saveLevel(int index, String name) {
+		File levelsDir = Launch.getInstance().config.levelsDir.get();
+		String[] levels;
+		try {
+			levels = SaveRequests.getLevelNames(levelsDir);
+			levels[index] = name;
+			SaveRequests.updateLevelNames(levelsDir, levels);
+		} catch (IOException e) {
+			Launch.LOGGER.logErr("Failed to save", e);
+		}
+		if (name.equals(SaveRequests.EMPTY_LEVEL_ALT)) {
+			File f = getLevelFile(index);
+			if (f.exists()) {
+				f.delete();
+			}
+			return null;
+		}
+		return getLevelFile(index);
+	}
+
+	/**
+	 * Used in level save screen
+	 */
+	public static File getLevelFile(int index) {
+		return new File(Launch.getInstance().config.levelsDir.get(), "level" + index + ".dat");
 	}
 }

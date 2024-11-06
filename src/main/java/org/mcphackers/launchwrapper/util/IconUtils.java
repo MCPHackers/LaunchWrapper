@@ -10,7 +10,6 @@ import java.util.List;
 import javax.imageio.ImageIO;
 
 import org.mcphackers.launchwrapper.Launch;
-import org.mcphackers.launchwrapper.inject.Inject;
 
 public final class IconUtils {
 
@@ -29,7 +28,7 @@ public final class IconUtils {
 	}
 
 	private static BufferedImage getIcon(String icon) throws IOException {
-		return ImageIO.read(Inject.class.getResourceAsStream(icon));
+		return ImageIO.read(IconUtils.class.getResourceAsStream(icon));
 	}
 
 	private static ByteBuffer loadIcon(String icon) throws IOException {

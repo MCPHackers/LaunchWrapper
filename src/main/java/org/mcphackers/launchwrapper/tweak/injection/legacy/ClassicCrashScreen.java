@@ -274,6 +274,9 @@ public class ClassicCrashScreen extends InjectionWithContext<MinecraftGetter> {
 				}
 			}
 			if (patched) {
+				if (patchErrorScreen(source, errScreen, openScreen, null) && instanceOf != null) {
+					openScreen.instructions.set(instanceOf, new InsnNode(ICONST_0));
+				}
 				return true;
 			}
 		}

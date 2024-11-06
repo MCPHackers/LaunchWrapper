@@ -11,6 +11,7 @@ import org.mcphackers.launchwrapper.util.Util;
 
 public final class SaveRequests {
 	public static final String EMPTY_LEVEL = "-";
+	public static final String EMPTY_LEVEL_ALT = "---";
 	public static final int MAX_LEVELS = 5;
 
 	private SaveRequests() {
@@ -85,7 +86,7 @@ public final class SaveRequests {
 		}
 
 		// Since minecraft doesn't have a delete button on levels, just save a new one with this name and it'll get deleted
-		if (levelName.equals("---") /* Can't be "-" because save button is active at 3>= characters */) {
+		if (levelName.equals(EMPTY_LEVEL_ALT) /* Can't be "-" because save button is active at 3>= characters */) {
 			if (level.exists()) {
 				level.delete();
 			}

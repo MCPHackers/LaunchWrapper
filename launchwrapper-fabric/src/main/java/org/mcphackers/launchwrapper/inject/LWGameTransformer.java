@@ -30,6 +30,7 @@ import org.objectweb.asm.tree.ClassNode;
 
 public class LWGameTransformer extends GameTransformer implements ClassNodeSource {
 	private final LWGameProvider gameProvider;
+	private FabricLauncher launcher;
 	private Map<String, ClassNode> modified;
 	private Function<String, ClassNode> classSource;
 	private boolean entrypointsLocated = false;
@@ -44,6 +45,7 @@ public class LWGameTransformer extends GameTransformer implements ClassNodeSourc
 		}
 
 		modified = new HashMap<>();
+		this.launcher = launcher;
 
 		try (SimpleClassPath cp = new SimpleClassPath(gameJars)) {
 			classSource = name -> {
@@ -56,8 +58,7 @@ public class LWGameTransformer extends GameTransformer implements ClassNodeSourc
 				try {
 					CpEntry entry = cp.getEntry(LoaderUtil.getClassFileName(name));
 					if (entry == null) {
-						// SafeClassWriter needs access to whole classpath
-						return NodeHelper.readClass(launcher.getResourceAsStream(LoaderUtil.getClassFileName(name)), 0);
+						return null;
 					}
 
 					try (InputStream is = entry.getInputStream()) {
@@ -83,7 +84,15 @@ public class LWGameTransformer extends GameTransformer implements ClassNodeSourc
 	}
 
 	public ClassNode getClass(String name) {
-		return classSource.apply(name.replace("/", "."));
+		ClassNode node = classSource.apply(name.replace("/", "."));
+		if (node == null) {
+			try {
+				node = NodeHelper.readClass(launcher.getResourceAsStream(LoaderUtil.getClassFileName(name)), 0);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+		return node;
 	}
 
 	public void overrideClass(ClassNode node) {

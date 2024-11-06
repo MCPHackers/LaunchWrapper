@@ -17,27 +17,41 @@ public class LaunchClassLoader extends org.mcphackers.launchwrapper.loader.Launc
 	private final List<URL> sources = new ArrayList<URL>();
 
 	private final Map<String, Class<?>> cachedClasses = Collections.<String, Class<?>>emptyMap();
+	private final Map<String, byte[]> resourceCache = Collections.<String, byte[]>emptyMap();
 	private final Set<String> invalidClasses = new HashSet<String>();
 	private final Set<String> classLoaderExceptions;
 	private final Set<String> transformerExceptions = new HashSet<String>();
 	private final List<IClassTransformer> transformers = new ArrayList<IClassTransformer>();
-	public IClassNameTransformer renameTransformer;
+	private IClassNameTransformer renameTransformer;
 
 	// Avoids exceptions with mods like FoamFix and CensoredASM
-	@Deprecated
 	private static final Manifest EMPTY = new Manifest();
-	@Deprecated
 	private Map<Package, Manifest> packageManifests = null;
 
 	public LaunchClassLoader(ClassLoader parent) {
-		super(parent);
-		// Some mods refer to these fields via reflection
+		this(getInitialURLs(parent), parent);
+	}
+	public LaunchClassLoader(URL[] sources) {
+		this(sources, LaunchClassLoader.class.getClassLoader());
+	}
+	public LaunchClassLoader(URL[] sources, ClassLoader parent) {
+		super(sources, parent);
 		classLoaderExceptions = exclusions;
+		addClassLoaderExclusion("org.lwjgl.");
+		addClassLoaderExclusion("org.apache.logging.");
+		addClassLoaderExclusion("net.minecraft.launchwrapper.");
+
+		addTransformerExclusion("javax.");
+		addTransformerExclusion("argo.");
+		addTransformerExclusion("org.objectweb.asm.");
+		addTransformerExclusion("com.google.common.");
+		addTransformerExclusion("org.bouncycastle.");
+		addTransformerExclusion("net.minecraft.launchwrapper.injector.");
 	}
 
 	public void registerTransformer(String transformerClassName) {
 		try {
-			IClassTransformer transformer = (IClassTransformer)Launch.classLoader.loadClass(transformerClassName).newInstance();
+			IClassTransformer transformer = (IClassTransformer)loadClass(transformerClassName).newInstance();
 			transformers.add(transformer);
 			if (transformer instanceof IClassNameTransformer && renameTransformer == null) {
 				renameTransformer = (IClassNameTransformer)transformer;
@@ -51,12 +65,12 @@ public class LaunchClassLoader extends org.mcphackers.launchwrapper.loader.Launc
 		return Collections.unmodifiableList(transformers);
 	}
 
-	public void addClassLoaderExclusion(String pkg) {
-		addExclusion(pkg);
+	public void addClassLoaderExclusion(String prefix) {
+		addExclusion(prefix);
 	}
 
-	public void addTransformerExclusion(String pkg) {
-		transformerExceptions.add(pkg + (pkg.endsWith(".") ? "" : "."));
+	public void addTransformerExclusion(String prefix) {
+		transformerExceptions.add(prefix);
 	}
 
 	private String untransformName(final String name) {
@@ -73,27 +87,6 @@ public class LaunchClassLoader extends org.mcphackers.launchwrapper.loader.Launc
 		return name;
 	}
 
-	/**
-	 * Foundation API extension
-	 * used by Cleanroom
-	 *
-	 * @param name class name
-	 * @return
-	 */
-	public boolean isClassLoaded(String name) {
-		return getLoadedClass(name) != null;
-	}
-
-	/**
-	 * TODO Foundation API extension
-	 * used by Cleanroom
-	 *
-	 * @param transformerClassName
-	 */
-	public void registerSuperTransformer(String transformerClassName) {
-		registerTransformer(transformerClassName);
-	}
-
 	@Override
 	public void addURL(URL url) {
 		super.addURL(url);
@@ -108,15 +101,7 @@ public class LaunchClassLoader extends org.mcphackers.launchwrapper.loader.Launc
 		invalidClasses.clear();
 	}
 
-	/**
-	 * Called by Cleanroom loader
-	 *
-	 * @param name
-	 * @param transformedName
-	 * @param data
-	 * @return
-	 */
-	public byte[] runTrasformers(String name, String transformedName, byte[] data) {
+	private byte[] runTrasformers(String name, String transformedName, byte[] data) {
 		byte[] transformed = data;
 		for (IClassTransformer transformer : transformers) {
 			transformed = transformer.transform(name, transformedName, transformed);
@@ -125,7 +110,7 @@ public class LaunchClassLoader extends org.mcphackers.launchwrapper.loader.Launc
 	}
 
 	@Override
-	public byte[] getTransformedClass(String name) throws IOException {
+	protected byte[] getTransformedClass(String name) throws IOException {
 		String untransformedName = untransformName(name);
 		String transformedName = transformName(name);
 		byte[] classData = getClassBytes(untransformedName);
@@ -138,7 +123,7 @@ public class LaunchClassLoader extends org.mcphackers.launchwrapper.loader.Launc
 	}
 
 	@Override
-	public String getTransformedName(String name) {
+	protected String getTransformedName(String name) {
 		return transformName(name);
 	}
 

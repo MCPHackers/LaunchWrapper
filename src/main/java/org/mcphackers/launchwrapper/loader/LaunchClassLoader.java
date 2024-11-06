@@ -68,19 +68,22 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 	}
 
 	public LaunchClassLoader(ClassLoader parent) {
-		super(getInitialURLs(parent), null);
-		this.parent = parent;
-		this.urlClassLoader = new HighPriorityClassLoader(new URL[0]);
-		addExclusion("java");
-		addExclusion("javax");
-		addExclusion("sun");
-		addExclusion("net.minecraft.launchwrapper");
-		addExclusion("org.mcphackers.launchwrapper");
-		addExclusion("org.objectweb.asm");
-		addExclusion("org.json");
+		this(getInitialURLs(parent), parent);
 	}
 
-	private static URL[] getInitialURLs(ClassLoader parent) {
+	protected LaunchClassLoader(URL[] sources, ClassLoader parent) {
+		super(sources, null);
+		this.parent = parent;
+		this.urlClassLoader = new HighPriorityClassLoader(new URL[0]);
+		addExclusion("java.");
+		addExclusion("javax.");
+		addExclusion("sun.");
+		addExclusion("org.mcphackers.launchwrapper.");
+		addExclusion("org.objectweb.asm.");
+		addExclusion("org.json.");
+	}
+
+	protected static URL[] getInitialURLs(ClassLoader parent) {
 		List<URL> urls = new ArrayList<URL>();
 		if (parent instanceof URLClassLoader) {
 			return ((URLClassLoader)parent).getURLs();
@@ -155,11 +158,11 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 		return parent.getResources(name);
 	}
 
-	public void addExclusion(String pkg) {
-		if (pkg == null) {
+	public void addExclusion(String prefix) {
+		if (prefix == null) {
 			return;
 		}
-		exclusions.add(pkg + (pkg.endsWith(".") ? "" : "."));
+		exclusions.add(prefix);
 	}
 
 	public void overrideClassSource(String name, String f) {
@@ -194,8 +197,8 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 			return redefineClass(name);
 		}
 
-		for (String pkg : exclusions) {
-			if (name.startsWith(pkg)) {
+		for (String prefix : exclusions) {
+			if (name.startsWith(prefix)) {
 				return parent.loadClass(name);
 			}
 		}
@@ -312,11 +315,11 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 		}
 	}
 
-	public String getTransformedName(String name) {
+	protected String getTransformedName(String name) {
 		return name;
 	}
 
-	public byte[] getTransformedClass(String name) throws IOException {
+	protected byte[] getTransformedClass(String name) throws IOException {
 		return getClassBytes(name);
 	}
 

@@ -57,7 +57,7 @@ public class LaunchConfig {
 	private final LaunchParameterSwitch awtFrame 			= new LaunchParameterSwitchReverse("awtFrame", lwjglFrame);
 	public final LaunchParameterEnum<SkinType> skinProxy 	= new LaunchParameterEnum<SkinType>("skinProxy", SkinType.DEFAULT, true);
 	public final LaunchParameterSkinOptions skinOptions		= new LaunchParameterSkinOptions("skinOptions");
-	public final LaunchParameterFile levelsDir				= new LaunchParameterFile("levelsDir", new File(DEFAULT_GAME_DIR, "levels"), true);
+	public final LaunchParameterFile levelsDir				= new LaunchParameterFile("levelsDir", null, true);
 	public final LaunchParameterSwitch isom 				= new LaunchParameterSwitch("isom", false, true);
 	public final LaunchParameterFileList icon 				= new LaunchParameterFileList("icon", null, true);
 	public final LaunchParameterString title 				= new LaunchParameterString("title", null, true);
@@ -124,6 +124,7 @@ public class LaunchConfig {
 	}
 
 	public LaunchConfig() {
+		levelsDir.set(new File(DEFAULT_GAME_DIR, "levels"));
 	}
 
 	public LaunchConfig(String[] args) {
@@ -149,6 +150,9 @@ public class LaunchConfig {
 				} catch (IllegalArgumentException ignored) {
 				}
 			}
+		}
+		if (levelsDir.get() == null) {
+			levelsDir.set(new File(gameDir.get(), "levels"));
 		}
 		if (uuid.get() == null && username.get() != null) {
 			// Resolve profile UUID if we only provide username
@@ -193,9 +197,6 @@ public class LaunchConfig {
 			}
 		}
 		for (String param : extraParameters) {
-			if (param == null) {
-				continue;
-			}
 			list.add(param);
 		}
 		String[] arr = new String[list.size()];
