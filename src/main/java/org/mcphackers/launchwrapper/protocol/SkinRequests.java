@@ -73,17 +73,26 @@ public class SkinRequests {
 		return null;
 	}
 
+	private static final int ATTEMPTS = 3;
+
 	public static JSONObject requestUUIDfromName(String name) {
 		try {
-			URL profileURL = new URL("https://api.mojang.com/users/profiles/minecraft/" + name);
-			HttpURLConnection connection = (HttpURLConnection)openDirectConnection(profileURL);
-			if (connection.getResponseCode() == 404) {
-				return null;
-			}
-			InputStream connStream = connection.getInputStream();
-			JSONObject uuidJson = new JSONObject(new String(Util.readStream(connStream), "UTF-8"));
+			for (int i = 0; i < ATTEMPTS; i++) {
+				URL profileURL = new URL("https://api.mojang.com/users/profiles/minecraft/" + name);
+				HttpURLConnection connection = (HttpURLConnection)openDirectConnection(profileURL);
+				if (connection.getResponseCode() == 429) {
+					Thread.sleep(1000);
+					continue;
+				}
+				if (connection.getResponseCode() == 404) {
+					return null;
+				}
+				InputStream connStream = connection.getInputStream();
+				JSONObject uuidJson = new JSONObject(new String(Util.readStream(connStream), "UTF-8"));
 
-			return uuidJson;
+				return uuidJson;
+			}
+			return null;
 		} catch (Throwable t) {
 			t.printStackTrace();
 			return null;
