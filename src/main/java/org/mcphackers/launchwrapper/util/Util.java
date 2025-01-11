@@ -12,7 +12,10 @@ import java.net.URL;
 import java.net.URLDecoder;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
+import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.mcphackers.launchwrapper.Launch;
@@ -31,22 +34,29 @@ public final class Util {
 		}
 	}
 
-	public static File getSource(URL resource, String resPath) {
-		if (resource.getProtocol().equals("jar")) {
-			String path = resource.getPath();
-			if (path.startsWith("file:")) {
-				path = path.substring("file:".length());
-				int i = path.lastIndexOf('!');
-				if (i != -1) {
-					path = path.substring(0, i);
+	public static List<File> getSource(ClassLoader loader, String resPath) {
+		List<File> sources = new ArrayList<File>();
+		try {
+			Enumeration<URL> enumeration = loader.getResources(resPath);
+			while (enumeration.hasMoreElements()) {
+				URL resource = enumeration.nextElement();
+				if (resource.getProtocol().equals("jar")) {
+					String path = resource.getPath();
+					if (path.startsWith("file:")) {
+						path = path.substring("file:".length());
+						int i = path.lastIndexOf('!');
+						if (i != -1) {
+							path = path.substring(0, i);
+						}
+					}
+					sources.add(new File(path));
+				} else if (resource.getPath().endsWith(resPath)) {
+					sources.add(new File(resource.getPath().substring(0, resource.getPath().length() - resPath.length() - 1)));
 				}
 			}
-			return new File(path);
+		} catch (IOException e) {
 		}
-		if (resource.getPath().endsWith(resPath)) {
-			return new File(resource.getPath().substring(0, resource.getPath().length() - resPath.length() - 1));
-		}
-		return null;
+		return sources;
 	}
 
 	public static byte[] getResource(String path) {

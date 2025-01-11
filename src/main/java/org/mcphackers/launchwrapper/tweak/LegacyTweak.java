@@ -101,6 +101,35 @@ public class LegacyTweak extends Tweak {
 		return crashPatch.injectErrorAtInit(loader, t);
 	}
 
+	protected AppletLaunchTarget getIsomLaunchTarget() {
+		AppletLaunchTarget launchTarget = new AppletLaunchTarget(MAIN_ISOM.replace("/", "."));
+		launchTarget.setTitle(config.title.get() != null ? config.title.get() : "IsomPreview");
+		try {
+			launchTarget.setIcon(ImageIO.read(Launch.class.getClassLoader().getResourceAsStream("favicon.png")));
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		launchTarget.setResolution(config.width.get(), config.height.get());
+		return launchTarget;
+	}
+
+	@Override
+	public LaunchTarget getLaunchTarget() {
+		if (config.isom.get()) {
+			return getIsomLaunchTarget();
+		}
+		if (context.getMinecraft() == null || NodeHelper.getMethod(context.getMinecraft(), "main", "([Ljava/lang/String;)V") == null) {
+			return null;
+		}
+		downloadServer();
+		enableLegacyMergeSort();
+		enableWLToolkit();
+		URLStreamHandlerProxy.setURLStreamHandler("http", new LegacyURLStreamHandler(config));
+		URLStreamHandlerProxy.setURLStreamHandler("https", new LegacyURLStreamHandler(config));
+		MainLaunchTarget target = new MainLaunchTarget(context.getMinecraft().name, new String[] { config.username.get(), config.session.get() });
+		return target;
+	}
+
 	private void downloadServer() {
 		if (config.serverURL.get() == null || config.gameDir.get() == null) {
 			return;
@@ -137,31 +166,11 @@ public class LegacyTweak extends Tweak {
 		}
 	}
 
-	protected AppletLaunchTarget getIsomLaunchTarget() {
-		AppletLaunchTarget launchTarget = new AppletLaunchTarget(MAIN_ISOM.replace("/", "."));
-		launchTarget.setTitle(config.title.get() != null ? config.title.get() : "IsomPreview");
-		try {
-			launchTarget.setIcon(ImageIO.read(Launch.class.getClassLoader().getResourceAsStream("favicon.png")));
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		launchTarget.setResolution(config.width.get(), config.height.get());
-		return launchTarget;
-	}
-
-	@Override
-	public LaunchTarget getLaunchTarget() {
-		if (config.isom.get()) {
-			return getIsomLaunchTarget();
-		}
-		if (context.getMinecraft() == null || NodeHelper.getMethod(context.getMinecraft(), "main", "([Ljava/lang/String;)V") == null) {
-			return null;
-		}
-		downloadServer();
-		enableLegacyMergeSort();
-		URLStreamHandlerProxy.setURLStreamHandler("http", new LegacyURLStreamHandler(config));
-		URLStreamHandlerProxy.setURLStreamHandler("https", new LegacyURLStreamHandler(config));
-		MainLaunchTarget target = new MainLaunchTarget(context.getMinecraft().name, new String[] { config.username.get(), config.session.get() });
-		return target;
+	private void enableWLToolkit() {
+        try {
+            Class.forName("sun.awt.wl.WLToolkit", false, Launch.class.getClassLoader());
+            System.setProperty("awt.toolkit.name", "WLToolkit");
+        } catch (ClassNotFoundException e) {
+        }
 	}
 }

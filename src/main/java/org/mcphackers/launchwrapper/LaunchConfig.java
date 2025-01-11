@@ -10,9 +10,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 
-import org.mcphackers.launchwrapper.protocol.SkinOption;
-import org.mcphackers.launchwrapper.protocol.SkinRequests;
-import org.mcphackers.launchwrapper.protocol.SkinType;
+import org.mcphackers.launchwrapper.protocol.skin.MojangSkinProvider;
+import org.mcphackers.launchwrapper.protocol.skin.SkinOption;
+import org.mcphackers.launchwrapper.protocol.skin.SkinType;
 import org.mcphackers.launchwrapper.util.OS;
 
 @SuppressWarnings("unused")
@@ -156,7 +156,7 @@ public class LaunchConfig {
 		}
 		if (uuid.get() == null && username.get() != null) {
 			// Resolve profile UUID if we only provide username
-			uuid.set(SkinRequests.getUUIDfromName(username.get()));
+			uuid.set(MojangSkinProvider.getUUIDfromName(username.get()));
 		}
 	}
 

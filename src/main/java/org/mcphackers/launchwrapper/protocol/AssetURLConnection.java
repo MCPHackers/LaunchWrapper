@@ -28,10 +28,7 @@ public class AssetURLConnection extends URLConnection {
 		if (xml) {
 			s.append("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>");
 			s.append("<ListBucketResult>");
-		}
-		for (AssetObject asset : assets.list()) {
-			// path,size,last_updated_timestamp(unused)
-			if (xml) {
+			for (AssetObject asset : assets.list()) {
 				s.append("<Contents>");
 				s.append("<Key>");
 				s.append(asset.path);
@@ -40,12 +37,12 @@ public class AssetURLConnection extends URLConnection {
 				s.append(Long.toString(asset.size));
 				s.append("</Size>");
 				s.append("</Contents>");
-			} else {
+			}
+			s.append("</ListBucketResult>");
+		} else {
+			for (AssetObject asset : assets.list()) {
 				s.append(asset.path + ',' + asset.size + ",0\n");
 			}
-		}
-		if (xml) {
-			s.append("</ListBucketResult>");
 		}
 		return new ByteArrayInputStream(s.toString().getBytes());
 	}

@@ -7,6 +7,8 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.Map;
 
+import org.mcphackers.launchwrapper.protocol.skin.SkinRequests;
+import org.mcphackers.launchwrapper.protocol.skin.SkinTexture;
 import org.mcphackers.launchwrapper.util.Util;
 
 public class SkinURLConnection extends HttpURLConnection {
@@ -38,20 +40,6 @@ public class SkinURLConnection extends HttpURLConnection {
 		String username = queryMap.get("user");
 		String path = url.getPath();
 
-		for (String template : CLOAKS) {
-			if (!path.startsWith(template)) {
-				continue;
-			}
-			if (username == null) {
-				username = path.substring(template.length(), path.length() - ".png".length());
-			}
-			byte[] skinData = skinRequests.getCape(username);
-			if (skinData != null) {
-				inputStream = new ByteArrayInputStream(skinData);
-				return;
-			}
-		}
-
 		for (String template : SKINS) {
 			if (!path.startsWith(template)) {
 				continue;
@@ -59,7 +47,21 @@ public class SkinURLConnection extends HttpURLConnection {
 			if (username == null) {
 				username = path.substring(template.length(), path.length() - ".png".length());
 			}
-			byte[] skinData = skinRequests.getSkin(username);
+			byte[] skinData = skinRequests.getSkin(null, username, SkinTexture.SKIN);
+			if (skinData != null) {
+				inputStream = new ByteArrayInputStream(skinData);
+				return;
+			}
+		}
+
+		for (String template : CLOAKS) {
+			if (!path.startsWith(template)) {
+				continue;
+			}
+			if (username == null) {
+				username = path.substring(template.length(), path.length() - ".png".length());
+			}
+			byte[] skinData = skinRequests.getSkin(null, username, SkinTexture.CAPE);
 			if (skinData != null) {
 				inputStream = new ByteArrayInputStream(skinData);
 				return;

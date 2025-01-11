@@ -1,4 +1,4 @@
-package org.mcphackers.launchwrapper.protocol;
+package org.mcphackers.launchwrapper.protocol.skin;
 
 public enum SkinOption {
 	IGNORE_ALEX("ignoreAlex"),

@@ -6,6 +6,7 @@ import java.net.URL;
 import java.net.URLConnection;
 
 import org.mcphackers.launchwrapper.LaunchConfig;
+import org.mcphackers.launchwrapper.protocol.skin.SkinRequests;
 
 public class LegacyURLStreamHandler extends URLStreamHandlerProxy {
 
@@ -17,7 +18,7 @@ public class LegacyURLStreamHandler extends URLStreamHandlerProxy {
 	public LegacyURLStreamHandler(LaunchConfig config) {
 		this.config = config;
 		this.assets = new AssetRequests(config.assetsDir.get(), config.assetIndex.get());
-		this.skins = new SkinRequests(config.gameDir.get(), config.skinOptions.get(), config.skinProxy.get());
+		this.skins = new SkinRequests(config.gameDir.get(), config.assetsDir.get(), config.skinOptions.get(), config.skinProxy.get());
 		this.levelSaveDir = config.levelsDir.get();
 	}
 
@@ -83,17 +84,18 @@ public class LegacyURLStreamHandler extends URLStreamHandlerProxy {
 				// return new BasicResponseURLConnection(url, "1");
 			}
 			// FIXME server sends their own skin as packet
-			if (host.equals("textures.minecraft.net")) {
-				if (path.startsWith("/texture/")) {
-					return new TextureURLConnection(url, skins);
-				}
-			}
+			// TODO rewrite as injection instead of redirecting URL
+			// if (host.equals("textures.minecraft.net")) {
+			// 	if (path.startsWith("/texture/")) {
+			// 		return new TextureURLConnection(url, skins);
+			// 	}
+			// }
 		}
-		if (host.equals("sessionserver.mojang.com")) {
-			if (path.startsWith("/session/minecraft/profile/")) {
-				return new ProfileURLConnection(url, skins);
-			}
-		}
+		// if (host.equals("sessionserver.mojang.com")) {
+		// 	if (path.startsWith("/session/minecraft/profile/")) {
+		// 		return new ProfileURLConnection(url, skins);
+		// 	}
+		// }
 		return openDirectConnection(url);
 	}
 }
