@@ -145,6 +145,7 @@ public class LaunchWrapperModFile implements LaunchWrapperMod {
 					e.printStackTrace();
 				}
 			}
+			injections.add(0, mappingSource);
 		}
 	}
 

@@ -12,7 +12,6 @@ import org.mcphackers.launchwrapper.LaunchConfig;
 import org.mcphackers.launchwrapper.loader.LaunchClassLoader;
 import org.mcphackers.launchwrapper.micromixin.LaunchWrapperMod;
 import org.mcphackers.launchwrapper.micromixin.LaunchWrapperModFile;
-import org.mcphackers.launchwrapper.micromixin.MappingSource;
 import org.mcphackers.launchwrapper.micromixin.tweak.injection.micromixin.MicroMixinInjection;
 import org.mcphackers.launchwrapper.micromixin.tweak.injection.micromixin.PackageAccessFixer;
 import org.mcphackers.launchwrapper.target.LaunchTarget;
@@ -42,21 +41,19 @@ public class MicroMixinTweak extends Tweak {
 	public void prepare(LaunchClassLoader loader) {
 		File modDir = new File(config.gameDir.get(), "mods");
 		List<File> modFiles = new ArrayList<>();
-		URL url = loader.getResource("launchwrapper.mod.json");
-		if (url != null) {
-			// TODO get all mods if multiple are on classpath
-			File f = Util.getSource(url, "launchwrapper.mod.json");
-			modFiles.add(f); // Classpath mod has the highest priority
-		}
+		// Classpath mods have the highest priority
+		modFiles.addAll(Util.getSource(loader, "launchwrapper.mod.json"));
 		if (modDir.isDirectory()) {
 			List<File> modList = Arrays.asList(modDir.listFiles());
 			modList.sort(Comparator.naturalOrder());
-			modFiles.addAll(modList);
+			for (File f : modList) {
+				if (!f.getName().endsWith(".jar")) {
+					continue;
+				}
+				modFiles.add(f);
+			}
 		}
 		for (File f : modFiles) {
-			if (!f.getName().endsWith(".jar")) {
-				continue;
-			}
 			try {
 				LaunchWrapperMod mod = new LaunchWrapperModFile(f);
 				mods.add(mod);
@@ -86,10 +83,6 @@ public class MicroMixinTweak extends Tweak {
 		List<LaunchWrapperMod> mods = getMixins();
 		List<Injection> injects = new ArrayList<Injection>();
 		for (LaunchWrapperMod mod : mods) {
-			MappingSource mappingSource = mod.getMappingSource();
-			if (mappingSource != null) {
-				injects.add(mappingSource);
-			}
 			injects.addAll(mod.getInjections());
 		}
 		injects.addAll(baseTweak.getInjections());

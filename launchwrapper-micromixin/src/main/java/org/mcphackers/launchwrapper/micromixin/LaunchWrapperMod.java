@@ -30,6 +30,7 @@ public interface LaunchWrapperMod {
 	 * Returns an Injection which should dynamically create mappings, starting from an unobfuscated entry point
 	 * or you can return MappingSource.fromMappings(mappings) with predetermined mappings
 	 * This method must return an instance of MappingSource with all class/method/field mappings used by mixins from getMixins()
+	 * This instance should also be the first Injection in a list returned by {@link #getInjections()}
 	 * @return Instance of MappingsSource
 	 */
 	@Nullable
