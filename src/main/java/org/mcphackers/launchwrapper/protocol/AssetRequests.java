@@ -42,7 +42,7 @@ public class AssetRequests {
 				if (entry == null) {
 					continue;
 				}
-				String hash = entry.optString("hash");
+				String hash = entry.optString("hash", null);
 				long size = entry.optLong("size");
 				// Only resources in a folder are valid
 				if (!s.contains("/") || hash == null) {

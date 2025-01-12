@@ -28,7 +28,25 @@ public class SkinRequests {
 		providers.add(new ElyBySkinProvider());
 	}
 
-	public byte[] getSkin(String id, String username, SkinTexture type) {
+	public Skin getSkin(String id, String username, SkinTexture type) {
+		for (SkinProvider provider : providers) {
+			Skin skin = provider.getSkin(id, username, type);
+			if (skin == null) {
+				continue;
+			}
+			String hash = skin.getSHA256();
+			if (hash != null) {
+				File f = new File(assetsDir, "skins/" + hash.substring(0, 2) + "/" + hash);
+				if (f.isFile() && f.canRead()) {
+					return new LocalSkin(f, skin.isSlim());
+				}
+			}
+			return skin;
+		}
+		return null;
+	}
+
+	public byte[] getConvertedSkin(String id, String username, SkinTexture type) {
 		for (SkinProvider provider : providers) {
 			Skin skin = provider.getSkin(id, username, type);
 			if (skin == null) {

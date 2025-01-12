@@ -3,6 +3,7 @@ package org.mcphackers.launchwrapper.protocol.skin;
 import static org.mcphackers.launchwrapper.protocol.URLStreamHandlerProxy.*;
 
 import java.io.IOException;
+import java.net.HttpURLConnection;
 import java.net.URL;
 
 import org.mcphackers.launchwrapper.util.Util;
@@ -16,7 +17,10 @@ public class SkinMCCapeProvider implements SkinProvider {
 		if (uuid == null) {
 			uuid = MojangSkinProvider.getUUIDfromName(name);
 		}
-		return new SkinCape(convertUUID(uuid));
+		if (uuid != null) {
+			return new SkinCape(convertUUID(uuid));
+		}
+		return null;
 	}
 
 	private String convertUUID(String uuid) {
@@ -43,7 +47,11 @@ public class SkinMCCapeProvider implements SkinProvider {
 		}
 
 		public byte[] getData() throws IOException {
-			return Util.readStream(openDirectConnection(new URL("https://skinmc.net/api/v1/skinmcCape/" + uuid)).getInputStream());
+			HttpURLConnection httpConnection = (HttpURLConnection)openDirectConnection(new URL("https://skinmc.net/api/v1/skinmcCape/" + uuid));
+			if (httpConnection.getResponseCode() != 200) {
+				return null;
+			}
+			return Util.readStream(httpConnection.getInputStream());
 		}
 
 		public boolean isSlim() {

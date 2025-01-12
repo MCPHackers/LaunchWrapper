@@ -11,18 +11,16 @@ import org.mcphackers.launchwrapper.util.Util;
 public class ElyBySkinProvider implements SkinProvider {
 
 	public Skin getSkin(String uuid, String name, SkinTexture type) {
-		if (uuid != null && name == null) {
+		if (name == null) {
 			name = MojangSkinProvider.getNameFromUUID(uuid);
-			return getSkinByName(name, type);
 		}
-		return null;
-	}
-
-	public Skin getSkinByName(String name, SkinTexture type) {
 		return getSkin(name, type);
 	}
 
-	public ElyBySkin getSkin(String name, SkinTexture type) {
+	public Skin getSkin(String name, SkinTexture type) {
+		if (name == null) {
+			return null;
+		}
 		try {
 			boolean slim = false;
 			String url = null;
@@ -36,10 +34,13 @@ public class ElyBySkinProvider implements SkinProvider {
 					if (metadata != null) {
 						slim = "slim".equals(metadata.optString("model"));
 					}
-					url = skinjson.optString("url");
+					url = skinjson.optString("url", null);
 				}
 			}
-			return new ElyBySkin(url, slim);
+			if (url != null) {
+				return new ElyBySkin(url, slim);
+			}
+			return null;
 
 		} catch (Throwable t) {
 			t.printStackTrace();

@@ -16,20 +16,25 @@ public class MinecraftCapesProvider implements SkinProvider {
 		if (type != SkinTexture.CAPE) {
 			return null;
 		}
-		if (uuid == null) {
+		Skin skin = getCape(uuid);
+		if (skin == null) {
 			uuid = MojangSkinProvider.getUUIDfromName(name);
+			skin = getCape(uuid);
 		}
-		return getCape(uuid);
+		return skin;
 	}
 
 	private Skin getCape(String uuid) {
+		if (uuid == null) {
+			return null;
+		}
 		try {
 			URL profileURL = new URL("https://api.minecraftcapes.net/profile/" + uuid);
 			JSONObject profileJson = new JSONObject(new String(Util.readStream(openDirectConnection(profileURL).getInputStream()), "UTF-8"));
 
 			JSONObject txts = profileJson.optJSONObject("textures");
 			if (txts != null) {
-				String png = txts.optString("cape");
+				String png = txts.optString("cape", null);
 				if (png != null) {
 					byte[] cape = Base64.decode(png);
 					return new SkinCape(cape);

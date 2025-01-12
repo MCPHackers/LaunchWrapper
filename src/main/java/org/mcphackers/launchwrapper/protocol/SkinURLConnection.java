@@ -47,7 +47,7 @@ public class SkinURLConnection extends HttpURLConnection {
 			if (username == null) {
 				username = path.substring(template.length(), path.length() - ".png".length());
 			}
-			byte[] skinData = skinRequests.getSkin(null, username, SkinTexture.SKIN);
+			byte[] skinData = skinRequests.getConvertedSkin(null, username, SkinTexture.SKIN);
 			if (skinData != null) {
 				inputStream = new ByteArrayInputStream(skinData);
 				return;
@@ -61,7 +61,7 @@ public class SkinURLConnection extends HttpURLConnection {
 			if (username == null) {
 				username = path.substring(template.length(), path.length() - ".png".length());
 			}
-			byte[] skinData = skinRequests.getSkin(null, username, SkinTexture.CAPE);
+			byte[] skinData = skinRequests.getConvertedSkin(null, username, SkinTexture.CAPE);
 			if (skinData != null) {
 				inputStream = new ByteArrayInputStream(skinData);
 				return;

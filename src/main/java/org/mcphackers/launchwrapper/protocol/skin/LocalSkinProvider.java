@@ -15,7 +15,10 @@ public class LocalSkinProvider implements SkinProvider {
 			return skin;
 		}
 		String uuid = MojangSkinProvider.getUUIDfromName(name);
-		return getLocalSkin(uuid, type);
+		if (uuid != null) {
+			return getLocalSkin(uuid, type);
+		}
+		return null;
 	}
 
 	public Skin getSkin(String uuid, String name, SkinTexture type) {
@@ -32,7 +35,10 @@ public class LocalSkinProvider implements SkinProvider {
 			}
 		}
 		if (uuid != null) {
-			return getLocalSkin(MojangSkinProvider.getNameFromUUID(uuid), type);
+			name = MojangSkinProvider.getNameFromUUID(uuid);
+			if (name != null) {
+				return getLocalSkin(name, type);
+			}
 		}
 		return null;
 	}

@@ -22,6 +22,9 @@ public class MojangSkinProvider implements SkinProvider {
 
 	public static String getNameFromUUID(String uuid) {
 		Profile p = getProfile(uuid);
+		if (p == null) {
+			return null;
+		}
 		return p.name;
 	}
 
@@ -38,7 +41,7 @@ public class MojangSkinProvider implements SkinProvider {
 		} else {
 			JSONObject obj = requestUUIDfromName(username);
 			if (obj != null) {
-				String uuid = obj.optString("id");
+				String uuid = obj.optString("id", null);
 
 				nameToUUID.put(username, uuid);
 				return uuid;
@@ -91,6 +94,9 @@ public class MojangSkinProvider implements SkinProvider {
 	}
 
 	public static Profile getProfile(String uuid) {
+		if (uuid == null) {
+			return null;
+		}
 		try {
 			URL uuidtoprofileURL = new URL("https://sessionserver.mojang.com/session/minecraft/profile/" + uuid);
 			JSONObject profileJson = new JSONObject(new String(Util.readStream(openDirectConnection(uuidtoprofileURL).getInputStream()), "UTF-8"));
@@ -103,7 +109,10 @@ public class MojangSkinProvider implements SkinProvider {
 				if (!"textures".equals(properties.getJSONObject(i).optString("name"))) {
 					continue;
 				}
-				String base64tex = properties.getJSONObject(i).optString("value");
+				String base64tex = properties.getJSONObject(i).optString("value", null);
+				if (base64tex == null) {
+					continue;
+				}
 				texjsonstr = new String(Base64.decode(base64tex), "UTF-8");
 			}
 			String name = profileJson.optString("name", null);
@@ -141,19 +150,32 @@ public class MojangSkinProvider implements SkinProvider {
 		}
 	}
 
-	public Skin getSkin(String uuid, String name, SkinTexture type) {
+	public Skin getSkin(String uuid, SkinTexture type) {
 		if (uuid == null) {
-			uuid = getUUIDfromName(name);
+			return null;
 		}
-		return new MojangSkin(uuid, type);
+		Profile profile = getProfile(uuid);
+		if (profile == null) {
+			return null;
+		}
+		return new MojangSkin(profile, type);
+	}
+
+	public Skin getSkin(String uuid, String name, SkinTexture type) {
+		Skin skin = getSkin(uuid, type);
+		if (skin == null) {
+			uuid = getUUIDfromName(name);
+			skin = getSkin(uuid, type);
+		}
+		return skin;
 	}
 
 	public static class MojangSkin implements Skin {
 		private Profile profile;
 		private SkinTexture type;
 
-		public MojangSkin(String uuid, SkinTexture type) {
-			this.profile = getProfile(uuid);
+		public MojangSkin(Profile profile, SkinTexture type) {
+			this.profile = profile;
 			this.type = type;
 		}
 

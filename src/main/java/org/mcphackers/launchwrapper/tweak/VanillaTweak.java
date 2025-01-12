@@ -4,6 +4,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import org.mcphackers.launchwrapper.Launch;
 import org.mcphackers.launchwrapper.LaunchConfig;
 import org.mcphackers.launchwrapper.loader.LaunchClassLoader;
 import org.mcphackers.launchwrapper.protocol.LegacyURLStreamHandler;
@@ -52,8 +53,17 @@ public class VanillaTweak extends Tweak {
 
 	@Override
 	public LaunchTarget getLaunchTarget() {
+		enableWLToolkit();
 		URLStreamHandlerProxy.setURLStreamHandler("http", new LegacyURLStreamHandler(config));
 		URLStreamHandlerProxy.setURLStreamHandler("https", new LegacyURLStreamHandler(config));
 		return new MainLaunchTarget(MAIN_CLASS, context.args);
+	}
+
+	private void enableWLToolkit() {
+		try {
+			Class.forName("sun.awt.wl.WLToolkit", false, Launch.class.getClassLoader());
+			System.setProperty("awt.toolkit.name", "WLToolkit");
+		} catch (ClassNotFoundException e) {
+		}
 	}
 }
