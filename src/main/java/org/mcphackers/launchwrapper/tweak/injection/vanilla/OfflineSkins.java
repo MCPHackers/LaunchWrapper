@@ -22,5 +22,4 @@ public class OfflineSkins extends InjectionWithContext<MinecraftGetter> {
 	public boolean apply(ClassNodeSource source, LaunchConfig config) {
 		return true;
 	}
-
 }

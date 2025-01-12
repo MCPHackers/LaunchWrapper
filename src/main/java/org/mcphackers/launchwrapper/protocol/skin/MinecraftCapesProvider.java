@@ -66,6 +66,5 @@ public class MinecraftCapesProvider implements SkinProvider {
 		public boolean isSlim() {
 			return false;
 		}
-
 	}
 }

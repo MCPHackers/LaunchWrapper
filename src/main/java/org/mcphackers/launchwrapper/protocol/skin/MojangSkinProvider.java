@@ -182,7 +182,5 @@ public class MojangSkinProvider implements SkinProvider {
 		public boolean isSlim() {
 			return profile.slim;
 		}
-
 	}
-
 }

@@ -49,6 +49,5 @@ public class SkinMCCapeProvider implements SkinProvider {
 		public boolean isSlim() {
 			return false;
 		}
-
 	}
 }

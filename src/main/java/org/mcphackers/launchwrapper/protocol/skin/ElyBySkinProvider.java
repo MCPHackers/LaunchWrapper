@@ -67,6 +67,5 @@ public class ElyBySkinProvider implements SkinProvider {
 		public boolean isSlim() {
 			return slim;
 		}
-
 	}
 }

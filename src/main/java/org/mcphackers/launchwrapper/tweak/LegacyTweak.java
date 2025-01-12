@@ -167,10 +167,10 @@ public class LegacyTweak extends Tweak {
 	}
 
 	private void enableWLToolkit() {
-        try {
-            Class.forName("sun.awt.wl.WLToolkit", false, Launch.class.getClassLoader());
-            System.setProperty("awt.toolkit.name", "WLToolkit");
-        } catch (ClassNotFoundException e) {
-        }
+		try {
+			Class.forName("sun.awt.wl.WLToolkit", false, Launch.class.getClassLoader());
+			System.setProperty("awt.toolkit.name", "WLToolkit");
+		} catch (ClassNotFoundException e) {
+		}
 	}
 }
