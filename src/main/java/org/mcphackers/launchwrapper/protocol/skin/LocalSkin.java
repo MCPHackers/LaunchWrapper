@@ -27,6 +27,10 @@ public class LocalSkin implements Skin {
 		return Util.readStream(new FileInputStream(skinFile));
 	}
 
+	public String getURL() {
+		return skinFile.toURI().toString();
+	}
+
 	public boolean isSlim() {
 		return slim;
 	}

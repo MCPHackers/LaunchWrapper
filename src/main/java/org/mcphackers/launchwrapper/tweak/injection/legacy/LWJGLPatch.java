@@ -379,7 +379,6 @@ public class LWJGLPatch extends InjectionWithContext<LegacyTweakContext> {
 				insn2 = getFirst(m.instructions);
 				while (insn2 != null) {
 					AbstractInsnNode[] insns2 = fill(insn2, 4);
-					// TODO setFullscreen(field:Z)
 					if (compareInsn(insns2[0], INVOKESTATIC, "org/lwjgl/opengl/Display", "setFullscreen", "(Z)V") &&
 						compareInsn(insns2[1], INVOKESTATIC, "org/lwjgl/opengl/Display", "update", "()V")) {
 						// Removes fullscreen delay

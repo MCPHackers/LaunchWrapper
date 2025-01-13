@@ -47,11 +47,15 @@ public class SkinMCCapeProvider implements SkinProvider {
 		}
 
 		public byte[] getData() throws IOException {
-			HttpURLConnection httpConnection = (HttpURLConnection)openDirectConnection(new URL("https://skinmc.net/api/v1/skinmcCape/" + uuid));
+			HttpURLConnection httpConnection = (HttpURLConnection)openDirectConnection(new URL(getURL()));
 			if (httpConnection.getResponseCode() != 200) {
 				return null;
 			}
 			return Util.readStream(httpConnection.getInputStream());
+		}
+
+		public String getURL() {
+			return "https://skinmc.net/api/v1/skinmcCape/" + uuid;
 		}
 
 		public boolean isSlim() {

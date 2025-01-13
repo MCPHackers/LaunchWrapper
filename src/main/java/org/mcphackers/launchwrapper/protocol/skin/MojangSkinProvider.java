@@ -6,7 +6,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.Map;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -80,15 +82,13 @@ public class MojangSkinProvider implements SkinProvider {
 	public static class Profile {
 		public final String name;
 		public final String uuid;
-		public final String skinTex;
-		public final String capeTex;
+		public final Map<SkinTexture, String> textures;
 		public final boolean slim;
 
-		public Profile(String name, String uuid, String skinTex, String capeTex, boolean slim) {
+		public Profile(String name, String uuid, Map<SkinTexture, String> textures, boolean slim) {
 			this.name = name;
 			this.uuid = uuid;
-			this.skinTex = skinTex;
-			this.capeTex = capeTex;
+			this.textures = textures;
 			this.slim = slim;
 		}
 	}
@@ -99,7 +99,16 @@ public class MojangSkinProvider implements SkinProvider {
 		}
 		try {
 			URL uuidtoprofileURL = new URL("https://sessionserver.mojang.com/session/minecraft/profile/" + uuid);
-			JSONObject profileJson = new JSONObject(new String(Util.readStream(openDirectConnection(uuidtoprofileURL).getInputStream()), "UTF-8"));
+			HttpURLConnection connection = (HttpURLConnection)openDirectConnection(uuidtoprofileURL);
+			// https://sessionserver.mojang.com/session/minecraft/profile/bbfd0136758c3f73a31ecc4963da4394
+			if (connection.getResponseCode() == 204) {
+				return null;
+			}
+			String response = new String(Util.readStream(connection.getInputStream()), "UTF-8");
+			if(response.isEmpty()) {
+				return null;
+			}
+			JSONObject profileJson = new JSONObject(response);
 			JSONArray properties = profileJson.optJSONArray("properties");
 			if (properties == null) {
 				return null;
@@ -117,31 +126,27 @@ public class MojangSkinProvider implements SkinProvider {
 			}
 			String name = profileJson.optString("name", null);
 			if (texjsonstr == null) {
-				return new Profile(name, uuid, null, null, false);
+				return new Profile(name, uuid, Collections.<SkinTexture, String>emptyMap(), false);
 			}
+			Map<SkinTexture, String> texMap = new HashMap<SkinTexture, String>();
 			boolean slim = false;
-			String skinHash = null;
-			String capeHash = null;
 
 			JSONObject texjson = new JSONObject(texjsonstr);
 			JSONObject txts = texjson.optJSONObject("textures");
 			if (txts != null) {
-				JSONObject skinjson = txts.optJSONObject("SKIN");
-				if (skinjson != null) {
-					JSONObject metadata = skinjson.optJSONObject("metadata");
-					if (metadata != null) {
-						slim = "slim".equals(metadata.optString("model"));
+				for (SkinTexture tex : SkinTexture.values()) {
+					JSONObject texJson = txts.optJSONObject(tex.name());
+					if (texJson != null) {
+						JSONObject metadata = texJson.optJSONObject("metadata");
+						if (metadata != null && tex == SkinTexture.SKIN) {
+							slim = "slim".equals(metadata.optString("model"));
+						}
+						String skinURLstr = texJson.optString("url");
+						texMap.put(tex, skinURLstr.substring(skinURLstr.lastIndexOf('/') + 1));
 					}
-					String skinURLstr = skinjson.optString("url");
-					skinHash = skinURLstr.substring(skinURLstr.lastIndexOf('/') + 1);
-				}
-				skinjson = txts.optJSONObject("CAPE");
-				if (skinjson != null) {
-					String skinURLstr = skinjson.optString("url");
-					capeHash = skinURLstr.substring(skinURLstr.lastIndexOf('/') + 1);
 				}
 			}
-			Profile p = new Profile(name, uuid, skinHash, capeHash, slim);
+			Profile p = new Profile(name, uuid, texMap, slim);
 			return p;
 
 		} catch (Throwable t) {
@@ -180,25 +185,19 @@ public class MojangSkinProvider implements SkinProvider {
 		}
 
 		public String getSHA256() {
-			if (type == SkinTexture.SKIN) {
-				return profile.skinTex;
-			}
-			if (type == SkinTexture.CAPE) {
-				return profile.capeTex;
+			return profile.textures.get(type);
+		}
+
+		public byte[] getData() throws IOException {
+			String url = getURL();
+			if (url != null) {
+				return Util.readStream(openDirectConnection(new URL(url)).getInputStream());
 			}
 			return null;
 		}
 
-		public byte[] getData() throws IOException {
-			if (type == SkinTexture.SKIN) {
-				URL skinURL = new URL("http://textures.minecraft.net/texture/" + profile.skinTex);
-				return Util.readStream(openDirectConnection(skinURL).getInputStream());
-			}
-			if (type == SkinTexture.CAPE) {
-				URL skinURL = new URL("http://textures.minecraft.net/texture/" + profile.capeTex);
-				return Util.readStream(openDirectConnection(skinURL).getInputStream());
-			}
-			return null;
+		public String getURL() {
+			return "http://textures.minecraft.net/texture/" + getSHA256();
 		}
 
 		public boolean isSlim() {

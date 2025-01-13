@@ -65,6 +65,10 @@ public class ElyBySkinProvider implements SkinProvider {
 			return Util.readStream(openDirectConnection(new URL(url)).getInputStream());
 		}
 
+		public String getURL() {
+			return url;
+		}
+
 		public boolean isSlim() {
 			return slim;
 		}

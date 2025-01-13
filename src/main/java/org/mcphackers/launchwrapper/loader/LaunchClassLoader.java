@@ -81,6 +81,8 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 		addExclusion("org.mcphackers.launchwrapper.");
 		addExclusion("org.objectweb.asm.");
 		addExclusion("org.json.");
+		addExclusion("com.mojang.authlib.");
+		addExclusion("com.google.gson.");
 	}
 
 	protected static URL[] getInitialURLs(ClassLoader parent) {
@@ -291,7 +293,8 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 			}
 			if (modified) {
 				overrideClass(getClass(nodeName));
-				Launch.LOGGER.logDebug("Applying lazy tweak to %s", nodeName);
+				// Silence it for now because it gets very spammy with no real information (especially in the case of widening package access in fabric env)
+				// Launch.LOGGER.logDebug("Applying lazy tweak to %s", nodeName);
 			}
 		}
 		ClassNode overridenNode = overridenClasses.get(name);

@@ -83,7 +83,6 @@ public class LegacyURLStreamHandler extends URLStreamHandlerProxy {
 				// if(path.equals("/worlds/test/$LOCATION_ID"))
 				// return new BasicResponseURLConnection(url, "1");
 			}
-			// FIXME server sends their own skin as packet
 			// TODO rewrite as injection instead of redirecting URL
 			// if (host.equals("textures.minecraft.net")) {
 			// 	if (path.startsWith("/texture/")) {

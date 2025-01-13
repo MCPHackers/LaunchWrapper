@@ -475,11 +475,9 @@ public final class InsnHelper {
 				return matches;
 			case TABLESWITCH_INSN:
 				TableSwitchInsnNode insn12 = (TableSwitchInsnNode)insn;
-				// TODO
 				return matches;
 			case LOOKUPSWITCH_INSN:
 				LookupSwitchInsnNode insn13 = (LookupSwitchInsnNode)insn;
-				// TODO
 				return matches;
 			case MULTIANEWARRAY_INSN:
 				MultiANewArrayInsnNode insn14 = (MultiANewArrayInsnNode)insn;

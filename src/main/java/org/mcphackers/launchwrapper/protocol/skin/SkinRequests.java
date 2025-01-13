@@ -22,10 +22,11 @@ public class SkinRequests {
 		this.skinOptions = options;
 		this.skinType = type;
 		providers.add(new LocalSkinProvider(new File(gameDir, "skins")));
-		providers.add(new MinecraftCapesProvider());
+		providers.add(new MinecraftCapesProvider(assetsDir));
 		providers.add(new SkinMCCapeProvider());
 		providers.add(new MojangSkinProvider());
 		providers.add(new ElyBySkinProvider());
+		providers.add(new CraftarSkinProvider());
 	}
 
 	public Skin getSkin(String id, String username, SkinTexture type) {
