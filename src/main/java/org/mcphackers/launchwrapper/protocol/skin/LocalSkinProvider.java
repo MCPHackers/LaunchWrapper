@@ -44,25 +44,28 @@ public class LocalSkinProvider implements SkinProvider {
 	}
 
 	private Skin getLocalSkin(String path, SkinTexture type) {
-		File f;
+		String dirName = null;
+		switch (type) {
+			case SKIN:
+				dirName = "skin";
+				break;
+			case CAPE:
+				dirName = "cape";
+				break;
+			case ELYTRA:
+				dirName = "elytra";
+				break;
+			default:
+				break;
+		}
+		File f = new File(skinsDirectory, dirName + "/" + path + ".png");
+		if (f.isFile() && f.canRead()) {
+			return new LocalSkin(f, false);
+		}
 		if (type == SkinTexture.SKIN) {
-			f = new File(skinsDirectory, "skins/" + path + ".png");
-			if (f.isFile() && f.canRead()) {
-				return new LocalSkin(f, false);
-			}
-			f = new File(skinsDirectory, "skins/" + path + ".slim.png");
+			f = new File(skinsDirectory, "skin/" + path + ".slim.png");
 			if (f.isFile() && f.canRead()) {
 				return new LocalSkin(f, true);
-			}
-		} else if (type == SkinTexture.CAPE) {
-			f = new File(skinsDirectory, "capes/" + path + ".png");
-			if (f.isFile() && f.canRead()) {
-				return new LocalSkin(f, false);
-			}
-		} else if (type == SkinTexture.ELYTRA) {
-			f = new File(skinsDirectory, "elytra/" + path + ".png");
-			if (f.isFile() && f.canRead()) {
-				return new LocalSkin(f, false);
 			}
 		}
 		return null;

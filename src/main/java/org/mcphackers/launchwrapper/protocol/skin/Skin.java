@@ -17,6 +17,7 @@ public interface Skin {
 
 	/**
 	 * @return a file:// or an http[s]:// url
+	 * Base name of URL path must be the same as return value of {@link #getSHA256()}
 	 */
 	String getURL();
 

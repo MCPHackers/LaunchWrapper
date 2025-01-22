@@ -3,19 +3,25 @@ package org.mcphackers.launchwrapper.protocol.skin;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.File;
-import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.mcphackers.launchwrapper.util.ImageUtils;
+import org.mcphackers.launchwrapper.util.Util;
 
 public class SkinRequests {
 
+	private static SkinRequests INSTANCE;
 	private SkinType skinType;
 	private List<SkinOption> skinOptions;
 	private File assetsDir;
 	private List<SkinProvider> providers = new ArrayList<SkinProvider>();
+
+	public static SkinRequests getInstance() {
+		return INSTANCE;
+	}
 
 	public SkinRequests(File gameDir, File assetsDir, List<SkinOption> options, SkinType type) {
 		this.assetsDir = assetsDir;
@@ -26,7 +32,43 @@ public class SkinRequests {
 		providers.add(new SkinMCCapeProvider());
 		providers.add(new MojangSkinProvider());
 		providers.add(new ElyBySkinProvider());
-		providers.add(new CraftarSkinProvider());
+		// providers.add(new CraftarSkinProvider());
+		INSTANCE = this;
+	}
+
+	public Skin downloadSkin(String id, String username, SkinTexture type) {
+		Skin skin = getSkin(id, username, type);
+		if (skin == null) {
+			return null;
+		}
+		String hash = skin.getSHA256();
+		byte[] skinData = null;
+		if (hash == null) {
+			try {
+				skinData = skin.getData();
+				hash = Util.getSHA256(new ByteArrayInputStream(skinData));
+			} catch (IOException e) {
+				return null;
+			}
+		}
+		File f = new File(assetsDir, "skins/" + hash.substring(0, 2) + "/" + hash);
+		File dir = f.getParentFile();
+		if (dir != null) {
+			if (f.isFile() && f.canRead()) {
+				return new LocalSkin(f, skin.isSlim());
+			}
+			dir.mkdirs();
+			f.delete();
+			try {
+				if (skinData == null) {
+					skinData = skin.getData();
+				}
+				Util.copyStream(new ByteArrayInputStream(skinData), new FileOutputStream(f));
+			} catch (IOException e) {
+				return null;
+			}
+		}
+		return new LocalSkin(f, skin.isSlim());
 	}
 
 	public Skin getSkin(String id, String username, SkinTexture type) {
@@ -48,36 +90,13 @@ public class SkinRequests {
 	}
 
 	public byte[] getConvertedSkin(String id, String username, SkinTexture type) {
-		for (SkinProvider provider : providers) {
-			Skin skin = provider.getSkin(id, username, type);
-			if (skin == null) {
-				continue;
-			}
-			String hash = skin.getSHA256();
-			if (hash != null) {
-				File f = new File(assetsDir, "skins/" + hash.substring(0, 2) + "/" + hash);
-				if (f.isFile() && f.canRead()) {
-					try {
-						LocalSkin localSkin = new LocalSkin(f, skin.isSlim());
-						return type == SkinTexture.SKIN ? convertSkin(localSkin) : convertCape(localSkin);
-					} catch (IOException e) {
-						// ignore
-					}
-				}
-			}
-			try {
-				byte[] skinData = type == SkinTexture.SKIN ? convertSkin(skin) : convertCape(skin);
-				if (skinData == null) {
-					continue;
-				}
-				return skinData;
-			} catch (FileNotFoundException e) {
-				continue;
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
+		Skin skin = getSkin(id, username, type);
+		try {
+			return type == SkinTexture.SKIN ? convertSkin(skin) : convertCape(skin);
+		} catch (IOException e) {
+			e.printStackTrace();
+			return null;
 		}
-		return null;
 	}
 
 	private byte[] convertCape(Skin skin) throws IOException {

@@ -54,23 +54,30 @@ public class MojangSkinProvider implements SkinProvider {
 	}
 
 	private static final int ATTEMPTS = 3;
+	private static final String[] USERNAME_LOOKUP = { "https://api.mojang.com/users/profiles/minecraft/", "https://api.minecraftservices.com/minecraft/profile/lookup/name/" };
 
 	private static JSONObject requestUUIDfromName(String name) {
 		try {
-			for (int i = 0; i < ATTEMPTS; i++) {
-				URL profileURL = new URL("https://api.mojang.com/users/profiles/minecraft/" + name);
-				HttpURLConnection connection = (HttpURLConnection)openDirectConnection(profileURL);
-				if (connection.getResponseCode() == 429) {
-					Thread.sleep(1000);
-					continue;
-				}
-				if (connection.getResponseCode() == 404) {
-					return null;
-				}
-				InputStream connStream = connection.getInputStream();
-				JSONObject uuidJson = new JSONObject(new String(Util.readStream(connStream), "UTF-8"));
+		next:
+			for (String url : USERNAME_LOOKUP) {
+				for (int i = 0; i < ATTEMPTS; i++) {
+					URL profileURL = new URL(url + name);
+					HttpURLConnection connection = (HttpURLConnection)openDirectConnection(profileURL);
+					if (connection.getResponseCode() == 429) {
+						Thread.sleep(1000);
+						continue;
+					}
+					if (connection.getResponseCode() == 404) {
+						return null;
+					}
+					if (connection.getResponseCode() != 200) {
+						continue next;
+					}
+					InputStream connStream = connection.getInputStream();
+					JSONObject uuidJson = new JSONObject(new String(Util.readStream(connStream), "UTF-8"));
 
-				return uuidJson;
+					return uuidJson;
+				}
 			}
 			return null;
 		} catch (Throwable t) {
@@ -105,7 +112,7 @@ public class MojangSkinProvider implements SkinProvider {
 				return null;
 			}
 			String response = new String(Util.readStream(connection.getInputStream()), "UTF-8");
-			if(response.isEmpty()) {
+			if (response.isEmpty()) {
 				return null;
 			}
 			JSONObject profileJson = new JSONObject(response);

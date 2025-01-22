@@ -26,12 +26,16 @@ public class ElyBySkinProvider implements SkinProvider {
 			String url = null;
 
 			URL texturesURL = new URL("http://skinsystem.ely.by/textures/" + name);
-			JSONObject texturesJson = new JSONObject(new String(Util.readStream(openDirectConnection(texturesURL).getInputStream()), "UTF-8"));
-			if (texturesJson != null && (type == SkinTexture.SKIN || type == SkinTexture.CAPE)) {
-				JSONObject skinjson = texturesJson.optJSONObject(type == SkinTexture.SKIN ? "SKIN" : "CAPE");
+			String response = new String(Util.readStream(openDirectConnection(texturesURL).getInputStream()), "UTF-8");
+			if (response.isEmpty()) {
+				return null;
+			}
+			JSONObject texturesJson = new JSONObject(response);
+			if (texturesJson != null) {
+				JSONObject skinjson = texturesJson.optJSONObject(type.name());
 				if (skinjson != null) {
 					JSONObject metadata = skinjson.optJSONObject("metadata");
-					if (metadata != null) {
+					if (metadata != null && type == SkinTexture.SKIN) {
 						slim = "slim".equals(metadata.optString("model"));
 					}
 					url = skinjson.optString("url", null);
@@ -58,7 +62,7 @@ public class ElyBySkinProvider implements SkinProvider {
 		}
 
 		public String getSHA256() {
-			return null;
+			return url.substring(url.lastIndexOf('/') + 1);
 		}
 
 		public byte[] getData() throws IOException {

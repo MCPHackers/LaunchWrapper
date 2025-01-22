@@ -35,18 +35,17 @@ public class CraftarSkinProvider implements SkinProvider {
 		}
 
 		public String getURL() {
-			if(type == SkinTexture.SKIN) {
+			if (type == SkinTexture.SKIN) {
 				return "https://crafatar.com/skins/" + uuid;
 			}
-			if(type == SkinTexture.CAPE) {
+			if (type == SkinTexture.CAPE) {
 				return "https://crafatar.com/capes/" + uuid;
 			}
 			return null;
 		}
 
 		public boolean isSlim() {
-			return false;
+			return false; // https://github.com/crafatar/crafatar/issues/326
 		}
 	}
-
 }

@@ -18,7 +18,7 @@ public class SkinMCCapeProvider implements SkinProvider {
 			uuid = MojangSkinProvider.getUUIDfromName(name);
 		}
 		if (uuid != null) {
-			return new SkinCape(convertUUID(uuid));
+			return new SkinMCCape(convertUUID(uuid));
 		}
 		return null;
 	}
@@ -35,10 +35,10 @@ public class SkinMCCapeProvider implements SkinProvider {
 		return sb.toString();
 	}
 
-	public static class SkinCape implements Skin {
+	public static class SkinMCCape implements Skin {
 		private String uuid;
 
-		public SkinCape(String uuid) {
+		public SkinMCCape(String uuid) {
 			this.uuid = uuid;
 		}
 

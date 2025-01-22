@@ -15,7 +15,6 @@ import com.mojang.authlib.minecraft.MinecraftProfileTexture;
 import com.mojang.authlib.minecraft.MinecraftSessionService;
 import com.mojang.authlib.yggdrasil.YggdrasilAuthenticationService;
 
-import org.mcphackers.launchwrapper.Launch;
 import org.mcphackers.launchwrapper.LaunchConfig;
 import org.mcphackers.launchwrapper.protocol.skin.Skin;
 import org.mcphackers.launchwrapper.protocol.skin.SkinRequests;
@@ -30,17 +29,6 @@ import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 
 public class OfflineSkins extends InjectionWithContext<MinecraftGetter> {
-	private static final SkinRequests SKINS;
-	static {
-		Launch launch = Launch.getInstance();
-		if(launch == null) {
-			SKINS = null;
-		} else {
-			LaunchConfig config = launch.config;
-			SKINS = new SkinRequests(config.gameDir.get(), config.assetsDir.get(), config.skinOptions.get(), config.skinProxy.get());
-		}
-	}
-
 	public OfflineSkins(MinecraftGetter storage) {
 		super(storage);
 	}
@@ -66,6 +54,7 @@ public class OfflineSkins extends InjectionWithContext<MinecraftGetter> {
 					continue;
 				}
 				MethodInsnNode mInsn = (MethodInsnNode)insn;
+				// authlib isn't obfuscated. We can rely on hardcoded names
 				if (compareInsn(mInsn, -1, "com/mojang/authlib/yggdrasil/YggdrasilAuthenticationService", "createMinecraftSessionService", "()Lcom/mojang/authlib/minecraft/MinecraftSessionService;")) {
 					m.instructions.set(insn, new MethodInsnNode(INVOKESTATIC, "org/mcphackers/launchwrapper/tweak/injection/vanilla/OfflineSkins", "redirectSessionService", "(Lcom/mojang/authlib/yggdrasil/YggdrasilAuthenticationService;)Lcom/mojang/authlib/minecraft/MinecraftSessionService;"));
 					source.overrideClass(mc);
@@ -76,16 +65,17 @@ public class OfflineSkins extends InjectionWithContext<MinecraftGetter> {
 		return false;
 	}
 	public static MinecraftSessionService redirectSessionService(YggdrasilAuthenticationService authenticationService) {
-		final MinecraftSessionService dispatchTo = authenticationService.createMinecraftSessionService();
+		final MinecraftSessionService dispatcher = authenticationService.createMinecraftSessionService();
+		final SkinRequests SKINS = SkinRequests.getInstance();
 		return new MinecraftSessionService() {
 			@Override
 			public void joinServer(GameProfile profile, String authenticationToken, String serverId) throws AuthenticationException {
-				dispatchTo.joinServer(profile, authenticationToken, serverId);
+				dispatcher.joinServer(profile, authenticationToken, serverId);
 			}
 
 			@Override
 			public GameProfile hasJoinedServer(GameProfile user, String serverId, InetAddress address) throws AuthenticationUnavailableException {
-				return dispatchTo.hasJoinedServer(user, serverId, address);
+				return dispatcher.hasJoinedServer(user, serverId, address);
 			}
 
 			@Override
@@ -93,25 +83,40 @@ public class OfflineSkins extends InjectionWithContext<MinecraftGetter> {
 				Map<MinecraftProfileTexture.Type, MinecraftProfileTexture> map = new HashMap<MinecraftProfileTexture.Type, MinecraftProfileTexture>();
 				String uuid = profile.getId().toString().replace("-", "");
 				String name = profile.getName();
+				String sha256;
+				String url;
 				Skin skin;
-				skin = SKINS.getSkin(uuid, name, SkinTexture.SKIN);
+				// TODO url may not end with a SHA256. Minecraft expects it to be file hash
+				skin = SKINS.downloadSkin(uuid, name, SkinTexture.SKIN);
 				if (skin != null) {
-					map.put(MinecraftProfileTexture.Type.SKIN, new MinecraftProfileTexture(skin.getURL(), skin.isSlim() ? Collections.singletonMap("model", "slim") : null));
+					sha256 = skin.getSHA256();
+					url = skin.getURL();
+					if (sha256 != null && url != null && url.endsWith(sha256)) {
+						map.put(MinecraftProfileTexture.Type.SKIN, new MinecraftProfileTexture(url, skin.isSlim() ? Collections.singletonMap("model", "slim") : null));
+					}
 				}
-				skin = SKINS.getSkin(uuid, name, SkinTexture.CAPE);
+				skin = SKINS.downloadSkin(uuid, name, SkinTexture.CAPE);
 				if (skin != null) {
-					map.put(MinecraftProfileTexture.Type.CAPE, new MinecraftProfileTexture(skin.getURL(), null));
+					sha256 = skin.getSHA256();
+					url = skin.getURL();
+					if (sha256 != null && url != null && url.endsWith(sha256)) {
+						map.put(MinecraftProfileTexture.Type.CAPE, new MinecraftProfileTexture(url, null));
+					}
 				}
-				skin = SKINS.getSkin(uuid, name, SkinTexture.ELYTRA);
+				skin = SKINS.downloadSkin(uuid, name, SkinTexture.ELYTRA);
 				if (skin != null) {
-					map.put(MinecraftProfileTexture.Type.ELYTRA, new MinecraftProfileTexture(skin.getURL(), null));
+					sha256 = skin.getSHA256();
+					url = skin.getURL();
+					if (sha256 != null && url != null && url.endsWith(sha256)) {
+						map.put(MinecraftProfileTexture.Type.ELYTRA, new MinecraftProfileTexture(url, null));
+					}
 				}
 				return map;
 			}
 
 			@Override
 			public GameProfile fillProfileProperties(GameProfile profile, boolean requireSecure) {
-				return dispatchTo.fillProfileProperties(profile, requireSecure);
+				return dispatcher.fillProfileProperties(profile, requireSecure);
 			}
 		};
 	}

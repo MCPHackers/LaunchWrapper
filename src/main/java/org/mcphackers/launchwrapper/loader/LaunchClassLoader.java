@@ -75,12 +75,14 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 		super(sources, null);
 		this.parent = parent;
 		this.urlClassLoader = new HighPriorityClassLoader(new URL[0]);
+		// Exclude references to libraries loaded in parent CL
 		addExclusion("java.");
 		addExclusion("javax.");
 		addExclusion("sun.");
 		addExclusion("org.mcphackers.launchwrapper.");
 		addExclusion("org.objectweb.asm.");
 		addExclusion("org.json.");
+		// FIXME avoid referencing authlib directly
 		addExclusion("com.mojang.authlib.");
 		addExclusion("com.google.gson.");
 	}

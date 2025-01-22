@@ -45,7 +45,7 @@ public class MinecraftCapesProvider implements SkinProvider {
 				String png = txts.optString("cape", null);
 				if (png != null) {
 					byte[] cape = Base64.decode(png);
-					return new SkinMCCape(cape);
+					return new SkinCape(cape);
 				}
 			}
 
@@ -55,11 +55,11 @@ public class MinecraftCapesProvider implements SkinProvider {
 		return null;
 	}
 
-	public class SkinMCCape implements Skin {
+	public class SkinCape implements Skin {
 		private String sha256;
 		private byte[] data;
 
-		public SkinMCCape(byte[] data) {
+		public SkinCape(byte[] data) {
 			this.data = data;
 			try {
 				this.sha256 = Util.getSHA256(new ByteArrayInputStream(data));
@@ -80,9 +80,9 @@ public class MinecraftCapesProvider implements SkinProvider {
 			String hash = getSHA256();
 			File f = new File(assetsDir, "skins/" + hash.substring(0, 2) + "/" + hash);
 			try {
-				// Download to assetsDir then return a file:// url
+				// Download to assetsDir and return a file:// url
 				File dir = f.getParentFile();
-				if(dir != null) {
+				if (dir != null) {
 					dir.mkdirs();
 				}
 				Util.copyStream(new ByteArrayInputStream(data), new FileOutputStream(f));
