@@ -57,6 +57,8 @@ public class AssetRequests {
 
 					if (entry.has("custom_url")) {
 						url = entry.getString("custom_url");
+					} else if (entry.has("url")) {
+						url = entry.getString("url");
 					} else {
 						url = "https://resources.download.minecraft.net/" + hash.substring(0, 2) + "/" + hash;
 					}
