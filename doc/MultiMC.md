@@ -36,7 +36,7 @@ loom {
 ```
 in gradle project of the mod.
 
-LaunchWrapper Micromixin reads fabric.mod.json (aka FMJ) and attempts to load fabric mods with Micromixin. However there's also launchwrapper.mod.json which is used with over FMJ if present.
+LaunchWrapper Micromixin reads fabric.mod.json (aka FMJ) and attempts to load fabric mods with Micromixin. However there's also launchwrapper.mod.json which is used over FMJ if present.
 JSON format differs. (TODO: No documentation yet)
 
 To load fabric mods Intermediary mappings need to be present on classpath.
