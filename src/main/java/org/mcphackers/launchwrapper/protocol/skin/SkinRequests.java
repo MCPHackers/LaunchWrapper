@@ -92,6 +92,9 @@ public class SkinRequests {
 
 	public byte[] getConvertedSkin(String id, String username, SkinTexture type) {
 		Skin skin = getSkin(id, username, type);
+		if (skin == null) {
+			return null;
+		}
 		try {
 			return type == SkinTexture.SKIN ? convertSkin(skin) : convertCape(skin);
 		} catch (IOException e) {
