@@ -1,6 +1,7 @@
 package org.mcphackers.launchwrapper.tweak.injection.legacy;
 
 import static org.mcphackers.launchwrapper.util.asm.InsnHelper.*;
+import static org.mcphackers.launchwrapper.util.asm.NodeHelper.*;
 import static org.objectweb.asm.Opcodes.*;
 
 import org.mcphackers.launchwrapper.Launch;
@@ -123,8 +124,6 @@ public class AddMain extends InjectionWithContext<LegacyTweakContext> {
 		final int frameIndex = 2;
 		final int mcIndex = 3;
 
-		final String listenerClass = "org/mcphackers/launchwrapper/inject/WindowListener";
-
 		String mcField = null;
 		String mcDesc = "L" + minecraft.name + ";";
 		boolean invokeAppletInit = patchAppletInit(source, config);
@@ -173,7 +172,10 @@ public class AddMain extends InjectionWithContext<LegacyTweakContext> {
 			insns.add(new VarInsnNode(ALOAD, appletIndex));
 			insns.add(new FieldInsnNode(GETFIELD, minecraftApplet.name, mcField, mcDesc));
 		} else {
-			insns.add(getNewMinecraftImpl(minecraft, null, config));
+			InsnList insns2 = getNewMinecraftImpl(minecraft, null, config);
+			if (insns2 != null) {
+				insns.add(insns2);
+			}
 		}
 		insns.add(new VarInsnNode(ASTORE, mcIndex));
 		if (context.width != null && context.height != null) {
@@ -212,6 +214,7 @@ public class AddMain extends InjectionWithContext<LegacyTweakContext> {
 			// insns.add(new VarInsnNode(ALOAD, mcIndex));
 			// insns.add(new MethodInsnNode(INVOKEINTERFACE, "java/lang/Runnable", "run", "()V"));
 		} else {
+			String listenerClass = createWindowListener(source);
 			insns.add(new VarInsnNode(ALOAD, frameIndex));
 			insns.add(new InsnNode(ICONST_1));
 			insns.add(new MethodInsnNode(INVOKEVIRTUAL, "java/awt/Frame", "setVisible", "(Z)V"));
@@ -221,7 +224,6 @@ public class AddMain extends InjectionWithContext<LegacyTweakContext> {
 			insns.add(new VarInsnNode(ALOAD, mcIndex));
 			insns.add(new MethodInsnNode(INVOKESPECIAL, listenerClass, "<init>", "(L" + minecraft.name + ";)V"));
 			insns.add(new MethodInsnNode(INVOKEVIRTUAL, "java/awt/Frame", "addWindowListener", "(Ljava/awt/event/WindowListener;)V"));
-			createWindowListener(source, listenerClass);
 		}
 		insns.add(new InsnNode(RETURN));
 		return node;
@@ -346,38 +348,42 @@ public class AddMain extends InjectionWithContext<LegacyTweakContext> {
 		return true;
 	}
 
-	private void createWindowListener(ClassNodeSource source, String listenerClass) {
+	private String createWindowListener(ClassNodeSource source) {
 		ClassNode minecraft = context.getMinecraft();
 		FieldNode running = context.getIsRunning();
 		running.access = applyAccess(running.access, Opcodes.ACC_PUBLIC);
 
-		ClassNode node = new ClassNode();
-		node.visit(49, ACC_PUBLIC, listenerClass, null, "java/awt/event/WindowAdapter", null);
-		node.fields.add(new FieldNode(ACC_PRIVATE, "mc", "L" + minecraft.name + ";", null, null));
+		ClassNode node = newClass(source, ACC_PUBLIC, "org/mcphackers/launchwrapper/inject/WindowListener", "java/awt/event/WindowAdapter", null);
+		FieldNode mc = newField(node, ACC_PRIVATE, "mc", "L" + minecraft.name + ";");
 		MethodNode init = new MethodNode(ACC_PUBLIC, "<init>", "(L" + minecraft.name + ";)V", null, null);
 		InsnList insns = init.instructions;
 		insns.add(new VarInsnNode(ALOAD, 0));
 		insns.add(new VarInsnNode(ALOAD, 1));
-		insns.add(new FieldInsnNode(PUTFIELD, listenerClass, "mc", "L" + minecraft.name + ";"));
+		insns.add(new FieldInsnNode(PUTFIELD, node.name, mc.name, mc.desc));
 		insns.add(new VarInsnNode(ALOAD, 0));
 		insns.add(new MethodInsnNode(INVOKESPECIAL, "java/awt/event/WindowAdapter", "<init>", "()V"));
 		insns.add(new InsnNode(RETURN));
 		node.methods.add(init);
 
+		// Overrides java/awt/event/WindowAdapter.windowClosing
 		MethodNode windowClosing = new MethodNode(ACC_PUBLIC, "windowClosing", "(Ljava/awt/event/WindowEvent;)V", null, null);
+		node.methods.add(windowClosing);
 		insns = windowClosing.instructions;
 
 		insns.add(new VarInsnNode(ALOAD, 0));
-		insns.add(new FieldInsnNode(GETFIELD, listenerClass, "mc", "L" + minecraft.name + ";"));
+		insns.add(new FieldInsnNode(GETFIELD, node.name, mc.name, mc.desc));
 		insns.add(new InsnNode(ICONST_0));
 		insns.add(new FieldInsnNode(PUTFIELD, minecraft.name, running.name, running.desc));
 		insns.add(new InsnNode(RETURN));
-		node.methods.add(windowClosing);
 		source.overrideClass(node);
+		return node.name;
 	}
 
 	private InsnList getNewMinecraftImpl(ClassNode minecraftImpl, String canvasField, LaunchConfig config) {
 		ClassNode minecraftApplet = context.getMinecraftApplet();
+		if (minecraftApplet == null) {
+			return null;
+		}
 		MethodNode init = null;
 		for (MethodNode m : minecraftImpl.methods) {
 			if (m.name.equals("<init>")) {
@@ -385,7 +391,7 @@ public class AddMain extends InjectionWithContext<LegacyTweakContext> {
 			}
 		}
 		if (init == null) {
-			throw new NullPointerException();
+			return null;
 		}
 
 		InsnList insns = new InsnList();

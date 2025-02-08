@@ -3,9 +3,6 @@ package org.mcphackers.launchwrapper.protocol.skin;
 import static org.mcphackers.launchwrapper.protocol.URLStreamHandlerProxy.*;
 
 import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.URL;
 
@@ -14,12 +11,6 @@ import org.mcphackers.launchwrapper.util.Base64;
 import org.mcphackers.launchwrapper.util.Util;
 
 public class MinecraftCapesProvider implements SkinProvider {
-	private final File assetsDir;
-
-	public MinecraftCapesProvider(File assetsDir) {
-		this.assetsDir = assetsDir;
-	}
-
 	public Skin getSkin(String uuid, String name, SkinTexture type) {
 		if (type != SkinTexture.CAPE) {
 			return null;
@@ -77,21 +68,6 @@ public class MinecraftCapesProvider implements SkinProvider {
 		}
 
 		public String getURL() {
-			String hash = getSHA256();
-			File f = new File(assetsDir, "skins/" + hash.substring(0, 2) + "/" + hash);
-			try {
-				// Download to assetsDir and return a file:// url
-				File dir = f.getParentFile();
-				if (dir != null) {
-					dir.mkdirs();
-				}
-				Util.copyStream(new ByteArrayInputStream(data), new FileOutputStream(f));
-				return f.toURI().toString();
-			} catch (FileNotFoundException e) {
-				return null;
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
 			return null;
 		}
 

@@ -53,8 +53,11 @@ public class LaunchConfig {
 	// Built-in wrapper options
 	public final LaunchParameterString tweakClass 			= new LaunchParameterString("tweakClass", null, true);
 	public final LaunchParameterString brand				= new LaunchParameterString("brand", "launchwrapper", true);
+	public final LaunchParameterString realmsServer	 		= new LaunchParameterString("realmsServer", null, true);
+	public final LaunchParameterNumber realmsPort	 		= new LaunchParameterNumber("realmsPort", 80, true);
 	public final LaunchParameterSwitch lwjglFrame	 		= new LaunchParameterSwitch("lwjglFrame", true, true);
 	private final LaunchParameterSwitch awtFrame 			= new LaunchParameterSwitchReverse("awtFrame", lwjglFrame);
+	public final LaunchParameterSwitch disableSkinFix 		= new LaunchParameterSwitch("disableSkinFix", false, true);
 	public final LaunchParameterEnum<SkinType> skinProxy 	= new LaunchParameterEnum<SkinType>("skinProxy", SkinType.DEFAULT, true);
 	public final LaunchParameterSkinOptions skinOptions		= new LaunchParameterSkinOptions("skinOptions");
 	public final LaunchParameterFile levelsDir				= new LaunchParameterFile("levelsDir", null, true);

@@ -149,6 +149,9 @@ public class IndevSaving extends InjectionWithContext<MinecraftGetter> {
 				}
 			}
 		}
+		if (nameLevelMenu == null) {
+			return false;
+		}
 		for (MethodNode m : saveLevelMenu.methods) {
 			if (openFile == null && m.desc.equals("(Ljava/io/File;)V")) {
 				openFile = new MethodNode(m.access, m.name, m.desc, m.signature, null);
@@ -185,6 +188,9 @@ public class IndevSaving extends InjectionWithContext<MinecraftGetter> {
 					insn = nextInsn(insn);
 				}
 			}
+		}
+		if (idField == null) {
+			return false;
 		}
 		for (MethodNode m : nameLevelMenu.methods) {
 			if (Type.getArgumentTypes(m.desc).length == 1) {

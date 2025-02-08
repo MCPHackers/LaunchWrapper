@@ -1,13 +1,14 @@
 package org.mcphackers.launchwrapper.util.asm;
 
-import static org.objectweb.asm.Opcodes.ACC_ABSTRACT;
-import static org.objectweb.asm.Opcodes.ACC_STATIC;
+import static org.objectweb.asm.Opcodes.*;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.mcphackers.launchwrapper.loader.LaunchClassLoader;
+import org.mcphackers.launchwrapper.util.ClassNodeSource;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldNode;
@@ -34,6 +35,33 @@ public final class NodeHelper {
 			}
 		}
 		return null;
+	}
+
+	public static MethodNode newMethod(ClassNode owner, int access, String name, String desc, String[] exceptions) {
+		while (getMethod(owner, name, desc) != null) {
+			name += '_';
+		}
+		MethodNode method = new MethodNode(access, name, desc, null, exceptions);
+		owner.methods.add(method);
+		return method;
+	}
+
+	public static FieldNode newField(ClassNode owner, int access, String name, String desc) {
+		while (getField(owner, name, desc) != null) {
+			name += '_';
+		}
+		FieldNode field = new FieldNode(access, name, desc, null, null);
+		owner.fields.add(field);
+		return field;
+	}
+
+	public static ClassNode newClass(ClassNodeSource source, int access, String name, String superName, String[] interfaces) {
+		while (source.getClass(name) != null) {
+			name += '_';
+		}
+		ClassNode node = new ClassNode();
+		node.visit(LaunchClassLoader.CLASS_VERSION, access, name, null, superName, interfaces);
+		return node;
 	}
 
 	public static List<MethodNode> getConstructors(ClassNode node) {

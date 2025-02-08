@@ -107,6 +107,9 @@ public class ClassicCrashScreen extends InjectionWithContext<MinecraftGetter> {
 				screen = (FieldInsnNode)nextInsn(insn);
 			}
 		}
+		if (screen == null) {
+			return false;
+		}
 		for (AbstractInsnNode insn = getFirst(run.instructions); insn != null; insn = nextInsn(insn)) {
 			if (compareInsn(insn, INVOKEVIRTUAL, minecraft.name, init.name, init.desc) ||
 				compareInsn(insn, INVOKESPECIAL, minecraft.name, init.name, init.desc)) {
@@ -425,7 +428,7 @@ public class ClassicCrashScreen extends InjectionWithContext<MinecraftGetter> {
 		if (cleanup != null) {
 			handle.add(new VarInsnNode(ALOAD, 0));
 			handle.add(new MethodInsnNode(INVOKEVIRTUAL, minecraft.name, cleanup.name, cleanup.desc));
-		} else {
+		} else if (setWorld != null) {
 			// set world to null to crash without saving (bad idea)
 			// handle.add(new VarInsnNode(ALOAD, 0));
 			// handle.add(new InsnNode(ACONST_NULL));
@@ -622,6 +625,9 @@ public class ClassicCrashScreen extends InjectionWithContext<MinecraftGetter> {
 			}
 			buttonClicked = m;
 			break;
+		}
+		if (buttonClicked == null) {
+			return false;
 		}
 		ClassNode button = source.getClass(buttonType);
 		if (button != null) {

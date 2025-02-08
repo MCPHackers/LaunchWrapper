@@ -104,7 +104,7 @@ public class OptionsLoadFix extends InjectionWithContext<MinecraftGetter> {
 								if (compareInsn(insns3[0], ALOAD) &&
 									compareInsn(insns3[1], LDC, ":") &&
 									compareInsn(insns3[2], INVOKEVIRTUAL, "java/lang/String", "split", "(Ljava/lang/String;)[Ljava/lang/String;")) {
-									if (lbl == null) {
+									if (lbl == null || var0 == null) {
 										return false;
 									}
 									if (compareInsn(insns3[3], DUP) &&

@@ -28,7 +28,7 @@ public class SkinRequests {
 		this.skinOptions = options;
 		this.skinType = type;
 		providers.add(new LocalSkinProvider(new File(gameDir, "skins")));
-		providers.add(new MinecraftCapesProvider(assetsDir));
+		providers.add(new MinecraftCapesProvider());
 		providers.add(new SkinMCCapeProvider());
 		providers.add(new MojangSkinProvider());
 		providers.add(new ElyBySkinProvider());
@@ -36,6 +36,7 @@ public class SkinRequests {
 		INSTANCE = this;
 	}
 
+	// FIXME this will cause an exception if the game doesn't read cached texture (happens in 1.14)
 	public Skin downloadSkin(String id, String username, SkinTexture type) {
 		Skin skin = getSkin(id, username, type);
 		if (skin == null) {

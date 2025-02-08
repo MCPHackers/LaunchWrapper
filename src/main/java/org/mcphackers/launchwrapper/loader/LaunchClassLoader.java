@@ -10,9 +10,9 @@ import java.lang.reflect.InvocationTargetException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.security.CodeSigner;
 import java.security.CodeSource;
 import java.security.ProtectionDomain;
-import java.security.cert.Certificate;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -72,19 +72,27 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 	}
 
 	protected LaunchClassLoader(URL[] sources, ClassLoader parent) {
-		super(sources, null);
+		super(sources, getParentClassLoader());
 		this.parent = parent;
 		this.urlClassLoader = new HighPriorityClassLoader(new URL[0]);
 		// Exclude references to libraries loaded in parent CL
 		addExclusion("java.");
 		addExclusion("javax.");
 		addExclusion("sun.");
+		addExclusion("com.sun.");
 		addExclusion("org.mcphackers.launchwrapper.");
 		addExclusion("org.objectweb.asm.");
 		addExclusion("org.json.");
-		// FIXME avoid referencing authlib directly
-		addExclusion("com.mojang.authlib.");
-		addExclusion("com.google.gson.");
+	}
+
+	private static ClassLoader getParentClassLoader() {
+		try {
+			return (ClassLoader)ClassLoader.class.getMethod("getPlatformClassLoader").invoke(null); // Java 9+ only
+		} catch (NoSuchMethodException e) {
+			return null; // fall back to boot cl
+		} catch (ReflectiveOperationException e) {
+			throw new RuntimeException(e);
+		}
 	}
 
 	protected static URL[] getInitialURLs(ClassLoader parent) {
@@ -158,8 +166,13 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 
 	@Override
 	public Enumeration<URL> findResources(String name) throws IOException {
-		// TODO enumerate all resources, including overriden ones?
-		return parent.getResources(name);
+		final Enumeration<URL> resources = urlClassLoader.getResources(name);
+
+		if (!resources.hasMoreElements()) {
+			return parent.getResources(name);
+		}
+
+		return resources;
 	}
 
 	public void addExclusion(String prefix) {
@@ -211,6 +224,7 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 
 	public void invokeMain(String launchTarget, String... args) {
 		try {
+			Thread.currentThread().setContextClassLoader(this);
 			Class<?> mainClass = loadClass(launchTarget);
 			mainClass.getDeclaredMethod("main", String[].class).invoke(null, (Object)args);
 		} catch (InvocationTargetException e1) {
@@ -370,12 +384,15 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 		return defineClass(name, classData, 0, classData.length, getProtectionDomain(name));
 	}
 
+	private static final boolean CODE_SIGNERS = !Boolean.parseBoolean(System.getProperty("launchwrapper.disableEmptyCodeSigners", "false"));
+
 	private ProtectionDomain getProtectionDomain(String name) {
 		final URL resource = getResource(classResourceName(name));
 		if (resource == null) {
 			return null;
 		}
 		CodeSource codeSource;
+		CodeSigner[] signers = CODE_SIGNERS ? new CodeSigner[0] : null;
 		if (resource.getProtocol().equals("jar")) {
 			String path = resource.getPath();
 			if (path.startsWith("file:")) {
@@ -390,12 +407,12 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 			}
 			try {
 				URL newResource = new URL("file", "", path);
-				codeSource = new CodeSource(newResource, (Certificate[])null);
+				codeSource = new CodeSource(newResource, signers);
 			} catch (MalformedURLException e) {
-				codeSource = new CodeSource(resource, (Certificate[])null);
+				codeSource = new CodeSource(resource, signers);
 			}
 		} else {
-			codeSource = new CodeSource(resource, (Certificate[])null);
+			codeSource = new CodeSource(resource, signers);
 		}
 		return new ProtectionDomain(codeSource, null);
 	}
@@ -440,7 +457,6 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 
 	public static LaunchClassLoader instantiate() {
 		LaunchClassLoader loader = new LaunchClassLoader(LaunchClassLoader.class.getClassLoader());
-		Thread.currentThread().setContextClassLoader(loader);
 		return loader;
 	}
 }

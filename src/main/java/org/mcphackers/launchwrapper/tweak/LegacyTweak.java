@@ -15,7 +15,7 @@ import javax.imageio.ImageIO;
 import org.mcphackers.launchwrapper.Launch;
 import org.mcphackers.launchwrapper.LaunchConfig;
 import org.mcphackers.launchwrapper.loader.LaunchClassLoader;
-import org.mcphackers.launchwrapper.protocol.LegacyURLStreamHandler;
+import org.mcphackers.launchwrapper.protocol.MinecraftURLStreamHandler;
 import org.mcphackers.launchwrapper.protocol.URLStreamHandlerProxy;
 import org.mcphackers.launchwrapper.target.AppletLaunchTarget;
 import org.mcphackers.launchwrapper.target.LaunchTarget;
@@ -124,8 +124,8 @@ public class LegacyTweak extends Tweak {
 		downloadServer();
 		enableLegacyMergeSort();
 		enableWLToolkit();
-		URLStreamHandlerProxy.setURLStreamHandler("http", new LegacyURLStreamHandler(config));
-		URLStreamHandlerProxy.setURLStreamHandler("https", new LegacyURLStreamHandler(config));
+		URLStreamHandlerProxy.setURLStreamHandler("http", new MinecraftURLStreamHandler(config));
+		URLStreamHandlerProxy.setURLStreamHandler("https", new MinecraftURLStreamHandler(config));
 		MainLaunchTarget target = new MainLaunchTarget(context.getMinecraft().name, new String[] { config.username.get(), config.session.get() });
 		return target;
 	}

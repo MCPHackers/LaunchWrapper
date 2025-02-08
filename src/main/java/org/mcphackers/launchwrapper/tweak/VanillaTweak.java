@@ -7,7 +7,7 @@ import java.util.List;
 import org.mcphackers.launchwrapper.Launch;
 import org.mcphackers.launchwrapper.LaunchConfig;
 import org.mcphackers.launchwrapper.loader.LaunchClassLoader;
-import org.mcphackers.launchwrapper.protocol.LegacyURLStreamHandler;
+import org.mcphackers.launchwrapper.protocol.MinecraftURLStreamHandler;
 import org.mcphackers.launchwrapper.protocol.URLStreamHandlerProxy;
 import org.mcphackers.launchwrapper.target.LaunchTarget;
 import org.mcphackers.launchwrapper.target.MainLaunchTarget;
@@ -54,8 +54,8 @@ public class VanillaTweak extends Tweak {
 	@Override
 	public LaunchTarget getLaunchTarget() {
 		enableWLToolkit();
-		URLStreamHandlerProxy.setURLStreamHandler("http", new LegacyURLStreamHandler(config));
-		URLStreamHandlerProxy.setURLStreamHandler("https", new LegacyURLStreamHandler(config));
+		URLStreamHandlerProxy.setURLStreamHandler("http", new MinecraftURLStreamHandler(config));
+		URLStreamHandlerProxy.setURLStreamHandler("https", new MinecraftURLStreamHandler(config));
 		return new MainLaunchTarget(MAIN_CLASS, context.args);
 	}
 

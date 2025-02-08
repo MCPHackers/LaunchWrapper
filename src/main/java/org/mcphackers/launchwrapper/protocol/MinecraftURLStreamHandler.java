@@ -8,14 +8,14 @@ import java.net.URLConnection;
 import org.mcphackers.launchwrapper.LaunchConfig;
 import org.mcphackers.launchwrapper.protocol.skin.SkinRequests;
 
-public class LegacyURLStreamHandler extends URLStreamHandlerProxy {
+public class MinecraftURLStreamHandler extends URLStreamHandlerProxy {
 
 	private final LaunchConfig config;
 	private final AssetRequests assets;
 	private final SkinRequests skins;
 	private final File levelSaveDir;
 
-	public LegacyURLStreamHandler(LaunchConfig config) {
+	public MinecraftURLStreamHandler(LaunchConfig config) {
 		this.config = config;
 		this.assets = new AssetRequests(config.assetsDir.get(), config.assetIndex.get());
 		this.skins = new SkinRequests(config.gameDir.get(), config.assetsDir.get(), config.skinOptions.get(), config.skinProxy.get());
@@ -57,44 +57,29 @@ public class LegacyURLStreamHandler extends URLStreamHandlerProxy {
 				else
 					return new BasicResponseURLConnection(url, "");
 
+			// Telemetry
 			if (host.equals("snoop.minecraft.net")) {
-				// Don't snoop
 				if (path.equals("/client") || path.equals("/server"))
 					return new BasicResponseURLConnection(url, "");
 			}
+
 			if (path.equals("/heartbeat.jsp"))
 				return new HeartbeatURLConnection(url);
-			// TODO redirect to something actually useful. Like a local self hosted realm
 			if (host.equals("mcoapi.minecraft.net")) {
-				if (path.equals("/mco/available"))
-					return new BasicResponseURLConnection(url, "true");
-				if (path.equals("/mco/client/outdated"))
-					return new BasicResponseURLConnection(url, "false");
-				// if(path.equals("/payments/unused"))
-				// return new BasicResponseURLConnection(url, "0");
-				// if(path.equals("/invites/count/pending"))
-				// return new BasicResponseURLConnection(url, "0");
-				// if(path.equals("/invites/pending"))
-				// return new BasicResponseURLConnection(url, "{}");
-				// if(path.equals("/worlds"))
-				// return new BasicResponseURLConnection(url, "");
-				// if(path.equals("/worlds/templates"))
-				// return new BasicResponseURLConnection(url, "");
-				// if(path.equals("/worlds/test/$LOCATION_ID"))
-				// return new BasicResponseURLConnection(url, "1");
+				if (config.realmsServer.get() != null) {
+					return openDirectConnection(new URL("http", config.realmsServer.get(), config.realmsPort.get(), file));
+				} else {
+					if (path.equals("/mco/available"))
+						return new BasicResponseURLConnection(url, "true");
+					if (path.equals("/mco/client/outdated"))
+						return new BasicResponseURLConnection(url, "false");
+				}
 			}
-			// TODO rewrite as injection instead of redirecting URL
-			// if (host.equals("textures.minecraft.net")) {
-			// 	if (path.startsWith("/texture/")) {
-			// 		return new TextureURLConnection(url, skins);
-			// 	}
-			// }
 		}
-		// if (host.equals("sessionserver.mojang.com")) {
-		// 	if (path.startsWith("/session/minecraft/profile/")) {
-		// 		return new ProfileURLConnection(url, skins);
-		// 	}
-		// }
+		// More telemetry (but modern)
+		if (host.equals("api.minecraftservices.com") && path.equals("/events"))
+			return new BasicResponseURLConnection(url, "");
+
 		return openDirectConnection(url);
 	}
 }
