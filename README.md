@@ -1,18 +1,21 @@
 # LaunchWrapper
 ![image](https://user-images.githubusercontent.com/68742864/227987160-03948674-48c2-4a69-b5b8-86793462f128.png)
 
-**LaunchWrapper** is a wrapper for legacy Minecraft which provides fixes for certain game features and also improves compatibility with launchers.
+**LaunchWrapper** is a wrapper for both legacy and modern Minecraft which provides fixes for certain game features and also improves compatibility with launchers.
 
 LaunchWrapper is bundled in [BetterJSONs](https://github.com/MCPHackers/BetterJSONs) which are meant for official Minecraft Launcher.
 
 ## Supported versions
 - All versions from rd-132211 to 1.12.2
-- [Better Than Adventure](https://www.betterthanadventure.net/)
-- Babric and OrnitheMC instances
+- 1.13+ (experimental)
+- Any Fabric instances
+- Forge (<=1.12.2)
+- Optifine
 
 ## Features
 - Does not depend on any hard-coded obfuscated names and is mostly compatible with every Minecraft version
 	- This also includes modded versions
+- Skins in offline-mode servers and for unauthenticated users.
 - **deAWT** (aka **M1Fix**) - Strips game window from Java **AWT** (Abstract Window Toolkit) and lets the game use internal **LWJGL** frame
 - Replaces mouse input code with **LWJGL** calls (Fixes any mouse input issues in Classic, Indev and Infdev. Commonly included with deAWT or M1Fix mods)
 - BitDepthFix
@@ -37,14 +40,14 @@ LaunchWrapper is bundled in [BetterJSONs](https://github.com/MCPHackers/BetterJS
 - Added parameter to automatically download `minecraft_server.jar` for snapshots: `12w18a`, `12w19a`, `12w21a`
 - A launcher for isometric level viewer (IsomPreviewApplet)
 - Allows changing assets directory in 1.6 snapshots (the game didn't have a parameter to do that yet)
+- Block telemetry in both modern and legacy Minecraft versions
 
 ## How to use
 ***There will be an installer eventually.***<br>
 *For now, here is an in-depth guide for those who will be using the wrapper*
 
-- If you are using MultiMC, [follow this guide](MultiMC.md).<br>
+- If you are using MultiMC, [follow this guide](doc/MultiMC.md).<br>
 - If you are using Official Launcher (or any other launcher which follows the same versions folder structure), use [BetterJSONs](https://github.com/MCPHackers/BetterJSONs) and rename the JSONs if they are conflicting with any vanilla JSONs
-- If you need to use these fixes with fabric read [this guide](launchwrapper-fabric/README.md)
 
 ### Setting up manually
 
@@ -84,4 +87,5 @@ Arguments may be as follows:
 - `oneSixFlag` - Toggles notice about the release of 1.6 in 1.5.2
 - `serverSHA1` - Compare minecraft_server.jar in .minecraft/server against this hash
 - `serverURL` - URL to download the server from if the hash is mismatched or the jar is missing
-- \+ any [Minecraft launch arguments](https://wiki.vg/Launching_the_game#Game_Arguments) or applet parameters
+- Any [Minecraft launch arguments](https://wiki.vg/Launching_the_game#Game_Arguments) or applet parameters
+- Some LaunchWrapper-specific arguments may be undocumented so make sure to check the [source code](src/main/java/org/mcphackers/launchwrapper/LaunchConfig.java)

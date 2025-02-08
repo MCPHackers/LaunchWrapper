@@ -1,0 +1,46 @@
+# JSON patches for MultiMC/Prism Launcher instances
+This allows changing the Minecraft version in the instance without re-editing the component, and easier interoperability with other MultiMC features. More information about JSON patches can be found [on the MultiMC wiki page about them](https://github.com/MultiMC/Launcher/wiki/JSON-Patches).
+
+> [!NOTE]
+> Overriding asset index requires a separate component and must be above "Minecraft" component
+
+## Instructions for Vanilla
+- Create a new MultiMC instance.
+- Click "Edit Instance".
+- Click "Add Empty". Enter "LaunchWrapper" for the name, and "org.mcphackers.launchwrapper" for the UUID.
+- Select the new component labeled "LaunchWrapper", and click "Edit".
+- Replace the contents of the file with contents of [org.mcphackers.launchwrapper.json](org.mcphackers.launchwrapper.json)
+- Save and close the document.
+ 
+    (If you're using Prism Launcher all previous steps can be skipped. Use "Import Components" button and locate the aforementioned JSON)
+
+> [!IMPORTANT] 
+> Component order matters. Make sure LaunchWrapper is the bottom-most component
+
+## Fabric
+To install LaunchWrapper with Fabric, first you need to acquire a regular Fabric instance.
+For this instance, perform the following steps:
+
+- Repeat all the instructions for vanilla
+- Perform the same steps but instead of `org.mcphackers.launchwrapper.json` use the contents of [org.mcphackers.launchwrapper.fabric.json](org.mcphackers.launchwrapper.fabric.json)
+- Make sure it's the bottom-most component and is below the regular "LaunchWrapper" component
+
+## Micromixin
+Micromixin is a lightweight alternative mixin implementation which can be used with standalone LaunchWrapper. Currently the implementation is barebones so many mixin annotations aren't supported. However, if the mod uses exclusively the annotations from base Mixin (Not MixinExtras) there's a high chance it'll work when recompiled with
+```groovy
+loom {
+    mixin {
+        useLegacyMixinAp = false
+    }
+}
+```
+in gradle project of the mod.
+
+LaunchWrapper Micromixin reads fabric.mod.json (aka FMJ) and attempts to load fabric mods with Micromixin. However there's also launchwrapper.mod.json which is used with over FMJ if present.
+JSON format differs. (TODO: No documentation yet)
+
+To load fabric mods Intermediary mappings need to be present on classpath.
+
+When loaded, fabric mods will be remapped to the "official" (obfuscated) namespace, which will keep compatibility with any base edit mods or reflection used by such mods.
+
+To install Micromixin alongside LaunchWrapper perform same instructions as for vanilla component, but use the contents of [org.mcphackers.launchwrapper.micromixin.json](org.mcphackers.launchwrapper.micromixin.json). Make sure it's the bottom-most component and is below regular "LaunchWrapper" component

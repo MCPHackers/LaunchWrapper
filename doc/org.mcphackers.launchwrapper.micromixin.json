@@ -1,0 +1,57 @@
+{
+    "formatVersion": 1,
+    "name": "LaunchWrapper Micromixin",
+    "uid": "org.mcphackers.launchwrapper.micromixin",
+    "version": "1.1",
+    "libraries": [
+        {
+            "name": "org.mcphackers:launchwrapper-micromixin:1.1",
+            "url": "https://maven.glass-launcher.net/releases/"
+        },
+        {
+            "name": "org.stianloader:micromixin-transformer:0.6.5-a20240922",
+            "url": "https://stianloader.org/maven/"
+        },
+        {
+            "name": "org.stianloader:micromixin-runtime:0.6.5-a20240922",
+            "url": "https://stianloader.org/maven/"
+        },
+        {
+            "name": "org.stianloader:stianloader-remapper:0.1.0-a20240601",
+            "url": "https://stianloader.org/maven/"
+        },
+        {
+            "name": "org.stianloader:micromixin-transformer:0.6.5-a20240922",
+            "url": "https://stianloader.org/maven/"
+        },
+        {
+            "name": "org.stianloader:micromixin-remapper:0.2.0-a20240908",
+            "url": "https://stianloader.org/maven/"
+        },
+        {
+            "name": "net.fabricmc:mapping-io:0.3.0",
+            "url": "https://maven.fabricmc.net/"
+        },
+        {
+            "name": "net.fabricmc:access-widener:2.1.0",
+            "url": "https://maven.fabricmc.net/"
+        },
+        {
+            "name": "org.json:json:20230311",
+            "url": "https://repo1.maven.org/maven2/"
+        },
+        {
+            "name": "org.ow2.asm:asm:9.7.1",
+            "url": "https://maven.fabricmc.net/"
+        },
+        {
+            "name": "org.ow2.asm:asm-tree:9.7.1",
+            "url": "https://maven.fabricmc.net/"
+        },
+        {
+            "name": "org.ow2.asm:asm-util:9.7.1",
+            "url": "https://maven.fabricmc.net/"
+        }
+    ],
+    "minecraftArguments": "--tweakClass org.mcphackers.launchwrapper.micromixin.tweak.MicroMixinTweak --username ${auth_player_name} --session ${auth_session} --version ${version_name} --gameDir ${game_directory} --assetsDir ${assets_root} --assetIndex ${assets_index_name} --accessToken ${auth_access_token} --userType ${user_type} --versionType ${version_type}"
+}
