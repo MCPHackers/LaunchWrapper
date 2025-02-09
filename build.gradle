@@ -12,7 +12,7 @@ if(!ENV.RELEASE.equals('1')) {
 	project.version += '-SNAPSHOT'
 }
 
-def asm_version = 9.7
+def asm_version = '9.7.1'
 def depends = [
 	"org.ow2.asm:asm:${asm_version}",
 	// "org.ow2.asm:asm-util:${asm_version}",
