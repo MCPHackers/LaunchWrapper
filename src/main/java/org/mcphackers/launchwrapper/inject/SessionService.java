@@ -40,6 +40,9 @@ public final class SessionService implements MinecraftSessionService {
 
 	@Override
 	public Map<MinecraftProfileTexture.Type, MinecraftProfileTexture> getTextures(GameProfile profile, boolean requireSecure) {
+		if (SKINS == null) {
+			return dispatcher.getTextures(profile, requireSecure);
+		}
 		Map<MinecraftProfileTexture.Type, MinecraftProfileTexture> map = new HashMap<MinecraftProfileTexture.Type, MinecraftProfileTexture>();
 		String uuid = profile.getId().toString().replace("-", "");
 		String name = profile.getName();

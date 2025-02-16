@@ -10,9 +10,9 @@ import java.lang.reflect.InvocationTargetException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
-import java.security.CodeSigner;
 import java.security.CodeSource;
 import java.security.ProtectionDomain;
+import java.security.cert.Certificate;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -384,15 +384,15 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 		return defineClass(name, classData, 0, classData.length, getProtectionDomain(name));
 	}
 
-	private static final boolean CODE_SIGNERS = !Boolean.parseBoolean(System.getProperty("launchwrapper.disableEmptyCodeSigners", "false"));
+	private static final boolean DUMMY_CERT = !Boolean.parseBoolean(System.getProperty("launchwrapper.disableDummyCertificate", "false"));
 
 	private ProtectionDomain getProtectionDomain(String name) {
 		final URL resource = getResource(classResourceName(name));
 		if (resource == null) {
 			return null;
 		}
-		CodeSource codeSource;
-		CodeSigner[] signers = CODE_SIGNERS ? new CodeSigner[0] : null;
+		CodeSource codeSource = null;
+		Certificate[] certificates = DUMMY_CERT ? new Certificate[] { new DummyCertificate() } : null;
 		if (resource.getProtocol().equals("jar")) {
 			String path = resource.getPath();
 			if (path.startsWith("file:")) {
@@ -407,12 +407,12 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 			}
 			try {
 				URL newResource = new URL("file", "", path);
-				codeSource = new CodeSource(newResource, signers);
+				codeSource = new CodeSource(newResource, certificates);
 			} catch (MalformedURLException e) {
-				codeSource = new CodeSource(resource, signers);
+				codeSource = new CodeSource(resource, certificates);
 			}
 		} else {
-			codeSource = new CodeSource(resource, signers);
+			codeSource = new CodeSource(resource, certificates);
 		}
 		return new ProtectionDomain(codeSource, null);
 	}

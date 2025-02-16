@@ -66,7 +66,7 @@ public class Launch {
 		return Tweak.get(getLoader(), config);
 	}
 
-	public LaunchClassLoader getLoader() {
+	protected LaunchClassLoader getLoader() {
 		if (CLASS_LOADER == null) {
 			CLASS_LOADER = LaunchClassLoader.instantiate();
 		}

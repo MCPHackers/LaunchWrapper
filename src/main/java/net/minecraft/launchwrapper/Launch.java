@@ -52,7 +52,9 @@ public final class Launch extends org.mcphackers.launchwrapper.Launch {
 	@Override
 	public void launch() {
 		List<String> tweakClassNames = new ArrayList<String>();
-		tweakClassNames.add(config.tweakClass.get());
+		if (config.tweakClass.get() != null) {
+			tweakClassNames.add(config.tweakClass.get());
+		}
 		blackboard.put("TweakClasses", tweakClassNames);
 		blackboard.put("ArgumentList", new ArrayList<String>());
 		minecraftHome = config.gameDir.get();
@@ -84,10 +86,13 @@ public final class Launch extends org.mcphackers.launchwrapper.Launch {
 			}
 		}
 		mainTweak.transformResources(loader);
-		getLaunchTarget().launch(loader);
+		getLaunchTarget(mainTweak.getLaunchTarget()).launch(loader);
 	}
 
-	private LaunchTarget getLaunchTarget() {
+	private LaunchTarget getLaunchTarget(LaunchTarget launchTarget) {
+		if (primaryTweaker == null) {
+			return launchTarget;
+		}
 		String target = primaryTweaker.getLaunchTarget();
 		LOGGER.log("Launching wrapped minecraft {%s}", target);
 		return new MainLaunchTarget(target, arguments.toArray(new String[arguments.size()]));
