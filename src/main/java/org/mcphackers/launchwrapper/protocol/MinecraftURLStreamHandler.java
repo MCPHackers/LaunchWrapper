@@ -29,8 +29,9 @@ public class MinecraftURLStreamHandler extends URLStreamHandlerProxy {
 		String file = url.getFile();
 		if (host.endsWith(".minecraft.net") || host.equals("s3.amazonaws.com")) {
 			if (path.equals("/game/joinserver.jsp"))
-				// TODO: update this to use the "sessionserver.mojang.com" API instead?
-				return openDirectConnection(new URL("https", "session.minecraft.net", file));
+				return new JoinServerURLConnection(url, config.accessToken.get(), config.uuid.get());
+			if (path.equals("/game/checkserver.jsp"))
+				return new CheckServerURLConnection(url);
 			if (path.equals("/login/session.jsp") || host.equals("login.minecraft.net") && path.equals("/session")) {
 				// UnlicensedCopyText injection does this instead. (It doesn't fire the check thread for some reason)
 				if (config.unlicensedCopy.get()) {
