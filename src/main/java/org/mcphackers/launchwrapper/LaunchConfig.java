@@ -161,6 +161,12 @@ public class LaunchConfig {
 			// Resolve profile UUID if we only provide username
 			uuid.set(MojangSkinProvider.getUUIDfromName(username.get()));
 		}
+		if (accessToken.get() == null && session.get() != null && session.get().startsWith("token:")) {
+			// Parse the session ID for the access token if we don't have it
+			// 'token:<ACCESS_TOKEN>:<UUID>'
+			String[] token = session.get().split(":");
+			accessToken.set(token[1]);
+		}
 	}
 
 	public List<LaunchParameter<?>> getParamsAsList() {
