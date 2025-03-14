@@ -209,10 +209,10 @@ public class LWGameProvider implements GameProvider {
 													.setEnvironment(ModEnvironment.CLIENT)
 													.setDescription("Launch wrapper for legacy Minecraft")
 													.addAuthor("lassebq", Collections.emptyMap())
-													.addIcon(0, "icon_16x16.png")
-													.addIcon(1, "icon_32x32.png")
-													.addIcon(2, "icon_48x48.png")
-													.addIcon(3, "icon_256x256.png")
+													.addIcon(0, "icon_256x256.png")
+													.addIcon(1, "icon_48x48.png")
+													.addIcon(2, "icon_32x32.png")
+													.addIcon(3, "icon_16x16.png")
 													.addLicense("MIT")
 													.setContact(new ContactInformationImpl(contactInfo));
 
