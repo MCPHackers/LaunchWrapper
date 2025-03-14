@@ -44,9 +44,24 @@ public class SkinRequests {
 		}
 		String hash = skin.getSHA256();
 		byte[] skinData = null;
+		try {
+			// Default (modern) skins should not be modified unless the remove hat option is specified
+			if (type != SkinTexture.ELYTRA && (skinType != SkinType.DEFAULT || skinOptions.contains(SkinOption.REMOVE_HAT))) {
+				skinData = (type == SkinTexture.SKIN ? convertSkin(skin) : convertCape(skin));
+			}
+			if (skinData == null) {
+				skinData = skin.getData();
+			} else {
+				String newHash = Util.getSHA256(new ByteArrayInputStream(skinData));
+				if (newHash != null) {
+					hash = (hash == null || !hash.equals(newHash) ? newHash : hash);
+				}
+			}
+		} catch (IOException e) {
+			return null;
+		}
 		if (hash == null) {
 			try {
-				skinData = skin.getData();
 				hash = Util.getSHA256(new ByteArrayInputStream(skinData));
 			} catch (IOException e) {
 				return null;
@@ -61,9 +76,6 @@ public class SkinRequests {
 			dir.mkdirs();
 			f.delete();
 			try {
-				if (skinData == null) {
-					skinData = skin.getData();
-				}
 				Util.copyStream(new ByteArrayInputStream(skinData), new FileOutputStream(f));
 			} catch (IOException e) {
 				return null;
@@ -85,6 +97,14 @@ public class SkinRequests {
 					return new LocalSkin(f, skin.isSlim());
 				}
 			}
+			try {
+				// By the odd chance a skin returns with NULL data, move onto the next provider
+				if (skin.getData() == null) {
+					continue;
+				}
+			} catch (IOException e) {
+				continue;
+			}
 			return skin;
 		}
 		return null;
@@ -96,7 +116,7 @@ public class SkinRequests {
 			return null;
 		}
 		try {
-			return type == SkinTexture.SKIN ? convertSkin(skin) : convertCape(skin);
+			return (type == SkinTexture.SKIN ? convertSkin(skin) : convertCape(skin));
 		} catch (IOException e) {
 			e.printStackTrace();
 			return null;

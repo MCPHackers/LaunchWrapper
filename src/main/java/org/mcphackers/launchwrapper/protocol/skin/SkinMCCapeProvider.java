@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
+import org.mcphackers.launchwrapper.Launch;
 import org.mcphackers.launchwrapper.util.Util;
 
 public class SkinMCCapeProvider implements SkinProvider {
@@ -48,6 +49,8 @@ public class SkinMCCapeProvider implements SkinProvider {
 
 		public byte[] getData() throws IOException {
 			HttpURLConnection httpConnection = (HttpURLConnection)openDirectConnection(new URL(getURL()));
+			// Set User-Agent, otherwise SkinMC will return 403/Forbidden
+			httpConnection.setRequestProperty("User-Agent", "LaunchWrapper/" + Launch.VERSION);
 			if (httpConnection.getResponseCode() != 200) {
 				return null;
 			}
@@ -55,7 +58,7 @@ public class SkinMCCapeProvider implements SkinProvider {
 		}
 
 		public String getURL() {
-			return "https://skinmc.net/api/v1/skinmcCape/" + uuid;
+			return "https://skinmc.net/api/v1/cape/" + uuid;
 		}
 
 		public boolean isSlim() {
