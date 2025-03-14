@@ -209,15 +209,16 @@ public class LWGameProvider implements GameProvider {
 													.setEnvironment(ModEnvironment.CLIENT)
 													.setDescription("Launch wrapper for legacy Minecraft")
 													.addAuthor("lassebq", Collections.emptyMap())
-													.addIcon(0, "icon_256x256.png")
-													.addIcon(1, "icon_48x48.png")
-													.addIcon(2, "icon_32x32.png")
-													.addIcon(3, "icon_16x16.png")
+													.addIcon(16, "icon_16x16.png")
+													.addIcon(32, "icon_32x32.png")
+													.addIcon(48, "icon_48x48.png")
+													.addIcon(256, "icon_256x256.png")
 													.addLicense("MIT")
 													.setContact(new ContactInformationImpl(contactInfo));
 
 		BuiltinModMetadata.Builder metadataLWJGL = new BuiltinModMetadata.Builder("lwjgl", LWJGLVersionLookup.getVersion(lwjglJars))
 													   .setName("LWJGL")
+													   .setEnvironment(ModEnvironment.CLIENT)
 													   .setDescription("Lightweight Java Game Library");
 
 		if (versionData.getClassVersion().isPresent()) {
