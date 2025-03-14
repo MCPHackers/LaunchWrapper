@@ -6,6 +6,7 @@ import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
@@ -18,9 +19,10 @@ import org.mcphackers.launchwrapper.util.OS;
 @SuppressWarnings("unused")
 public class LaunchConfig {
 	private static final File DEFAULT_GAME_DIR = getDefaultGameDir();
+	// Store all arguments into this list, in order of whatever has been passed by a launcher or the user
+	// NOTE: this is supposed to hold String and LaunchParameter objects primarily
+	private final List<Object> arguments = new ArrayList<Object>();
 	private final Map<String, LaunchParameter<?>> parameters = new HashMap<String, LaunchParameter<?>>();
-	// If we won't find any of the parameters from below, they're going into this list
-	private final List<String> extraParameters = new ArrayList<String>();
 
 	// clang-format off
 
@@ -73,6 +75,7 @@ public class LaunchConfig {
 	public final LaunchParameterSwitch survival	 			= new LaunchParameterSwitch("survival", false, true);
 	public final LaunchParameterString serverURL 			= new LaunchParameterString("serverURL", null, true);
 	public final LaunchParameterString serverSHA1 			= new LaunchParameterString("serverSHA1", null, true);
+	public final LaunchParameterSwitch noParameters	 			= new LaunchParameterSwitch("noParameters", false, true);
 	// clang-format on
 
 	private static File getDefaultGameDir() {
@@ -115,7 +118,21 @@ public class LaunchConfig {
 	@Override
 	public LaunchConfig clone() {
 		LaunchConfig newConfig = new LaunchConfig();
-		newConfig.extraParameters.addAll(extraParameters);
+		for (Object argument : arguments) {
+			if (argument == null) {
+				continue;
+			}
+			if (argument instanceof LaunchParameter) {
+				LaunchParameter<Object> param = (LaunchParameter<Object>)newConfig.parameters.get(((LaunchParameter)argument).name);
+				if (param == null) {
+					continue;
+				}
+				// This should add the new config's parameters to its arguments list
+				newConfig.arguments.add(param);
+			} else {
+				newConfig.arguments.add(argument);
+			}
+		}
 		for (Map.Entry<String, LaunchParameter<?>> entry : parameters.entrySet()) {
 			LaunchParameter<Object> param = (LaunchParameter<Object>)newConfig.parameters.get(entry.getKey());
 			if (param == null) {
@@ -133,17 +150,18 @@ public class LaunchConfig {
 	public LaunchConfig(String[] args) {
 		for (int i = 0; i < args.length; i++) {
 			if (!args[i].startsWith("--")) {
-				extraParameters.add(args[i]);
+				arguments.add(args[i]);
 				continue;
 			}
 			String paramName = args[i].substring(2);
 			LaunchParameter<?> param = parameters.get(paramName);
 			if (param == null) {
-				extraParameters.add(args[i]);
+				arguments.add(args[i]);
 				continue;
 			}
 			if (param.isSwitch()) {
 				((LaunchParameterSwitch)param).setFlag();
+				arguments.add(param);
 				continue;
 			}
 			if (i + 1 < args.length) {
@@ -151,6 +169,14 @@ public class LaunchConfig {
 					param.setString(args[i + 1]);
 					i++;
 				} catch (IllegalArgumentException ignored) {
+				}
+			}
+			arguments.add(param);
+		}
+		if (!noParameters.get().equals(Boolean.TRUE)) {
+			for (LaunchParameter<?> param : parameters.values()) {
+				if (!arguments.contains(param)) {
+					arguments.add(param);
 				}
 			}
 		}
@@ -166,7 +192,7 @@ public class LaunchConfig {
 	public List<LaunchParameter<?>> getParamsAsList() {
 		List<LaunchParameter<?>> list = new ArrayList<LaunchParameter<?>>();
 		for (LaunchParameter<?> param : parameters.values()) {
-			if (!param.wrapperOnly && param.get() != null && param.get() != Boolean.FALSE) {
+			if (!param.wrapperOnly && param.get() != null && !param.get().equals(Boolean.FALSE)) {
 				list.add(param);
 			}
 		}
@@ -174,11 +200,22 @@ public class LaunchConfig {
 	}
 
 	public Map<String, String> getArgsAsMap() {
-		Map<String, String> map = new HashMap<String, String>();
-		for (String key : parameters.keySet()) {
-			LaunchParameter<?> param = parameters.get(key);
-			if (!param.wrapperOnly && param.get() != null && param.get() != Boolean.FALSE) {
-				map.put(key, param.getString());
+		// LinkedHashMap as arguments should be returned in a consistent order
+		Map<String, String> map = new LinkedHashMap<String, String>();
+		for (Object argument : arguments) {
+			if (argument == null) {
+				continue;
+			}
+			if (argument instanceof LaunchParameter) {
+				LaunchParameter<?> param = (LaunchParameter<?>)argument;
+				if (!param.wrapperOnly && param.get() != null && !param.get().equals(Boolean.FALSE)) {
+					map.put(param.name, param.getString());
+					if (param.getAltName() != null && param.getAltName().length() > 0) {
+						map.put(param.getAltName(), param.getString());
+					}
+				}
+			} else {
+				map.put(argument.toString(), null);
 			}
 		}
 		return map;
@@ -186,21 +223,32 @@ public class LaunchConfig {
 
 	public String[] getArgs() {
 		List<String> list = new ArrayList<String>();
-		for (String key : parameters.keySet()) {
-			LaunchParameter<?> param = parameters.get(key);
-			if (!param.wrapperOnly && param.get() != null) {
-				if (param.isSwitch()) {
-					if (param.get().equals(true)) {
-						list.add("--" + key);
-					}
-				} else {
-					list.add("--" + key);
-					list.add(param.getString());
-				}
+		for (Object argument : arguments) {
+			if (argument == null) {
+				continue;
 			}
-		}
-		for (String param : extraParameters) {
-			list.add(param);
+			if (argument instanceof LaunchParameter) {
+				LaunchParameter<?> param = (LaunchParameter<?>)argument;
+				if (!param.wrapperOnly && param.get() != null) {
+					if (param.isSwitch()) {
+						if (param.get().equals(Boolean.TRUE)) {
+							list.add("--" + param.name);
+							if (param.getAltName() != null && param.getAltName().length() > 0) {
+								list.add("--" + param.getAltName());
+							}
+						}
+					} else {
+						list.add("--" + param.name);
+						list.add(param.getString());
+						if (param.getAltName() != null && param.getAltName().length() > 0) {
+							list.add("--" + param.getAltName());
+							list.add(param.getString());
+						}
+					}
+				}
+			} else {
+				list.add(argument.toString());
+			}
 		}
 		String[] arr = new String[list.size()];
 		return list.toArray(arr);
@@ -209,6 +257,7 @@ public class LaunchConfig {
 	public abstract class LaunchParameter<T> {
 		public final String name;
 		public final boolean wrapperOnly;
+		protected String altName;
 		protected final T defaultValue;
 		protected T value;
 
@@ -225,13 +274,19 @@ public class LaunchConfig {
 			this.value = defaultValue;
 			this.name = name;
 			this.wrapperOnly = wrapper;
+			this.altName = null;
 			// Parameters names are case sensitive
 			parameters.put(name, this);
 		}
 
 		public LaunchParameter<T> altName(String altName) {
+			this.altName = altName;
 			parameters.put(altName, this);
 			return this;
+		}
+
+		public String getAltName() {
+			return this.altName;
 		}
 
 		public boolean isSwitch() {
