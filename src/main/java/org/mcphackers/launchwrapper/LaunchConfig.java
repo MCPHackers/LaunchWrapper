@@ -75,7 +75,6 @@ public class LaunchConfig {
 	public final LaunchParameterSwitch survival	 			= new LaunchParameterSwitch("survival", false, true);
 	public final LaunchParameterString serverURL 			= new LaunchParameterString("serverURL", null, true);
 	public final LaunchParameterString serverSHA1 			= new LaunchParameterString("serverSHA1", null, true);
-	public final LaunchParameterSwitch noParameters	 			= new LaunchParameterSwitch("noParameters", false, true);
 	// clang-format on
 
 	private static File getDefaultGameDir() {
@@ -172,13 +171,6 @@ public class LaunchConfig {
 				}
 			}
 			arguments.add(param);
-		}
-		if (!noParameters.get().equals(Boolean.TRUE)) {
-			for (LaunchParameter<?> param : parameters.values()) {
-				if (!arguments.contains(param)) {
-					arguments.add(param);
-				}
-			}
 		}
 		if (levelsDir.get() == null) {
 			levelsDir.set(new File(gameDir.get(), "levels"));
