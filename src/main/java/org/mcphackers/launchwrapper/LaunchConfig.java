@@ -122,7 +122,7 @@ public class LaunchConfig {
 				continue;
 			}
 			if (argument instanceof LaunchParameter) {
-				LaunchParameter<Object> param = (LaunchParameter<Object>)newConfig.parameters.get(((LaunchParameter)argument).name);
+				LaunchParameter<Object> param = (LaunchParameter<Object>)newConfig.parameters.get(((LaunchParameter<?>)argument).name);
 				if (param == null) {
 					continue;
 				}
@@ -171,6 +171,11 @@ public class LaunchConfig {
 				}
 			}
 			arguments.add(param);
+		}
+		for (LaunchParameter<?> param : parameters.values()) {
+			if (!arguments.contains(param)) {
+				arguments.add(param);
+			}
 		}
 		if (levelsDir.get() == null) {
 			levelsDir.set(new File(gameDir.get(), "levels"));
