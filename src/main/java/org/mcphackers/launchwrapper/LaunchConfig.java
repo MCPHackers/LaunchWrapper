@@ -172,6 +172,12 @@ public class LaunchConfig {
 			}
 			arguments.add(param);
 		}
+		// Append other parameters which were not parsed above to the end of the arguments list
+		for (LaunchParameter<?> param : parameters.values()) {
+			if (!arguments.contains(param)) {
+				arguments.add(param);
+			}
+		}
 		if (levelsDir.get() == null) {
 			levelsDir.set(new File(gameDir.get(), "levels"));
 		}
