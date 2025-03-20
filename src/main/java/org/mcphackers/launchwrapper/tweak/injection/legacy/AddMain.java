@@ -205,14 +205,9 @@ public class AddMain extends InjectionWithContext<LegacyTweakContext> {
 			insns.add(new FieldInsnNode(PUTFIELD, minecraft.name, context.appletMode.name, context.appletMode.desc));
 		}
 		if (config.lwjglFrame.get()) {
-			insns.add(new TypeInsnNode(NEW, "java/lang/Thread"));
-			insns.add(new InsnNode(DUP));
+			// Use Runnable#run() to satisfy MacOS's first thread requirement (also needs vm arg -XstartOnFirstThread)
 			insns.add(new VarInsnNode(ALOAD, mcIndex));
-			insns.add(new LdcInsnNode("Minecraft main thread"));
-			insns.add(new MethodInsnNode(INVOKESPECIAL, "java/lang/Thread", "<init>", "(Ljava/lang/Runnable;Ljava/lang/String;)V"));
-			insns.add(new MethodInsnNode(INVOKEVIRTUAL, "java/lang/Thread", "start", "()V"));
-			// insns.add(new VarInsnNode(ALOAD, mcIndex));
-			// insns.add(new MethodInsnNode(INVOKEINTERFACE, "java/lang/Runnable", "run", "()V"));
+			insns.add(new MethodInsnNode(INVOKEINTERFACE, "java/lang/Runnable", "run", "()V"));
 		} else {
 			String listenerClass = createWindowListener(source);
 			insns.add(new VarInsnNode(ALOAD, frameIndex));
