@@ -54,6 +54,12 @@ public class VanillaTweak extends Tweak {
 	@Override
 	public LaunchTarget getLaunchTarget() {
 		enableWLToolkit();
+		// TODO detect if the version we're running already has this fixed?
+		if (LaunchClassLoader.CLASS_VERSION >= 64) {
+			// Minecraft shows unknown unicode symbol in place of U+00A0 (NON-BREAKING SPACE) in dates, force old locale provider to use space
+			// Fixed in 1.12.2??? Breaks in 1.14.4?? Works in 1.20 and above
+			System.setProperty("java.locale.providers", "COMPAT");
+		}
 		URLStreamHandlerProxy.setURLStreamHandler("http", new MinecraftURLStreamHandler(config));
 		URLStreamHandlerProxy.setURLStreamHandler("https", new MinecraftURLStreamHandler(config));
 		return new MainLaunchTarget(MAIN_CLASS, context.args);
