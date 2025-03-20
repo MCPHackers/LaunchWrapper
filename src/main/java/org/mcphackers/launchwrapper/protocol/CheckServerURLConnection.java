@@ -48,7 +48,7 @@ public class CheckServerURLConnection extends HttpURLConnection {
 		URL sessionURL = new URL(SESSION_URL + "/session/minecraft/hasJoined" + params);
 		Launch.LOGGER.logDebug("Session API | Connect: \"%s\"", sessionURL.toString());
 
-		HttpURLConnection connection = (HttpURLConnection) openDirectConnection(sessionURL);
+		HttpURLConnection connection = (HttpURLConnection)openDirectConnection(sessionURL);
 		connection.setRequestMethod("GET");
 		connection.connect();
 

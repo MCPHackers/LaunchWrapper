@@ -353,8 +353,8 @@ public class AddMain extends InjectionWithContext<LegacyTweakContext> {
 		FieldNode running = context.getIsRunning();
 		running.access = applyAccess(running.access, Opcodes.ACC_PUBLIC);
 
-		ClassNode node = newClass(source, ACC_PUBLIC, "org/mcphackers/launchwrapper/inject/WindowListener", "java/awt/event/WindowAdapter", null);
-		FieldNode mc = newField(node, ACC_PRIVATE, "mc", "L" + minecraft.name + ";");
+		ClassNode node = newClass(source, ACC_PUBLIC, "org/mcphackers/launchwrapper/inject/WindowListener", "java/awt/event/WindowAdapter", null, true);
+		FieldNode mc = newField(node, ACC_PRIVATE, "mc", "L" + minecraft.name + ";", null, true);
 		MethodNode init = new MethodNode(ACC_PUBLIC, "<init>", "(L" + minecraft.name + ";)V", null, null);
 		InsnList insns = init.instructions;
 		insns.add(new VarInsnNode(ALOAD, 0));

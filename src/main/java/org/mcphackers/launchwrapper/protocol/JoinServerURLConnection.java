@@ -56,7 +56,7 @@ public class JoinServerURLConnection extends HttpURLConnection {
 		URL sessionURL = new URL(SESSION_URL + "/session/minecraft/join");
 		Launch.LOGGER.logDebug("Session API | Connect: \"%s\"", sessionURL.toString());
 
-		HttpURLConnection connection = (HttpURLConnection) openDirectConnection(sessionURL);
+		HttpURLConnection connection = (HttpURLConnection)openDirectConnection(sessionURL);
 		connection.setRequestMethod("POST");
 		connection.setRequestProperty("Content-Type", "application/json; charset=utf-8");
 		connection.setDoOutput(true);

@@ -18,7 +18,6 @@ def depends = [
 	// "org.ow2.asm:asm-util:${asm_version}",
 	"org.ow2.asm:asm-tree:${asm_version}",
 	"org.json:json:20240303",
-	"com.mojang:authlib:1.5.25" // Compile time only. Optional at runtime.
 ]
 
 dependencies {

@@ -36,7 +36,6 @@ public class SkinRequests {
 		INSTANCE = this;
 	}
 
-	// FIXME this will cause an exception if the game doesn't read cached texture (happens in 1.14)
 	public Skin downloadSkin(String id, String username, SkinTexture type) {
 		Skin skin = getSkin(id, username, type);
 		if (skin == null) {
@@ -68,20 +67,20 @@ public class SkinRequests {
 			}
 		}
 		File f = new File(assetsDir, "skins/" + hash.substring(0, 2) + "/" + hash);
+		if (f.isFile() && f.canRead()) {
+			return new LocalSkin(f, skin.isSlim());
+		}
 		File dir = f.getParentFile();
 		if (dir != null) {
-			if (f.isFile() && f.canRead()) {
-				return new LocalSkin(f, skin.isSlim());
-			}
 			dir.mkdirs();
-			f.delete();
-			try {
-				Util.copyStream(new ByteArrayInputStream(skinData), new FileOutputStream(f));
-			} catch (IOException e) {
-				return null;
-			}
 		}
-		return new LocalSkin(f, skin.isSlim());
+		f.delete();
+		try {
+			Util.copyStream(new ByteArrayInputStream(skinData), new FileOutputStream(f));
+			return new LocalSkin(f, skin.isSlim());
+		} catch (IOException e) {
+			return null;
+		}
 	}
 
 	public Skin getSkin(String id, String username, SkinTexture type) {

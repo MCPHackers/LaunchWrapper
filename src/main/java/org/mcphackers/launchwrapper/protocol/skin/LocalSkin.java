@@ -10,6 +10,8 @@ public class LocalSkin implements Skin {
 	private File skinFile;
 	private boolean slim;
 
+	private static final boolean useFileURL = Boolean.parseBoolean(System.getProperty("launchwrapper.skins.useFileURL", "false"));
+
 	public LocalSkin(File file, boolean slim) {
 		this.skinFile = file;
 		this.slim = slim;
@@ -28,7 +30,7 @@ public class LocalSkin implements Skin {
 	}
 
 	public String getURL() {
-		return skinFile.toURI().toString();
+		return useFileURL ? skinFile.toURI().toString() : "http://skins.local/" + skinFile.getAbsolutePath();
 	}
 
 	public boolean isSlim() {

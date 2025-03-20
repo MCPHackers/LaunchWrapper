@@ -37,26 +37,35 @@ public final class NodeHelper {
 		return null;
 	}
 
-	public static MethodNode newMethod(ClassNode owner, int access, String name, String desc, String[] exceptions) {
+	public static MethodNode newMethod(ClassNode owner, int access, String name, String desc, String signature, String[] exceptions, boolean allowRenames) {
 		while (getMethod(owner, name, desc) != null) {
+			if (!allowRenames) {
+				return null;
+			}
 			name += '_';
 		}
-		MethodNode method = new MethodNode(access, name, desc, null, exceptions);
+		MethodNode method = new MethodNode(access, name, desc, signature, exceptions);
 		owner.methods.add(method);
 		return method;
 	}
 
-	public static FieldNode newField(ClassNode owner, int access, String name, String desc) {
+	public static FieldNode newField(ClassNode owner, int access, String name, String desc, String signature, boolean allowRenames) {
 		while (getField(owner, name, desc) != null) {
+			if (!allowRenames) {
+				return null;
+			}
 			name += '_';
 		}
-		FieldNode field = new FieldNode(access, name, desc, null, null);
+		FieldNode field = new FieldNode(access, name, desc, signature, null);
 		owner.fields.add(field);
 		return field;
 	}
 
-	public static ClassNode newClass(ClassNodeSource source, int access, String name, String superName, String[] interfaces) {
+	public static ClassNode newClass(ClassNodeSource source, int access, String name, String superName, String[] interfaces, boolean allowRenames) {
 		while (source.getClass(name) != null) {
+			if (!allowRenames) {
+				return null;
+			}
 			name += '_';
 		}
 		ClassNode node = new ClassNode();

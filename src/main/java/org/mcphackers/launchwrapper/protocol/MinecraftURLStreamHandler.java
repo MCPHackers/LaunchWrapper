@@ -81,6 +81,9 @@ public class MinecraftURLStreamHandler extends URLStreamHandlerProxy {
 		if (host.equals("api.minecraftservices.com") && path.equals("/events"))
 			return new BasicResponseURLConnection(url, "");
 
+		if (host.equals("skins.local"))
+			return new LocalSkinURLConnection(url);
+
 		return openDirectConnection(url);
 	}
 }
