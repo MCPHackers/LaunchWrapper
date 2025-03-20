@@ -62,6 +62,7 @@ Arguments may be as follows:
 - `isom` - Launch IsomPreviewApplet
 - `vsync` - Launch the game with VSync enabled
 - `resizable` - Early Indev and Classic don't properly update viewport, so the wrapper disables frame resizing. To enable it anyway use this argument
+- `disableSkinFix` - Disables AuthLib-based fixes for skins. (1.7.6+)
 - `skinProxy` - **pre-c0.0.19a** / **classic** / **pre-b1.9-pre4** / **pre-1.8** / **default** - convert the skin to one of these specified formats
 	- **pre-c0.0.19a** - flatten all skin layers, flip bottom textures, mirror entire skin and crop to 64x32
 	- **classic** - flatten all skin layers, flip bottom textures and crop to 64x32

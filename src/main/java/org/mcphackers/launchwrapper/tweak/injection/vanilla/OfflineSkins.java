@@ -90,7 +90,7 @@ public class OfflineSkins extends InjectionWithContext<MinecraftGetter> {
 																		 impl.name, impl.desc, impl.signature, impl.exceptions.toArray(new String[0]), false);
 							insns = implMethod.instructions;
 							if (impl.name.equals("getTextures") && impl.desc.equals("(Lcom/mojang/authlib/GameProfile;Z)Ljava/util/Map;")) {
-								insns.add(getTextures());
+								insns.add(getTextures(source));
 								continue;
 							}
 							if (impl.name.equals("getPackedTextures") && impl.desc.equals("(Lcom/mojang/authlib/GameProfile;)Lcom/mojang/authlib/properties/Property;")) {
@@ -196,7 +196,7 @@ public class OfflineSkins extends InjectionWithContext<MinecraftGetter> {
 		return map;
 	}
 
-	private static InsnList getTextures() {
+	private static InsnList getTextures(ClassNodeSource source) {
 		int mapIndex = 2;
 		int mapIndex2 = 3;
 		int valuesIndex = 4;
@@ -254,23 +254,30 @@ public class OfflineSkins extends InjectionWithContext<MinecraftGetter> {
 		insns.add(new MethodInsnNode(INVOKEINTERFACE, "org/mcphackers/launchwrapper/protocol/skin/Skin", "getURL", "()Ljava/lang/String;"));
 		insns.add(new InsnNode(SWAP));
 		// stack: Map, MinecraftProfileTexture.Type, MinecraftProfileTexture, MinecraftProfileTexture, String, Skin
-		LabelNode pop = new LabelNode();
-		LabelNode pushNull = new LabelNode();
-		insns.add(new VarInsnNode(ILOAD, iIndex));
-		insns.add(new JumpInsnNode(IFNE, pop));
-		insns.add(new MethodInsnNode(INVOKEINTERFACE, "org/mcphackers/launchwrapper/protocol/skin/Skin", "isSlim", "()Z"));
-		insns.add(new JumpInsnNode(IFEQ, pushNull));
-		LabelNode invokeInit = new LabelNode();
-		insns.add(new LdcInsnNode("model"));
-		insns.add(new LdcInsnNode("slim"));
-		insns.add(new MethodInsnNode(INVOKESTATIC, "java/util/Collections", "singletonMap", "(Ljava/lang/String;Ljava/lang/String;)Ljava/util/Map;"));
-		insns.add(new JumpInsnNode(GOTO, invokeInit));
-		insns.add(pop);
-		insns.add(new InsnNode(POP));
-		insns.add(pushNull);
-		insns.add(new InsnNode(ACONST_NULL));
-		insns.add(invokeInit);
-		insns.add(new MethodInsnNode(INVOKESPECIAL, "com/mojang/authlib/minecraft/MinecraftProfileTexture", "<init>", "(Ljava/lang/String;Ljava/util/Map;)V"));
+		ClassNode mcSkinTexture = source.getClass("com/mojang/authlib/minecraft/MinecraftProfileTexture");
+		boolean hasModels = NodeHelper.getMethod(mcSkinTexture, "<init>", "(Ljava/lang/String;Ljava/util/Map;)V") != null;
+		if (hasModels) {
+			LabelNode pop = new LabelNode();
+			insns.add(new VarInsnNode(ILOAD, iIndex));
+			insns.add(new JumpInsnNode(IFNE, pop));
+			LabelNode pushNull = new LabelNode();
+			insns.add(new MethodInsnNode(INVOKEINTERFACE, "org/mcphackers/launchwrapper/protocol/skin/Skin", "isSlim", "()Z"));
+			insns.add(new JumpInsnNode(IFEQ, pushNull));
+			LabelNode invokeInit = new LabelNode();
+			insns.add(new LdcInsnNode("model"));
+			insns.add(new LdcInsnNode("slim"));
+			insns.add(new MethodInsnNode(INVOKESTATIC, "java/util/Collections", "singletonMap", "(Ljava/lang/String;Ljava/lang/String;)Ljava/util/Map;"));
+			insns.add(new JumpInsnNode(GOTO, invokeInit));
+			insns.add(pop);
+			insns.add(new InsnNode(POP));
+			insns.add(pushNull);
+			insns.add(new InsnNode(ACONST_NULL));
+			insns.add(invokeInit);
+			insns.add(new MethodInsnNode(INVOKESPECIAL, "com/mojang/authlib/minecraft/MinecraftProfileTexture", "<init>", "(Ljava/lang/String;Ljava/util/Map;)V"));
+		} else {
+			insns.add(new InsnNode(POP));
+			insns.add(new MethodInsnNode(INVOKESPECIAL, "com/mojang/authlib/minecraft/MinecraftProfileTexture", "<init>", "(Ljava/lang/String;)V"));
+		}
 		insns.add(new MethodInsnNode(INVOKEINTERFACE, "java/util/Map", "put", "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;"));
 		insns.add(new InsnNode(POP));
 		insns.add(new IincInsnNode(iIndex, 1));
