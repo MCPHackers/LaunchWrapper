@@ -9,6 +9,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.regex.Pattern;
 
 import org.mcphackers.launchwrapper.protocol.skin.MojangSkinProvider;
@@ -183,6 +184,10 @@ public class LaunchConfig {
 		if (uuid.get() == null && username.get() != null) {
 			// Resolve profile UUID if we only provide username
 			uuid.set(MojangSkinProvider.getUUIDfromName(username.get()));
+		}
+		if (uuid.get() == null) {
+			// If uuid is still null, generate random one (Fixes LAN play when there is no internet connection)
+			uuid.set(UUID.randomUUID().toString().replace("-", ""));
 		}
 		if (accessToken.get() == null && session.get() != null && session.get().startsWith("token:")) {
 			// Parse the session ID for the access token if we don't have it
