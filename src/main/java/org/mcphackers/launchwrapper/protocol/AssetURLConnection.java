@@ -60,7 +60,9 @@ public class AssetURLConnection extends URLConnection {
 			if (object.url != null) { // url is only set when the resource is requested to be re-downloaded
 				Launch.LOGGER.log("Downloading resource: " + object.path);
 				object.file.getParentFile().mkdirs();
-				Util.copyStream(openDirectConnection(new URL(object.url)).getInputStream(), new FileOutputStream(object.file));
+				URLConnection connection = openDirectConnection(new URL(object.url));
+				connection.setRequestProperty("User-Agent", "LaunchWrapper/" + Launch.VERSION);
+				Util.copyStream(connection.getInputStream(), new FileOutputStream(object.file));
 			}
 			return new FileInputStream(object.file);
 		}

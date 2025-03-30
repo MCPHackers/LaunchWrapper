@@ -1,7 +1,12 @@
 package org.mcphackers.launchwrapper.protocol;
 
+import static org.mcphackers.launchwrapper.protocol.URLStreamHandlerProxy.openDirectConnection;
+
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.net.URL;
+import java.net.URLConnection;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -11,6 +16,8 @@ import org.mcphackers.launchwrapper.Launch;
 import org.mcphackers.launchwrapper.util.Util;
 
 public class AssetRequests {
+	private static final boolean VERIFY_HASH = Boolean.parseBoolean(System.getProperty("launchwrapper.verifyAssetHash"));
+
 	public static class AssetObject {
 		public File file;
 		public String path;
@@ -34,9 +41,16 @@ public class AssetRequests {
 			return;
 		}
 		try {
-			String inputString = new String(Util.readStream(new FileInputStream(new File(assetsDir, "indexes/" + index + ".json"))));
+			File indexFile = new File(assetsDir, "indexes/" + index + ".json");
+			if (!indexFile.exists()) {
+				return;
+			}
+			String inputString = new String(Util.readStream(new FileInputStream(indexFile)));
+			JSONObject indexObj = new JSONObject(inputString);
 
-			JSONObject objects = new JSONObject(inputString).getJSONObject("objects");
+			JSONObject objects = indexObj.getJSONObject("objects");
+			boolean virtual = indexObj.optBoolean("virtual");
+
 			for (String s : objects.keySet()) {
 				JSONObject entry = objects.optJSONObject(s);
 				if (entry == null) {
@@ -44,14 +58,9 @@ public class AssetRequests {
 				}
 				String hash = entry.optString("hash", null);
 				long size = entry.optLong("size");
-				// Only resources in a folder are valid
-				if (!s.contains("/") || hash == null) {
-					Launch.LOGGER.logDebug("Invalid resource: " + s);
-					continue;
-				}
 				String url = null;
 				File object = new File(assetsDir, "objects/" + hash.substring(0, 2) + "/" + hash);
-				if (!object.exists() || object.length() != size /* || !hash.equals(Util.getSHA1(new FileInputStream(object))) */) {
+				if (!object.exists() || object.length() != size || VERIFY_HASH && !hash.equals(Util.getSHA1(new FileInputStream(object)))) {
 					// Download if missing
 					// Some sounds in betacraft indexes are downloaded from custom url which isn't handled by other launchers
 
@@ -65,6 +74,22 @@ public class AssetRequests {
 				}
 				AssetObject obj = new AssetObject(object, s, hash, size, url);
 				mappedAssets.put(s, obj);
+
+				// Emulate launcher's handling of virtual asset index object mapping. (Copy from {assetsDir}/objects/{hash} to {assetsDir}/{name})
+				if (virtual) {
+					File mappedObject = new File(assetsDir, s);
+					if (url != null) { // url is only set when the resource is requested to be re-downloaded
+						Launch.LOGGER.log("Downloading resource: " + s);
+						object.getParentFile().mkdirs();
+						URLConnection connection = openDirectConnection(new URL(url));
+						connection.setRequestProperty("User-Agent", "LaunchWrapper/" + Launch.VERSION);
+						Util.copyStream(connection.getInputStream(), new FileOutputStream(object));
+					}
+					if (!mappedObject.exists() || mappedObject.length() != size || VERIFY_HASH && !hash.equals(Util.getSHA1(new FileInputStream(mappedObject)))) {
+						mappedObject.getParentFile().mkdirs();
+						Util.copyStream(new FileInputStream(object), new FileOutputStream(mappedObject));
+					}
+				}
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
