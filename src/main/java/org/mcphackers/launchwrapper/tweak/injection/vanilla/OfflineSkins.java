@@ -6,12 +6,14 @@ import static org.objectweb.asm.Opcodes.*;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.json.JSONObject;
 import org.mcphackers.launchwrapper.LaunchConfig;
 import org.mcphackers.launchwrapper.protocol.skin.Skin;
 import org.mcphackers.launchwrapper.protocol.skin.SkinRequests;
 import org.mcphackers.launchwrapper.protocol.skin.SkinTexture;
 import org.mcphackers.launchwrapper.tweak.injection.InjectionWithContext;
 import org.mcphackers.launchwrapper.tweak.injection.MinecraftGetter;
+import org.mcphackers.launchwrapper.util.Base64;
 import org.mcphackers.launchwrapper.util.ClassNodeSource;
 import org.mcphackers.launchwrapper.util.asm.NodeHelper;
 import org.objectweb.asm.Type;
@@ -85,76 +87,102 @@ public class OfflineSkins extends InjectionWithContext<MinecraftGetter> {
 					insns.add(new InsnNode(ARETURN));
 
 					for (MethodNode impl : mcSessionService.methods) {
-						if ((impl.access & ACC_ABSTRACT) != 0) {
-							MethodNode implMethod = NodeHelper.newMethod(sessionService, ACC_PUBLIC,
-																		 impl.name, impl.desc, impl.signature, impl.exceptions.toArray(new String[0]), false);
-							insns = implMethod.instructions;
-							if (impl.name.equals("getTextures") && impl.desc.equals("(Lcom/mojang/authlib/GameProfile;Z)Ljava/util/Map;")) {
-								insns.add(getTextures(source));
-								continue;
-							}
-							if (impl.name.equals("getPackedTextures") && impl.desc.equals("(Lcom/mojang/authlib/GameProfile;)Lcom/mojang/authlib/properties/Property;")) {
-								// TODO
-								return false;
-							}
-							int i = 1;
-							insns.add(new VarInsnNode(ALOAD, 0));
-							insns.add(new FieldInsnNode(GETFIELD, sessionService.name, dispatcher.name, dispatcher.desc));
-							for (Type type : Type.getArgumentTypes(impl.desc)) {
-								switch (type.getSort()) {
-									case Type.BOOLEAN:
-									case Type.BYTE:
-									case Type.CHAR:
-									case Type.SHORT:
-									case Type.INT:
-										insns.add(new VarInsnNode(ILOAD, i));
-										break;
-									case Type.LONG:
-										insns.add(new VarInsnNode(LLOAD, i));
-										break;
-									case Type.FLOAT:
-										insns.add(new VarInsnNode(FLOAD, i));
-										break;
-									case Type.DOUBLE:
-										insns.add(new VarInsnNode(DLOAD, i));
-										break;
-									case Type.ARRAY:
-									case Type.OBJECT:
-										insns.add(new VarInsnNode(ALOAD, i));
-										break;
-									default:
-										return false;
-								}
-								i += type.getSize();
-							}
-							insns.add(new MethodInsnNode(INVOKEINTERFACE, "com/mojang/authlib/minecraft/MinecraftSessionService", impl.name, impl.desc));
-							switch (Type.getReturnType(impl.desc).getSort()) {
+						MethodNode implMethod = NodeHelper.newMethod(sessionService, ACC_PUBLIC,
+																	 impl.name, impl.desc, impl.signature, impl.exceptions.toArray(new String[0]), false);
+						insns = implMethod.instructions;
+						if (impl.name.equals("getTextures") && impl.desc.equals("(Lcom/mojang/authlib/GameProfile;Z)Ljava/util/Map;")) {
+							insns.add(new VarInsnNode(ALOAD, 1));
+							insns.add(pushIdAndName());
+							insns.add(getTextures(source, false));
+							continue;
+						}
+						if (impl.name.equals("getTextures") && impl.desc.equals("(Lcom/mojang/authlib/GameProfile;)Lcom/mojang/authlib/minecraft/MinecraftProfileTextures;")) {
+							insns.add(new VarInsnNode(ALOAD, 1));
+							insns.add(pushIdAndName());
+							insns.add(getTextures(source, true));
+							continue;
+						}
+						if (impl.name.equals("getPackedTextures") && impl.desc.equals("(Lcom/mojang/authlib/GameProfile;)Lcom/mojang/authlib/properties/Property;")) {
+							insns.add(new TypeInsnNode(NEW, "com/mojang/authlib/properties/Property"));
+							insns.add(new InsnNode(DUP));
+							insns.add(new LdcInsnNode("textures"));
+							insns.add(new VarInsnNode(ALOAD, 1));
+							insns.add(pushIdAndName());
+							insns.add(new MethodInsnNode(INVOKESTATIC, "org/mcphackers/launchwrapper/tweak/injection/vanilla/OfflineSkins", "getTexturesBase64", "(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;"));
+							insns.add(new MethodInsnNode(INVOKESPECIAL, "com/mojang/authlib/properties/Property", "<init>", "(Ljava/lang/String;Ljava/lang/String;)V"));
+							insns.add(new InsnNode(ARETURN));
+							continue;
+						}
+						if (impl.name.equals("unpackTextures") && impl.desc.equals("(Lcom/mojang/authlib/properties/Property;)Lcom/mojang/authlib/minecraft/MinecraftProfileTextures;")) {
+							insns.add(new VarInsnNode(ALOAD, 1));
+							insns.add(new MethodInsnNode(INVOKEVIRTUAL, "com/mojang/authlib/properties/Property", "value", "()Ljava/lang/String;"));
+							insns.add(new MethodInsnNode(INVOKESTATIC, "org/mcphackers/launchwrapper/tweak/injection/vanilla/OfflineSkins", "unpackProfileBase64", "(Ljava/lang/String;)[Ljava/lang/String;"));
+							insns.add(new InsnNode(DUP));
+							insns.add(new InsnNode(ICONST_0));
+							insns.add(new InsnNode(AALOAD));
+							insns.add(new InsnNode(SWAP));
+							insns.add(new InsnNode(ICONST_1));
+							insns.add(new InsnNode(AALOAD));
+							insns.add(getTextures(source, true));
+							continue;
+						}
+						int i = 1;
+						insns.add(new VarInsnNode(ALOAD, 0));
+						insns.add(new FieldInsnNode(GETFIELD, sessionService.name, dispatcher.name, dispatcher.desc));
+						for (Type type : Type.getArgumentTypes(impl.desc)) {
+							switch (type.getSort()) {
 								case Type.BOOLEAN:
 								case Type.BYTE:
 								case Type.CHAR:
 								case Type.SHORT:
 								case Type.INT:
-									insns.add(new InsnNode(IRETURN));
+									insns.add(new VarInsnNode(ILOAD, i));
 									break;
 								case Type.LONG:
-									insns.add(new InsnNode(LRETURN));
+									insns.add(new VarInsnNode(LLOAD, i));
 									break;
 								case Type.FLOAT:
-									insns.add(new InsnNode(FRETURN));
+									insns.add(new VarInsnNode(FLOAD, i));
 									break;
 								case Type.DOUBLE:
-									insns.add(new InsnNode(DRETURN));
+									insns.add(new VarInsnNode(DLOAD, i));
 									break;
 								case Type.ARRAY:
 								case Type.OBJECT:
-									insns.add(new InsnNode(ARETURN));
-									break;
-								case Type.VOID:
-									insns.add(new InsnNode(RETURN));
+									insns.add(new VarInsnNode(ALOAD, i));
 									break;
 								default:
 									return false;
 							}
+							i += type.getSize();
+						}
+						insns.add(new MethodInsnNode(INVOKEINTERFACE, "com/mojang/authlib/minecraft/MinecraftSessionService", impl.name, impl.desc));
+						switch (Type.getReturnType(impl.desc).getSort()) {
+							case Type.BOOLEAN:
+							case Type.BYTE:
+							case Type.CHAR:
+							case Type.SHORT:
+							case Type.INT:
+								insns.add(new InsnNode(IRETURN));
+								break;
+							case Type.LONG:
+								insns.add(new InsnNode(LRETURN));
+								break;
+							case Type.FLOAT:
+								insns.add(new InsnNode(FRETURN));
+								break;
+							case Type.DOUBLE:
+								insns.add(new InsnNode(DRETURN));
+								break;
+							case Type.ARRAY:
+							case Type.OBJECT:
+								insns.add(new InsnNode(ARETURN));
+								break;
+							case Type.VOID:
+								insns.add(new InsnNode(RETURN));
+								break;
+							default:
+								return false;
 						}
 					}
 
@@ -168,21 +196,9 @@ public class OfflineSkins extends InjectionWithContext<MinecraftGetter> {
 		}
 		return false;
 	}
-	private static InsnList pushIdAndName() {
-		InsnList insns = new InsnList();
-		insns.add(new InsnNode(DUP));
-		insns.add(new MethodInsnNode(INVOKEVIRTUAL, "com/mojang/authlib/GameProfile", "getId", "()Ljava/util/UUID;"));
-		insns.add(new MethodInsnNode(INVOKEVIRTUAL, "java/util/UUID", "toString", "()Ljava/lang/String;"));
-		insns.add(new LdcInsnNode("-"));
-		insns.add(new LdcInsnNode(""));
-		insns.add(new MethodInsnNode(INVOKEVIRTUAL, "java/lang/String", "replace", "(Ljava/lang/CharSequence;Ljava/lang/CharSequence;)Ljava/lang/String;"));
-		insns.add(new InsnNode(SWAP));
-		insns.add(new MethodInsnNode(INVOKEVIRTUAL, "com/mojang/authlib/GameProfile", "getName", "()Ljava/lang/String;"));
-		return insns;
-	}
 
 	/**
-	 * Helper method called from ASM
+	 * Helper methods
 	 */
 	public static Map<SkinTexture, Skin> getTexturesMap(String id, String username) {
 		SkinRequests skins = SkinRequests.getInstance();
@@ -196,15 +212,61 @@ public class OfflineSkins extends InjectionWithContext<MinecraftGetter> {
 		return map;
 	}
 
-	private static InsnList getTextures(ClassNodeSource source) {
+	public static String[] unpackProfileBase64(String base64) {
+		String[] uuidAndName = new String[2];
+		try {
+			JSONObject jsonObject = new JSONObject(new String(Base64.decode(base64), "UTF-8"));
+			uuidAndName[0] = jsonObject.getString("profileId");
+			uuidAndName[1] = jsonObject.getString("profileName");
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return uuidAndName;
+	}
+
+	public static String getTexturesBase64(String id, String username) {
+		SkinRequests skins = SkinRequests.getInstance();
+		JSONObject json = new JSONObject();
+		json.put("profileId", id);
+		json.put("profileName", username);
+		JSONObject textures = new JSONObject();
+		json.put("textures", textures);
+		for (SkinTexture skinTex : SkinTexture.values()) {
+			Skin skin = skins.downloadSkin(id, username, skinTex);
+			if (skin == null) {
+				continue;
+			}
+			JSONObject texture = new JSONObject();
+			texture.put("url", skin.getURL());
+			textures.put(skinTex.name(), texture);
+		}
+		return Base64.encodeBytes(json.toString().getBytes());
+	}
+	/*
+	 * Helper methods end
+	 */
+
+	private static InsnList pushIdAndName() {
+		InsnList insns = new InsnList();
+		insns.add(new InsnNode(DUP));
+		insns.add(new MethodInsnNode(INVOKEVIRTUAL, "com/mojang/authlib/GameProfile", "getId", "()Ljava/util/UUID;"));
+		insns.add(new MethodInsnNode(INVOKEVIRTUAL, "java/util/UUID", "toString", "()Ljava/lang/String;"));
+		insns.add(new LdcInsnNode("-"));
+		insns.add(new LdcInsnNode(""));
+		insns.add(new MethodInsnNode(INVOKEVIRTUAL, "java/lang/String", "replace", "(Ljava/lang/CharSequence;Ljava/lang/CharSequence;)Ljava/lang/String;"));
+		insns.add(new InsnNode(SWAP));
+		insns.add(new MethodInsnNode(INVOKEVIRTUAL, "com/mojang/authlib/GameProfile", "getName", "()Ljava/lang/String;"));
+		return insns;
+	}
+
+	private static InsnList getTextures(ClassNodeSource source, boolean retRecordClass) {
 		int mapIndex = 2;
 		int mapIndex2 = 3;
 		int valuesIndex = 4;
 		int valuesIndex2 = 5;
 		int iIndex = 6;
 		InsnList insns = new InsnList();
-		insns.add(new VarInsnNode(ALOAD, 1));
-		insns.add(pushIdAndName());
+		// stack: String id, String username
 		insns.add(new MethodInsnNode(INVOKESTATIC, "org/mcphackers/launchwrapper/tweak/injection/vanilla/OfflineSkins", "getTexturesMap", "(Ljava/lang/String;Ljava/lang/String;)Ljava/util/Map;"));
 		insns.add(new VarInsnNode(ASTORE, mapIndex2));
 
@@ -288,7 +350,26 @@ public class OfflineSkins extends InjectionWithContext<MinecraftGetter> {
 		insns.add(new JumpInsnNode(GOTO, startLoop));
 		insns.add(endLoop);
 
-		insns.add(new VarInsnNode(ALOAD, mapIndex));
+		if (retRecordClass) {
+			insns.add(new TypeInsnNode(NEW, "com/mojang/authlib/minecraft/MinecraftProfileTextures"));
+			insns.add(new InsnNode(DUP));
+			insns.add(new VarInsnNode(ALOAD, mapIndex));
+			insns.add(new FieldInsnNode(GETSTATIC, "com/mojang/authlib/minecraft/MinecraftProfileTexture$Type", "SKIN", "Lcom/mojang/authlib/minecraft/MinecraftProfileTexture$Type;"));
+			insns.add(new MethodInsnNode(INVOKEINTERFACE, "java/util/Map", "get", "(Ljava/lang/Object;)Ljava/lang/Object;"));
+			insns.add(new TypeInsnNode(CHECKCAST, "com/mojang/authlib/minecraft/MinecraftProfileTexture"));
+			insns.add(new VarInsnNode(ALOAD, mapIndex));
+			insns.add(new FieldInsnNode(GETSTATIC, "com/mojang/authlib/minecraft/MinecraftProfileTexture$Type", "CAPE", "Lcom/mojang/authlib/minecraft/MinecraftProfileTexture$Type;"));
+			insns.add(new MethodInsnNode(INVOKEINTERFACE, "java/util/Map", "get", "(Ljava/lang/Object;)Ljava/lang/Object;"));
+			insns.add(new TypeInsnNode(CHECKCAST, "com/mojang/authlib/minecraft/MinecraftProfileTexture"));
+			insns.add(new VarInsnNode(ALOAD, mapIndex));
+			insns.add(new FieldInsnNode(GETSTATIC, "com/mojang/authlib/minecraft/MinecraftProfileTexture$Type", "ELYTRA", "Lcom/mojang/authlib/minecraft/MinecraftProfileTexture$Type;"));
+			insns.add(new MethodInsnNode(INVOKEINTERFACE, "java/util/Map", "get", "(Ljava/lang/Object;)Ljava/lang/Object;"));
+			insns.add(new TypeInsnNode(CHECKCAST, "com/mojang/authlib/minecraft/MinecraftProfileTexture"));
+			insns.add(new FieldInsnNode(GETSTATIC, "com/mojang/authlib/SignatureState", "SIGNED", "Lcom/mojang/authlib/SignatureState;"));
+			insns.add(new MethodInsnNode(INVOKESPECIAL, "com/mojang/authlib/minecraft/MinecraftProfileTextures", "<init>", "(Lcom/mojang/authlib/minecraft/MinecraftProfileTexture;Lcom/mojang/authlib/minecraft/MinecraftProfileTexture;Lcom/mojang/authlib/minecraft/MinecraftProfileTexture;Lcom/mojang/authlib/SignatureState;)V"));
+		} else {
+			insns.add(new VarInsnNode(ALOAD, mapIndex));
+		}
 		insns.add(new InsnNode(ARETURN));
 		return insns;
 	}
