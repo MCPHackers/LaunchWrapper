@@ -54,7 +54,9 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 	 * Keys should contain slashes
 	 */
 	protected Map<String, ClassNode> classNodeCache = new HashMap<String, ClassNode>();
+
 	private File debugOutput;
+	protected boolean useDummyCert = Boolean.parseBoolean(System.getProperty("launchwrapper.useDummyCertificate", "true"));
 
 	protected static class HighPriorityClassLoader extends URLClassLoader {
 		public HighPriorityClassLoader(URL[] urls) {
@@ -384,15 +386,13 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 		return defineClass(name, classData, 0, classData.length, getProtectionDomain(name));
 	}
 
-	private static final boolean DUMMY_CERT = !Boolean.parseBoolean(System.getProperty("launchwrapper.disableDummyCertificate", "false"));
-
 	private ProtectionDomain getProtectionDomain(String name) {
 		final URL resource = getResource(classResourceName(name));
 		if (resource == null) {
 			return null;
 		}
 		CodeSource codeSource = null;
-		Certificate[] certificates = DUMMY_CERT ? new Certificate[] { new DummyCertificate() } : null;
+		Certificate[] certificates = useDummyCert ? new Certificate[0] : null;
 		if (resource.getProtocol().equals("jar")) {
 			String path = resource.getPath();
 			if (path.startsWith("file:")) {

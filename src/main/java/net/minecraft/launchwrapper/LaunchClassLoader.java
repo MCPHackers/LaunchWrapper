@@ -36,6 +36,7 @@ public class LaunchClassLoader extends org.mcphackers.launchwrapper.loader.Launc
 	}
 	public LaunchClassLoader(URL[] sources, ClassLoader parent) {
 		super(sources, parent);
+		useDummyCert = false; // Forge only works with Certificate array that isn't 0-sized or if certificates are null
 		classLoaderExceptions = exclusions;
 		addClassLoaderExclusion("org.lwjgl.");
 		addClassLoaderExclusion("org.apache.logging.");
