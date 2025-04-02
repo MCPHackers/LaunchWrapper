@@ -29,6 +29,10 @@ public class AssetURLConnection extends URLConnection {
 			s.append("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>");
 			s.append("<ListBucketResult>");
 			for (AssetObject asset : assets.list()) {
+				if (!asset.path.contains("/")) {
+					Launch.LOGGER.logDebug("Invalid resource: " + asset.path);
+					continue;
+				}
 				s.append("<Contents>");
 				s.append("<Key>");
 				s.append(asset.path);
@@ -41,6 +45,10 @@ public class AssetURLConnection extends URLConnection {
 			s.append("</ListBucketResult>");
 		} else {
 			for (AssetObject asset : assets.list()) {
+				if (!asset.path.contains("/")) {
+					Launch.LOGGER.logDebug("Invalid resource: " + asset.path);
+					continue;
+				}
 				s.append(asset.path + ',' + asset.size + ",0\n");
 			}
 		}
