@@ -2,20 +2,18 @@ package org.mcphackers.launchwrapper.util;
 
 import java.lang.reflect.Field;
 
-import sun.misc.Unsafe;
-
 @SuppressWarnings("sunapi")
 public final class UnsafeUtils {
-	private static final Unsafe theUnsafe = getUnsafe();
+	private static final sun.misc.Unsafe theUnsafe = getUnsafe();
 
 	private UnsafeUtils() {
 	}
 
-	private static Unsafe getUnsafe() {
+	private static sun.misc.Unsafe getUnsafe() {
 		try {
-			final Field unsafeField = Unsafe.class.getDeclaredField("theUnsafe");
+			final Field unsafeField = sun.misc.Unsafe.class.getDeclaredField("theUnsafe");
 			unsafeField.setAccessible(true);
-			final Unsafe unsafe = (Unsafe)unsafeField.get(null);
+			final sun.misc.Unsafe unsafe = (sun.misc.Unsafe)unsafeField.get(null);
 			return unsafe;
 		} catch (Exception e) {
 			e.printStackTrace();
