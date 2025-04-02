@@ -126,7 +126,7 @@ public class LegacyTweak extends Tweak {
 		enableWLToolkit();
 		if (LaunchClassLoader.CLASS_VERSION >= 64) {
 			// Minecraft shows unknown unicode symbol in place of U+00A0 (NON-BREAKING SPACE) in dates, force old locale provider to use space
-			System.setProperty("java.locale.providers", "COMPAT");
+			System.setProperty("java.locale.providers", "SPI");
 		}
 		MinecraftURLStreamHandler handler = new MinecraftURLStreamHandler(config);
 		URLStreamHandlerProxy.setURLStreamHandler("http", handler);

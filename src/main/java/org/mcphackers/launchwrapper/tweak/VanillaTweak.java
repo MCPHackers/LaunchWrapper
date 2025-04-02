@@ -58,7 +58,7 @@ public class VanillaTweak extends Tweak {
 		if (LaunchClassLoader.CLASS_VERSION >= 64) {
 			// Minecraft shows unknown unicode symbol in place of U+00A0 (NON-BREAKING SPACE) in dates, force old locale provider to use space
 			// Fixed in 1.12.2??? Breaks in 1.14.4?? Works in 1.20 and above
-			System.setProperty("java.locale.providers", "COMPAT");
+			System.setProperty("java.locale.providers", "SPI");
 		}
 		MinecraftURLStreamHandler handler = new MinecraftURLStreamHandler(config);
 		URLStreamHandlerProxy.setURLStreamHandler("http", handler);
