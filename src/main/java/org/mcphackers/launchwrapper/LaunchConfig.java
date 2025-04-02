@@ -107,11 +107,7 @@ public class LaunchConfig {
 				gameDir = new File(homeDir, game + '/');
 		}
 
-		if (!gameDir.exists() && !gameDir.mkdirs()) {
-			throw new RuntimeException("The working directory could not be created: " + gameDir);
-		} else {
-			return gameDir;
-		}
+		return gameDir;
 	}
 
 	@SuppressWarnings("unchecked")
