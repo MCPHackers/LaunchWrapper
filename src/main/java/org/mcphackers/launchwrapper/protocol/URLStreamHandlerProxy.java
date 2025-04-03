@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.Map;
 
+import org.mcphackers.launchwrapper.Launch;
 import org.mcphackers.launchwrapper.util.UnsafeUtils;
 
 public abstract class URLStreamHandlerProxy extends URLStreamHandler {
@@ -29,7 +30,9 @@ public abstract class URLStreamHandlerProxy extends URLStreamHandler {
 	}
 
 	public static URLConnection openDirectConnection(URL url) throws IOException {
-		return new URL(null, url.toExternalForm(), getDefaultURLStreamHandler(url.getProtocol())).openConnection();
+		URLConnection connection = new URL(null, url.toExternalForm(), getDefaultURLStreamHandler(url.getProtocol())).openConnection();
+		connection.addRequestProperty("User-Agent", "LaunchWrapper/" + Launch.VERSION);
+		return connection;
 	}
 
 	public static void setURLStreamHandler(String protocol, URLStreamHandlerProxy handler) {

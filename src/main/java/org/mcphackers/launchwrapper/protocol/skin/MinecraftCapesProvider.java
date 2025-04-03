@@ -4,6 +4,7 @@ import static org.mcphackers.launchwrapper.protocol.URLStreamHandlerProxy.*;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URL;
 
 import org.json.JSONObject;
@@ -63,8 +64,8 @@ public class MinecraftCapesProvider implements SkinProvider {
 			return sha256;
 		}
 
-		public byte[] getData() throws IOException {
-			return data;
+		public InputStream getData() {
+			return new ByteArrayInputStream(data);
 		}
 
 		public String getURL() {

@@ -2,8 +2,9 @@ package org.mcphackers.launchwrapper.protocol.skin;
 
 import static org.mcphackers.launchwrapper.protocol.URLStreamHandlerProxy.*;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
 import java.net.URL;
 
 import org.json.JSONObject;
@@ -66,12 +67,12 @@ public class ElyBySkinProvider implements SkinProvider {
 			return url.substring(url.lastIndexOf('/') + 1);
 		}
 
-		public byte[] getData() throws IOException {
-			try {
-				return Util.readStream(openDirectConnection(new URL(url)).getInputStream());
-			} catch (FileNotFoundException e) {
+		public InputStream getData() throws IOException {
+			HttpURLConnection connection = (HttpURLConnection)openDirectConnection(new URL(url));
+			if (connection.getResponseCode() != 200) {
 				return null;
 			}
+			return connection.getInputStream();
 		}
 
 		public String getURL() {

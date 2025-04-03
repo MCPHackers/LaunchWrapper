@@ -30,11 +30,18 @@ public class MojangSkinProvider implements SkinProvider {
 		return p.name;
 	}
 
-	public static String getUUIDfromName(String username) {
+	public static boolean isBlacklistedName(String username) {
 		for (String s : BLACKLISTED_NAMES) {
 			if (s.equals(username)) {
-				return null;
+				return true;
 			}
+		}
+		return false;
+	}
+
+	public static String getUUIDfromName(String username) {
+		if (isBlacklistedName(username)) {
+			return null;
 		}
 		String cachedUUID = nameToUUID.get(username);
 
@@ -195,10 +202,10 @@ public class MojangSkinProvider implements SkinProvider {
 			return profile.textures.get(type);
 		}
 
-		public byte[] getData() throws IOException {
+		public InputStream getData() throws IOException {
 			String url = getURL();
 			if (url != null) {
-				return Util.readStream(openDirectConnection(new URL(url)).getInputStream());
+				return openDirectConnection(new URL(url)).getInputStream();
 			}
 			return null;
 		}

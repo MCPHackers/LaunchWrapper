@@ -3,8 +3,7 @@ package org.mcphackers.launchwrapper.protocol.skin;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-
-import org.mcphackers.launchwrapper.util.Util;
+import java.io.InputStream;
 
 public class LocalSkin implements Skin {
 	private File skinFile;
@@ -18,15 +17,11 @@ public class LocalSkin implements Skin {
 	}
 
 	public String getSHA256() {
-		try {
-			return Util.getSHA256(new FileInputStream(skinFile));
-		} catch (IOException e) {
-			return null;
-		}
+		return null;
 	}
 
-	public byte[] getData() throws IOException {
-		return Util.readStream(new FileInputStream(skinFile));
+	public InputStream getData() throws IOException {
+		return new FileInputStream(skinFile);
 	}
 
 	public String getURL() {

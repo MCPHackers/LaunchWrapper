@@ -27,12 +27,15 @@ public class SkinRequests {
 		this.assetsDir = assetsDir;
 		this.skinOptions = options;
 		this.skinType = type;
+		// TODO make this list configurable
 		providers.add(new LocalSkinProvider(new File(gameDir, "skins")));
 		providers.add(new MinecraftCapesProvider());
 		providers.add(new SkinMCCapeProvider());
+		// providers.add(new OptifineCapeProvider()); // Optifine serves HD capes which are not compatible with all versions.
+		// providers.add(new CloaksPlusCapeProvider()); // Same as Optifine
 		providers.add(new MojangSkinProvider());
 		providers.add(new ElyBySkinProvider());
-		// providers.add(new CraftarSkinProvider());
+		// providers.add(new CraftarSkinProvider()); // https://github.com/crafatar/crafatar/issues/326
 		INSTANCE = this;
 	}
 
@@ -49,22 +52,14 @@ public class SkinRequests {
 				skinData = (type == SkinTexture.SKIN ? convertSkin(skin) : convertCape(skin));
 			}
 			if (skinData == null) {
-				skinData = skin.getData();
-			} else {
-				String newHash = Util.getSHA256(new ByteArrayInputStream(skinData));
-				if (newHash != null) {
-					hash = (hash == null || !hash.equals(newHash) ? newHash : hash);
-				}
+				skinData = Util.readStream(skin.getData());
+			}
+			String newHash = Util.getSHA256(new ByteArrayInputStream(skinData));
+			if (newHash != null) {
+				hash = newHash;
 			}
 		} catch (IOException e) {
 			return null;
-		}
-		if (hash == null) {
-			try {
-				hash = Util.getSHA256(new ByteArrayInputStream(skinData));
-			} catch (IOException e) {
-				return null;
-			}
 		}
 		File f = new File(assetsDir, "skins/" + hash.substring(0, 2) + "/" + hash);
 		if (f.isFile() && f.canRead()) {
@@ -84,9 +79,16 @@ public class SkinRequests {
 	}
 
 	public Skin getSkin(String id, String username, SkinTexture type) {
+		if (MojangSkinProvider.isBlacklistedName(username)) {
+			return null;
+		}
 		for (SkinProvider provider : providers) {
 			Skin skin = provider.getSkin(id, username, type);
-			if (skin == null) {
+			try {
+				if (skin == null || skin.getData() == null) {
+					continue;
+				}
+			} catch (IOException e) {
 				continue;
 			}
 			String hash = skin.getSHA256();
@@ -95,14 +97,6 @@ public class SkinRequests {
 				if (f.isFile() && f.canRead()) {
 					return new LocalSkin(f, skin.isSlim());
 				}
-			}
-			try {
-				// By the odd chance a skin returns with NULL data, move onto the next provider
-				if (skin.getData() == null) {
-					continue;
-				}
-			} catch (IOException e) {
-				continue;
 			}
 			return skin;
 		}
@@ -124,11 +118,11 @@ public class SkinRequests {
 
 	private byte[] convertCape(Skin skin) throws IOException {
 		// Capes are always 64x32
-		return skin.getData();
+		return Util.readStream(skin.getData());
 	}
 
 	private byte[] convertSkin(Skin skin) throws IOException {
-		byte[] data = skin.getData();
+		byte[] data = Util.readStream(skin.getData());
 		if (data == null) {
 			return null;
 		}

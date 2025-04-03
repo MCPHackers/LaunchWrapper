@@ -1,12 +1,11 @@
 package org.mcphackers.launchwrapper.protocol;
 
-import static org.mcphackers.launchwrapper.protocol.URLStreamHandlerProxy.openDirectConnection;
+import static org.mcphackers.launchwrapper.protocol.URLStreamHandlerProxy.*;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.net.URL;
-import java.net.URLConnection;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -81,9 +80,7 @@ public class AssetRequests {
 					if (url != null) { // url is only set when the resource is requested to be re-downloaded
 						Launch.LOGGER.log("Downloading resource: " + s);
 						object.getParentFile().mkdirs();
-						URLConnection connection = openDirectConnection(new URL(url));
-						connection.setRequestProperty("User-Agent", "LaunchWrapper/" + Launch.VERSION);
-						Util.copyStream(connection.getInputStream(), new FileOutputStream(object));
+						Util.copyStream(openDirectConnection(new URL(url)).getInputStream(), new FileOutputStream(object));
 					}
 					if (!mappedObject.exists() || mappedObject.length() != size || VERIFY_HASH && !hash.equals(Util.getSHA1(new FileInputStream(mappedObject)))) {
 						mappedObject.getParentFile().mkdirs();

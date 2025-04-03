@@ -1,6 +1,7 @@
 package org.mcphackers.launchwrapper.protocol.skin;
 
 import java.io.IOException;
+import java.io.InputStream;
 
 public interface Skin {
 	/**
@@ -13,7 +14,7 @@ public interface Skin {
 	/**
 	 * @return skin data
 	 */
-	byte[] getData() throws IOException;
+	InputStream getData() throws IOException;
 
 	/**
 	 * @return a file:// or an http[s]:// url
