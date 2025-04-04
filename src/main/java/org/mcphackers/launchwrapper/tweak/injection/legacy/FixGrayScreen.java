@@ -8,6 +8,7 @@ import org.mcphackers.launchwrapper.tweak.injection.InjectionWithContext;
 import org.mcphackers.launchwrapper.tweak.injection.MinecraftGetter;
 import org.mcphackers.launchwrapper.util.ClassNodeSource;
 import org.objectweb.asm.tree.AbstractInsnNode;
+import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.InsnNode;
 import org.objectweb.asm.tree.MethodNode;
 
@@ -30,8 +31,12 @@ public class FixGrayScreen extends InjectionWithContext<MinecraftGetter> {
 	}
 
 	public boolean apply(ClassNodeSource source, LaunchConfig config) {
+		ClassNode minecraft = context.getMinecraft();
+		if (minecraft == null) {
+			return false;
+		}
 	next:
-		for (MethodNode m : context.getMinecraft().methods) {
+		for (MethodNode m : minecraft.methods) {
 			if (m.desc.equals("()V")) {
 				AbstractInsnNode insn = getFirst(m.instructions);
 				while (insn != null) {

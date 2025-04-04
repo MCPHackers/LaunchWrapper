@@ -419,13 +419,15 @@ public class AddMain extends InjectionWithContext<LegacyTweakContext> {
 				} else if (i == 1) {
 					insns.add(intInsn(config.height.get()));
 				} else {
-					throw new IllegalArgumentException("Unexpected Minecraft constructor: " + init.desc);
+					new IllegalArgumentException("Unexpected Minecraft constructor: " + init.desc).printStackTrace();
+					return null;
 				}
 				i++;
 			} else if (desc.equals("Z")) {
 				insns.add(booleanInsn(config.fullscreen.get()));
 			} else {
-				throw new IllegalArgumentException("Unexpected Minecraft constructor: " + init.desc);
+				new IllegalArgumentException("Unexpected Minecraft constructor: " + init.desc).printStackTrace();
+				return null;
 			}
 		}
 		insns.add(new MethodInsnNode(INVOKESPECIAL, minecraftImpl.name, "<init>", init.desc));

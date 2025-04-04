@@ -34,6 +34,9 @@ public class BitDepthFix extends InjectionWithContext<MinecraftGetter> {
 
 	public boolean apply(ClassNodeSource source, LaunchConfig config) {
 		MethodNode init = context.getInit();
+		if (init == null) {
+			return false;
+		}
 		for (TryCatchBlockNode tryCatch : init.tryCatchBlocks) {
 			if (!"org/lwjgl/LWJGLException".equals(tryCatch.type)) {
 				continue;

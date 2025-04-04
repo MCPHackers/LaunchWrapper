@@ -1,11 +1,9 @@
 package org.mcphackers.launchwrapper.protocol;
 
-import static org.mcphackers.launchwrapper.protocol.URLStreamHandlerProxy.openDirectConnection;
-
 import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
@@ -13,7 +11,6 @@ import java.net.URLConnection;
 
 import org.mcphackers.launchwrapper.Launch;
 import org.mcphackers.launchwrapper.protocol.AssetRequests.AssetObject;
-import org.mcphackers.launchwrapper.util.Util;
 
 public class AssetURLConnection extends URLConnection {
 	private final AssetRequests assets;
@@ -63,16 +60,11 @@ public class AssetURLConnection extends URLConnection {
 			boolean xml = url.getPath().startsWith("/MinecraftResources/");
 			return getIndex(xml);
 		}
-		AssetObject object = assets.get(key);
-		if (object != null) {
-			if (object.url != null) { // url is only set when the resource is requested to be re-downloaded
-				Launch.LOGGER.log("Downloading resource: " + object.path);
-				object.file.getParentFile().mkdirs();
-				Util.copyStream(openDirectConnection(new URL(object.url)).getInputStream(), new FileOutputStream(object.file));
-			}
-			return new FileInputStream(object.file);
+		File file = assets.getAssetFile(key);
+		if (file == null) {
+			throw new FileNotFoundException();
 		}
-		throw new FileNotFoundException();
+		return new FileInputStream(file);
 	}
 
 	@Override

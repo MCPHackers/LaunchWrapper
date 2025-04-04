@@ -50,6 +50,9 @@ public class ClassicCrashScreen extends InjectionWithContext<MinecraftGetter> {
 
 	private MethodNode getOpenScreen() {
 		ClassNode minecraft = context.getMinecraft();
+		if (minecraft == null) {
+			return null;
+		}
 
 		for (MethodNode m : minecraft.methods) {
 			if (!m.desc.equals("()V")) {

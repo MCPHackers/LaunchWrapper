@@ -34,5 +34,4 @@ public class HttpSkin implements Skin {
 	public boolean isSlim() {
 		return false;
 	}
-
 }

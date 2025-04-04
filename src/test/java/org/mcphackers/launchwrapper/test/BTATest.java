@@ -1,7 +1,7 @@
 package org.mcphackers.launchwrapper.test;
 
 import org.mcphackers.launchwrapper.LaunchConfig;
-import org.mcphackers.launchwrapper.tweak.BTATweak;
+import org.mcphackers.launchwrapper.tweak.LegacyTweak;
 import org.mcphackers.launchwrapper.tweak.Tweak;
 
 public class BTATest extends TweakTest {
@@ -18,7 +18,7 @@ public class BTATest extends TweakTest {
 
 	@Override
 	public Tweak getTweak(LaunchConfig config) {
-		return new BTATweak(config);
+		return new LegacyTweak(config);
 	}
 
 	@Override

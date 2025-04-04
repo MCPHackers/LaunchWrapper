@@ -61,6 +61,9 @@ public class SkinRequests {
 		} catch (IOException e) {
 			return null;
 		}
+		if (hash == null) {
+			return null;
+		}
 		File f = new File(assetsDir, "skins/" + hash.substring(0, 2) + "/" + hash);
 		if (f.isFile() && f.canRead()) {
 			return new LocalSkin(f, skin.isSlim());
