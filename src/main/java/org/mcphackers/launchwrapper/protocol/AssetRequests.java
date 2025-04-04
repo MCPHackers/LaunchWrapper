@@ -49,7 +49,6 @@ public class AssetRequests {
 			JSONObject indexObj = new JSONObject(inputString);
 
 			JSONObject objects = indexObj.getJSONObject("objects");
-			JSONObject objectsCustom = indexObj.optJSONObject("custom");
 			boolean virtual = indexObj.optBoolean("virtual");
 
 			for (String s : objects.keySet()) {
@@ -60,12 +59,16 @@ public class AssetRequests {
 				mapAsset(assetsDir, s, entry, virtual);
 			}
 
-			for (String s : objectsCustom.keySet()) {
-				JSONObject entry = objectsCustom.optJSONObject(s);
-				if (entry == null) {
-					continue;
+			JSONObject objectsCustom = indexObj.optJSONObject("custom");
+
+			if (objectsCustom != null) {
+				for (String s : objectsCustom.keySet()) {
+					JSONObject entry = objectsCustom.optJSONObject(s);
+					if (entry == null) {
+						continue;
+					}
+					mapAsset(assetsDir, s, entry, virtual);
 				}
-				mapAsset(assetsDir, s, entry, virtual);
 			}
 
 		} catch (Exception e) {
