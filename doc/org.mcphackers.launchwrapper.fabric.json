@@ -2,10 +2,10 @@
     "formatVersion": 1,
     "name": "LaunchWrapper Fabric Compat",
     "uid": "org.mcphackers.launchwrapper.fabric",
-    "version": "1.1.1",
+    "version": "1.1.2",
     "libraries": [
         {
-            "name": "org.mcphackers:launchwrapper-fabric:1.1.1",
+            "name": "org.mcphackers:launchwrapper-fabric:1.1.2",
             "url": "https://maven.glass-launcher.net/releases/"
         }
     ],

@@ -2,10 +2,10 @@
     "formatVersion": 1,
     "name": "LaunchWrapper Micromixin",
     "uid": "org.mcphackers.launchwrapper.micromixin",
-    "version": "1.1.1",
+    "version": "1.1.2",
     "libraries": [
         {
-            "name": "org.mcphackers:launchwrapper-micromixin:1.1.1",
+            "name": "org.mcphackers:launchwrapper-micromixin:1.1.2",
             "url": "https://maven.glass-launcher.net/releases/"
         },
         {
