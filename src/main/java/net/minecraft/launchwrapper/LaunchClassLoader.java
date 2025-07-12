@@ -106,7 +106,7 @@ public class LaunchClassLoader extends org.mcphackers.launchwrapper.loader.Launc
 		invalidClasses.clear();
 	}
 
-	private byte[] runTrasformers(String name, String transformedName, byte[] data) {
+	private byte[] runTransformers(String name, String transformedName, byte[] data) {
 		byte[] transformed = data;
 		for (IClassTransformer transformer : transformers) {
 			transformed = transformer.transform(name, transformedName, transformed);
@@ -119,7 +119,7 @@ public class LaunchClassLoader extends org.mcphackers.launchwrapper.loader.Launc
 		String untransformedName = untransformName(name);
 		String transformedName = transformName(name);
 		byte[] classData = getClassBytes(untransformedName);
-		return runTrasformers(untransformedName, transformedName, classData);
+		return runTransformers(untransformedName, transformedName, classData);
 	}
 
 	@Override
