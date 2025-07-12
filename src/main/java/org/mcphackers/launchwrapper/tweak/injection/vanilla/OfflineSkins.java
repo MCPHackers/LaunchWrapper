@@ -46,7 +46,7 @@ public class OfflineSkins extends InjectionWithContext<MinecraftGetter> {
 	}
 
 	public boolean apply(ClassNodeSource source, LaunchConfig config) {
-		if (config.disableSkinFix.get()) {
+		if (!config.modernSkinProxy.get()) {
 			return false;
 		}
 		ClassNode mc = context.getMinecraft();

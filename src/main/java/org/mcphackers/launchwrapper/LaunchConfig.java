@@ -60,7 +60,7 @@ public class LaunchConfig {
 	public final LaunchParameterNumber realmsPort	 		= new LaunchParameterNumber("realmsPort", 80, true);
 	public final LaunchParameterSwitch lwjglFrame	 		= new LaunchParameterSwitch("lwjglFrame", true, true);
 	private final LaunchParameterSwitch awtFrame 			= new LaunchParameterSwitchReverse("awtFrame", lwjglFrame);
-	public final LaunchParameterSwitch disableSkinFix 		= new LaunchParameterSwitch("disableSkinFix", false, true);
+	public final LaunchParameterSwitch modernSkinProxy 		= new LaunchParameterSwitch("useSkinProxy", false, true);
 	public final LaunchParameterEnum<SkinType> skinProxy 	= new LaunchParameterEnum<SkinType>("skinProxy", SkinType.DEFAULT, true);
 	public final LaunchParameterSkinOptions skinOptions		= new LaunchParameterSkinOptions("skinOptions");
 	public final LaunchParameterFile levelsDir				= new LaunchParameterFile("levelsDir", null, true);
