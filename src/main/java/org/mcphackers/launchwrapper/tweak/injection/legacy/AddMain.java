@@ -38,7 +38,7 @@ public class AddMain extends InjectionWithContext<LegacyTweakContext> {
 	}
 
 	public boolean required() {
-		return true;
+		return false;
 	}
 
 	public boolean apply(ClassNodeSource source, LaunchConfig config) {
@@ -46,12 +46,17 @@ public class AddMain extends InjectionWithContext<LegacyTweakContext> {
 
 		ClassNode minecraft = context.getMinecraft();
 		MethodNode main = NodeHelper.getMethod(minecraft, "main", "([Ljava/lang/String;)V");
+		MethodNode newMain = getMain(source, config);
+
+		if (newMain == null) {
+			return false;
+		}
 
 		if (main == null) {
-			minecraft.methods.add(getMain(source, config));
+			minecraft.methods.add(newMain);
 		} else {
 			minecraft.methods.remove(main);
-			minecraft.methods.add(getMain(source, config));
+			minecraft.methods.add(newMain);
 		}
 		return true;
 	}
@@ -173,9 +178,10 @@ public class AddMain extends InjectionWithContext<LegacyTweakContext> {
 			insns.add(new FieldInsnNode(GETFIELD, minecraftApplet.name, mcField, mcDesc));
 		} else {
 			InsnList insns2 = getNewMinecraftImpl(minecraft, null, config);
-			if (insns2 != null) {
-				insns.add(insns2);
+			if (insns2 == null) {
+				return null;
 			}
+			insns.add(insns2);
 		}
 		insns.add(new VarInsnNode(ASTORE, mcIndex));
 		if (context.width != null && context.height != null) {

@@ -327,8 +327,10 @@ public class OfflineSkins extends InjectionWithContext<MinecraftGetter> {
 			insns.add(new JumpInsnNode(IFEQ, pushNull));
 			LabelNode invokeInit = new LabelNode();
 			insns.add(new LdcInsnNode("model"));
+			insns.add(new TypeInsnNode(CHECKCAST, "java/lang/Object"));
 			insns.add(new LdcInsnNode("slim"));
-			insns.add(new MethodInsnNode(INVOKESTATIC, "java/util/Collections", "singletonMap", "(Ljava/lang/String;Ljava/lang/String;)Ljava/util/Map;"));
+			insns.add(new TypeInsnNode(CHECKCAST, "java/lang/Object"));
+			insns.add(new MethodInsnNode(INVOKESTATIC, "java/util/Collections", "singletonMap", "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/util/Map;"));
 			insns.add(new JumpInsnNode(GOTO, invokeInit));
 			insns.add(pop);
 			insns.add(new InsnNode(POP));
