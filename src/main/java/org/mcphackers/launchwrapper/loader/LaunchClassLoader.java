@@ -7,12 +7,14 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
+import java.net.JarURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.net.URLConnection;
+import java.security.CodeSigner;
 import java.security.CodeSource;
 import java.security.ProtectionDomain;
-import java.security.cert.Certificate;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -20,6 +22,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.jar.JarEntry;
+import java.util.jar.JarFile;
+import java.util.jar.Manifest;
 
 import org.mcphackers.launchwrapper.Launch;
 import org.mcphackers.launchwrapper.tweak.Tweaker;
@@ -44,6 +49,7 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 	protected HighPriorityClassLoader urlClassLoader;
 	protected List<Tweaker> tweaks;
 	protected Set<String> exclusions = new HashSet<String>();
+	protected Set<String> transformerExclusions = new HashSet<String>();
 	/**
 	 * Keys should contain dots
 	 */
@@ -221,6 +227,12 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 				return parent.loadClass(name);
 			}
 		}
+
+		for (String prefix : transformerExclusions) {
+			if (name.startsWith(prefix)) {
+				return super.findClass(name);
+			}
+		}
 		return redefineClass(name);
 	}
 
@@ -330,7 +342,7 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 			if (data == null) {
 				throw new ClassNotFoundException(transformedName);
 			}
-			return defineClass(transformedName, data);
+			return defineClass(transformedName, data, getProtectionDomain(name));
 		} catch (IOException e) {
 			throw new ClassNotFoundException(transformedName, e);
 		}
@@ -376,6 +388,10 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 	}
 
 	private Class<?> defineClass(String name, byte[] classData) {
+		return defineClass(name, classData, getProtectionDomain(name));
+	}
+
+	private Class<?> defineClass(String name, byte[] classData, ProtectionDomain protectionDomain) {
 		int i = name.lastIndexOf('.');
 		if (i != -1) {
 			String pkgName = name.substring(0, i);
@@ -383,7 +399,7 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 				definePackage(pkgName, null, null, null, null, null, null, null);
 			}
 		}
-		return defineClass(name, classData, 0, classData.length, getProtectionDomain(name));
+		return defineClass(name, classData, 0, classData.length, protectionDomain);
 	}
 
 	private ProtectionDomain getProtectionDomain(String name) {
@@ -391,29 +407,60 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 		if (resource == null) {
 			return null;
 		}
-		CodeSource codeSource = null;
-		Certificate[] certificates = useDummyCert ? new Certificate[0] : null;
+
+		CodeSigner[] signers = null;
+		int i = name.lastIndexOf('.');
+
+		// TODO avoid explicit net.minecraft comparison. Removing this condition breaks forge atm.
+		if (i != -1 && !name.startsWith("net.minecraft.")) {
+			try {
+				URLConnection urlConnection = resource.openConnection();
+				if (urlConnection instanceof JarURLConnection) {
+					final JarURLConnection jarURLConnection = (JarURLConnection)urlConnection;
+					JarFile jarFile;
+					jarFile = jarURLConnection.getJarFile();
+
+					if (jarFile != null && jarFile.getManifest() != null) {
+						final Manifest manifest = jarFile.getManifest();
+						final JarEntry entry = jarFile.getJarEntry(classResourceName(name));
+						String pkgName = name.substring(0, i);
+
+						Package pkg = getPackage(pkgName);
+						// getClassBytes(name);
+						if (entry != null) {
+							signers = entry.getCodeSigners();
+						}
+						if (pkg == null) {
+							pkg = definePackage(pkgName, manifest, jarURLConnection.getJarFileURL());
+						}
+					}
+				}
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+		URL newResource = resource;
+
+		CodeSource codeSource;
+		// ModLoader fix
 		if (resource.getProtocol().equals("jar")) {
 			String path = resource.getPath();
 			if (path.startsWith("file:")) {
 				path = path.substring("file:".length());
-				int i = path.lastIndexOf('!');
-				if (i != -1) {
-					path = path.substring(0, i);
+				int j = path.lastIndexOf('!');
+				if (j != -1) {
+					path = path.substring(0, j);
 				}
 			}
 			if (overridenSource.containsKey(name)) {
 				path = overridenSource.get(name);
 			}
 			try {
-				URL newResource = new URL("file", "", path);
-				codeSource = new CodeSource(newResource, certificates);
+				newResource = new URL("file", "", path);
 			} catch (MalformedURLException e) {
-				codeSource = new CodeSource(resource, certificates);
 			}
-		} else {
-			codeSource = new CodeSource(resource, certificates);
 		}
+		codeSource = new CodeSource(newResource, signers);
 		return new ProtectionDomain(codeSource, null);
 	}
 

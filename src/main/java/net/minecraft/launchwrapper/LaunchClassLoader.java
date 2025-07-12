@@ -20,7 +20,7 @@ public class LaunchClassLoader extends org.mcphackers.launchwrapper.loader.Launc
 	private final Map<String, byte[]> resourceCache = Collections.<String, byte[]>emptyMap();
 	private final Set<String> invalidClasses = new HashSet<String>();
 	private final Set<String> classLoaderExceptions;
-	private final Set<String> transformerExceptions = new HashSet<String>();
+	private final Set<String> transformerExceptions;
 	private final List<IClassTransformer> transformers = new ArrayList<IClassTransformer>();
 	private IClassNameTransformer renameTransformer;
 
@@ -36,8 +36,12 @@ public class LaunchClassLoader extends org.mcphackers.launchwrapper.loader.Launc
 	}
 	public LaunchClassLoader(URL[] sources, ClassLoader parent) {
 		super(sources, parent);
+		for (URL source : sources) {
+			this.sources.add(source);
+		}
 		useDummyCert = false; // Forge only works with Certificate array that isn't 0-sized or if certificates are null
 		classLoaderExceptions = exclusions;
+		transformerExceptions = transformerExclusions;
 		addClassLoaderExclusion("org.lwjgl.");
 		addClassLoaderExclusion("org.apache.logging.");
 		addClassLoaderExclusion("net.minecraft.launchwrapper.");
@@ -115,11 +119,6 @@ public class LaunchClassLoader extends org.mcphackers.launchwrapper.loader.Launc
 		String untransformedName = untransformName(name);
 		String transformedName = transformName(name);
 		byte[] classData = getClassBytes(untransformedName);
-		for (final String exception : transformerExceptions) {
-			if (name.startsWith(exception)) {
-				return classData;
-			}
-		}
 		return runTrasformers(untransformedName, transformedName, classData);
 	}
 
