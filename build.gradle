@@ -101,8 +101,9 @@ allprojects {
 			options.release.set(8)
 		} else {
 			// Suppress sun.misc.Unsafe and -target 1.5 warnings on Java 8
-			options.compilerArgs += ["-XDenableSunApiLintControl", "-Xlint:-options"]
+			options.compilerArgs += ["-XDenableSunApiLintControl"]
 		}
+		options.compilerArgs += ["-Xlint:-options"]
 	}
 
 	compileTestJava {
