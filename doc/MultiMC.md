@@ -25,6 +25,34 @@ For this instance, perform the following steps:
 - Perform the same steps but instead of `org.mcphackers.launchwrapper.json` use the contents of [org.mcphackers.launchwrapper.fabric.json](org.mcphackers.launchwrapper.fabric.json)
 - Make sure it's the bottom-most component and is below the regular "LaunchWrapper" component
 
+## Forge
+To install LaunchWrapper with Forge follow instructions for Vanilla, then move "LaunchWrapper" component above Forge.
+
+Edit "LaunchWrapper" component and modify `libraries` array:
+
+```diff
+     "libraries": [
+         {
+             "name": "org.mcphackers:launchwrapper:1.1.3",
+             "url": "https://maven.glass-launcher.net/releases/"
+         },
+-        {
+-            "name": "org.ow2.asm:asm:9.7.1",
+-            "url": "https://maven.fabricmc.net/"
+-        },
+-        {
+-            "name": "org.ow2.asm:asm-tree:9.7.1",
+-            "url": "https://maven.fabricmc.net/"
+-        },
+         {
+             "name": "org.json:json:20240303",
+             "url": "https://repo1.maven.org/maven2/"
+         }
+     ],
+```
+
+This only applies to versions where Forge isn't considered a jarmod. For versions where Forge is a jarmod, use Vanilla instructions.
+
 ## Micromixin
 Micromixin is a lightweight alternative mixin implementation which can be used with standalone LaunchWrapper. Currently the implementation is barebones so many mixin annotations aren't supported. However, if the mod uses exclusively the annotations from base Mixin (Not MixinExtras) there's a high chance it'll work when recompiled with
 ```groovy
