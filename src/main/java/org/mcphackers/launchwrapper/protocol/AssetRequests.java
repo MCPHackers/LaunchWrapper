@@ -93,13 +93,11 @@ public class AssetRequests {
 		}
 		AssetObject obj = new AssetObject(object, key, hash, size, url);
 		mappedAssets.put(key, obj);
+		getAssetFile(obj);
 
 		// Emulate launcher's handling of virtual asset index object mapping. (Copy from {assetsDir}/objects/{hash} to {assetsDir}/{name})
 		if (virtual) {
-			File mappedObject = getAssetFile(key);
-			if (mappedObject == null) {
-				return;
-			}
+			File mappedObject = new File(assetsDir, key);
 			if (!mappedObject.exists() || mappedObject.length() != size || VERIFY_HASH && !hash.equals(Util.getSHA1(new FileInputStream(mappedObject)))) {
 				mappedObject.getParentFile().mkdirs();
 				Util.copyStream(new FileInputStream(object), new FileOutputStream(mappedObject));
@@ -115,8 +113,7 @@ public class AssetRequests {
 		return mappedAssets.values();
 	}
 
-	public File getAssetFile(String key) throws IOException {
-		AssetObject object = get(key);
+	public File getAssetFile(AssetObject object) throws IOException {
 		if (object != null) {
 			if (object.url != null) { // url is only set when the resource is requested to be re-downloaded
 				Launch.LOGGER.log("Downloading resource: " + object.path);

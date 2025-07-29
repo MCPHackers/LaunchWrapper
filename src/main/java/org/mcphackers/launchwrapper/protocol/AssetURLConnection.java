@@ -60,7 +60,7 @@ public class AssetURLConnection extends URLConnection {
 			boolean xml = url.getPath().startsWith("/MinecraftResources/");
 			return getIndex(xml);
 		}
-		File file = assets.getAssetFile(key);
+		File file = assets.getAssetFile(assets.get(key));
 		if (file == null) {
 			throw new FileNotFoundException();
 		}
