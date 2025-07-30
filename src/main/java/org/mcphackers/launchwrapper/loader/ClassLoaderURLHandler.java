@@ -1,10 +1,8 @@
 package org.mcphackers.launchwrapper.loader;
 
-import static org.objectweb.asm.ClassWriter.COMPUTE_FRAMES;
-import static org.objectweb.asm.ClassWriter.COMPUTE_MAXS;
+import static org.objectweb.asm.ClassWriter.*;
 
 import java.io.ByteArrayInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
@@ -35,13 +33,14 @@ public class ClassLoaderURLHandler extends URLStreamHandler {
 		@Override
 		public InputStream getInputStream() throws IOException {
 			String path = url.getPath();
-			byte[] data = classLoader.overridenResources.get(LaunchClassLoader.classNameFromResource(path));
+			byte[] data = classLoader.overridenResources.get(path);
 			if (data != null) {
 				return new ByteArrayInputStream(data);
 			}
-			ClassNode node = classLoader.overridenClasses.get(path);
+			ClassNode node = classLoader.overridenClasses.get(LaunchClassLoader.classNameFromResource(path));
 			if (node == null) {
-				throw new FileNotFoundException();
+				InputStream is = classLoader.getOriginalURL(path).openStream();
+				return is;
 			}
 			ClassWriter writer = new SafeClassWriter(classLoader, COMPUTE_MAXS | COMPUTE_FRAMES);
 			node.accept(writer);

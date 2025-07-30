@@ -144,7 +144,7 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 		return getOriginalURL(resource);
 	}
 
-	private URL getOriginalURL(String resource) {
+	URL getOriginalURL(String resource) {
 		URL url = urlClassLoader.findResource(resource);
 		if (url != null) {
 			return url;
@@ -164,7 +164,7 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 					originalUrl.getProtocol(),
 					originalUrl.getHost(),
 					originalUrl.getPort(),
-					originalUrl.getFile(),
+					resource,
 					new ClassLoaderURLHandler(this));
 			}
 		} catch (MalformedURLException ignored) {
@@ -497,9 +497,9 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 
 	public static String classNameFromResource(String resource) {
 		if (resource.endsWith(".class")) {
-			return resource.substring(0, resource.length() - 6);
+			return resource.substring(0, resource.length() - 6).replace('/', '.');
 		}
-		return resource;
+		return null;
 	}
 
 	public static LaunchClassLoader instantiate() {
