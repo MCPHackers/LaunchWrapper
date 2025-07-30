@@ -46,6 +46,7 @@ public class AddMain extends InjectionWithContext<LegacyTweakContext> {
 
 		ClassNode minecraft = context.getMinecraft();
 		MethodNode main = NodeHelper.getMethod(minecraft, "main", "([Ljava/lang/String;)V");
+		MethodNode fmlReentry = NodeHelper.getMethod(minecraft, "fmlReentry", "(Lcpw/mods/fml/relauncher/ArgsWrapper;)V");
 		MethodNode newMain = getMain(source, config);
 
 		if (newMain == null) {
@@ -55,8 +56,16 @@ public class AddMain extends InjectionWithContext<LegacyTweakContext> {
 		if (main == null) {
 			minecraft.methods.add(newMain);
 		} else {
-			minecraft.methods.remove(main);
-			minecraft.methods.add(newMain);
+			if (fmlReentry == null) {
+				minecraft.methods.remove(main);
+				minecraft.methods.add(newMain);
+			} else {
+				minecraft.methods.remove(fmlReentry);
+				newMain.name = "fmlReentry";
+				newMain.desc = "(Lcpw/mods/fml/relauncher/ArgsWrapper;)V";
+				// We don't use params in newMain so no further modifications are needed
+				minecraft.methods.add(newMain);
+			}
 		}
 		return true;
 	}

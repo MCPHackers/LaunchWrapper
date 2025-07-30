@@ -21,6 +21,7 @@ import org.mcphackers.launchwrapper.target.AppletLaunchTarget;
 import org.mcphackers.launchwrapper.target.LaunchTarget;
 import org.mcphackers.launchwrapper.target.MainLaunchTarget;
 import org.mcphackers.launchwrapper.tweak.injection.Injection;
+import org.mcphackers.launchwrapper.tweak.injection.forge.ForgeLegacyFix;
 import org.mcphackers.launchwrapper.tweak.injection.forge.ForgeVersionCheck;
 import org.mcphackers.launchwrapper.tweak.injection.legacy.AddMain;
 import org.mcphackers.launchwrapper.tweak.injection.legacy.BitDepthFix;
@@ -83,6 +84,7 @@ public class LegacyTweak extends Tweak {
 			new OptionsLoadFix(context),
 			new GameModeSwitch(context),
 			new AddMain(context),
+			new ForgeLegacyFix(),
 			new ForgeVersionCheck(),
 			new ChangeBrand());
 	}

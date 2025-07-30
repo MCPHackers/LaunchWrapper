@@ -174,7 +174,10 @@ public class LegacyTweakContext implements Injection, MinecraftGetter {
 				}
 			}
 
-			MethodNode init = NodeHelper.getMethod(minecraftApplet, "init", "()V");
+			MethodNode init = NodeHelper.getMethod(minecraftApplet, "fmlInitReentry", "()V");
+			if (init == null) {
+				init = NodeHelper.getMethod(minecraftApplet, "init", "()V");
+			}
 			if (init != null) {
 				AbstractInsnNode insn = getFirst(init.instructions);
 				while (insn != null) {
