@@ -104,9 +104,8 @@ public final class Launch extends org.mcphackers.launchwrapper.Launch {
 		configCopy.gameDir.set(null);
 		configCopy.assetsDir.set(null);
 		configCopy.version.set(null);
-		for (Map.Entry<String, String> entry : configCopy.getArgsAsMap().entrySet()) {
-			args.add("--" + entry.getKey());
-			args.add(entry.getValue());
+		for (String s : configCopy.getArgs()) {
+			args.add(s);
 		}
 		return args;
 	}
