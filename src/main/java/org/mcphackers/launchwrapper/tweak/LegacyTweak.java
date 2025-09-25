@@ -7,7 +7,6 @@ import java.io.IOException;
 import java.lang.reflect.Field;
 import java.net.URL;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 import javax.imageio.ImageIO;
@@ -89,7 +88,7 @@ public class LegacyTweak extends Tweak {
 
 	@Override
 	public List<Tweaker> getTweakers() {
-		return Collections.<Tweaker>singletonList(new Java5Tweaker());
+		return Arrays.<Tweaker>asList(new Java5Tweaker(), new DelCharTweaker(config, context));
 	}
 
 	@Override
