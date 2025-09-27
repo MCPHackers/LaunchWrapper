@@ -87,7 +87,7 @@ public class DelCharTweaker implements Tweaker {
 			}
 
 			Type returnType = Type.getReturnType(method.desc);
-			if (returnType.getSort() != Type.VOID) {
+			if (!returnType.equals(Type.VOID_TYPE)) {
 				continue;
 			}
 
@@ -111,13 +111,13 @@ public class DelCharTweaker implements Tweaker {
 				if (invokeArgTypes.length != 3 ||
 						invokeArgTypes[0].getSort() != Type.OBJECT ||
 						!invokeArgTypes[0].getInternalName().equals(node.name) ||
-						invokeArgTypes[1].getSort() != Type.INT ||
-						invokeArgTypes[2].getSort() != Type.INT) {
+						!invokeArgTypes[1].equals(Type.INT_TYPE) ||
+						!invokeArgTypes[2].equals(Type.INT_TYPE)) {
 					continue;
 				}
 
 				Type invokeReturnType = Type.getReturnType(invokeInsn.desc);
-				if (invokeReturnType.getSort() != Type.VOID) {
+				if (!invokeReturnType.equals(Type.VOID_TYPE)) {
 					continue;
 				}
 
