@@ -23,7 +23,6 @@ import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldNode;
-import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.IntInsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
@@ -64,11 +63,11 @@ import org.objectweb.asm.tree.MethodNode;
  *
  */
 public class DelCharTweaker implements Tweaker {
-	private static String guiName;
-	private static String guiScreenName;
-
 	private LegacyTweakContext context;
 	private LaunchConfig config;
+
+	private String guiName;
+	private String guiScreenName;
 
 	public DelCharTweaker(LaunchConfig config, LegacyTweakContext context) {
 		this.config = config;
@@ -76,10 +75,6 @@ public class DelCharTweaker implements Tweaker {
 	}
 
 	private String getGuiScreenName(ClassNode node) {
-		if (node == null) {
-			return null;
-		}
-
 		// public void displayGuiScreen(GuiScreen)
 		for (MethodNode method : node.methods) {
 			if ((method.access & ACC_PUBLIC) == 0) {
@@ -87,40 +82,42 @@ public class DelCharTweaker implements Tweaker {
 			}
 
 			Type[] argTypes = Type.getArgumentTypes(method.desc);
-			Type returnType = Type.getReturnType(method.desc);
-
-			if (argTypes.length != 1 || argTypes[0].getSort() != Type.OBJECT || returnType.getSort() != Type.VOID) {
+			if (argTypes.length != 1 || argTypes[0].getSort() != Type.OBJECT) {
 				continue;
 			}
 
-			InsnList insns = method.instructions;
+			Type returnType = Type.getReturnType(method.desc);
+			if (returnType.getSort() != Type.VOID) {
+				continue;
+			}
 
 			// ((GuiScreen) _).setWorldAndResolution(Minecraft, int, int)
 			// ALOAD 1, ALOAD 0, ILOAD, ILOAD, INVOKEVIRTUAL
-			for (int index = 0; index <= insns.size() - 5; index++) {
-				AbstractInsnNode insn0 = insns.get(index);
-				AbstractInsnNode insn1 = insns.get(index + 1);
-				AbstractInsnNode insn2 = insns.get(index + 2);
-				AbstractInsnNode insn3 = insns.get(index + 3);
-				AbstractInsnNode insn4 = insns.get(index + 4);
+			for (int index = 0; index <= method.instructions.size() - 5; index++) {
+				AbstractInsnNode[] insns = fill(method.instructions.get(index), 5);
 
-				if (!compareInsn(insn0, ALOAD, 1) || !compareInsn(insn1, ALOAD, 0) ||
-						!compareInsn(insn2, ILOAD) || !compareInsn(insn3, ILOAD) ||
-						!compareInsn(insn4, INVOKEVIRTUAL)) {
+				if (!compareInsn(insns[0], ALOAD, 1) || !compareInsn(insns[1], ALOAD, 0) ||
+						!compareInsn(insns[2], ILOAD) || !compareInsn(insns[3], ILOAD) ||
+						!compareInsn(insns[4], INVOKEVIRTUAL)) {
 					continue;
 				}
 
-				MethodInsnNode methodInvocation = (MethodInsnNode) insn4;
-				Type[] methodArgTypes = Type.getArgumentTypes(methodInvocation.desc);
-				Type methodReturnType = Type.getReturnType(methodInvocation.desc);
+				MethodInsnNode invokeInsn = (MethodInsnNode) insns[4];
+				if (!invokeInsn.owner.equals(argTypes[0].getInternalName())) {
+					continue;
+				}
 
-				if (!methodInvocation.owner.equals(argTypes[0].getInternalName()) ||
-						methodArgTypes.length != 3 ||
-						methodArgTypes[0].getSort() != Type.OBJECT ||
-						!methodArgTypes[0].getInternalName().equals(node.name) ||
-						methodArgTypes[1].getSort() != Type.INT ||
-						methodArgTypes[2].getSort() != Type.INT ||
-						methodReturnType.getSort() != Type.VOID) {
+				Type[] invokeArgTypes = Type.getArgumentTypes(invokeInsn.desc);
+				if (invokeArgTypes.length != 3 ||
+						invokeArgTypes[0].getSort() != Type.OBJECT ||
+						!invokeArgTypes[0].getInternalName().equals(node.name) ||
+						invokeArgTypes[1].getSort() != Type.INT ||
+						invokeArgTypes[2].getSort() != Type.INT) {
+					continue;
+				}
+
+				Type invokeReturnType = Type.getReturnType(invokeInsn.desc);
+				if (invokeReturnType.getSort() != Type.VOID) {
 					continue;
 				}
 
@@ -132,7 +129,7 @@ public class DelCharTweaker implements Tweaker {
 	}
 
 	private boolean isGuiChat(ClassNode node) {
-		if (node == null || guiScreenName == null || !node.superName.equals(guiScreenName)) {
+		if (!node.superName.equals(guiScreenName)) {
 			return false;
 		}
 
@@ -181,12 +178,13 @@ public class DelCharTweaker implements Tweaker {
 			}
 
 			Type[] argTypes = Type.getArgumentTypes(method.desc);
-			Type returnType = Type.getReturnType(method.desc);
+			if (argTypes.length != 2 || !argTypes[0].equals(Type.CHAR_TYPE) ||
+					!argTypes[1].equals(Type.INT_TYPE)) {
+				continue;
+			}
 
-			if (argTypes.length == 2 &&
-					argTypes[0].equals(Type.CHAR_TYPE) &&
-					argTypes[1].equals(Type.INT_TYPE) &&
-					returnType.equals(Type.VOID_TYPE)) {
+			Type returnType = Type.getReturnType(method.desc);
+			if (returnType.equals(Type.VOID_TYPE)) {
 				return true;
 			}
 		}
@@ -195,7 +193,7 @@ public class DelCharTweaker implements Tweaker {
 	}
 
 	private boolean isGuiTextField(ClassNode node) {
-		if (node == null || guiName == null || !node.superName.equals(guiName)) {
+		if (!node.superName.equals(guiName)) {
 			return false;
 		}
 
@@ -274,7 +272,7 @@ public class DelCharTweaker implements Tweaker {
 				return false;
 			}
 
-			DelCharTweaker.guiScreenName = guiScreenName;
+			this.guiScreenName = guiScreenName;
 		}
 
 		ClassNode guiScreenNode = source.getClass(guiScreenName);
@@ -288,7 +286,7 @@ public class DelCharTweaker implements Tweaker {
 				return false;
 			}
 
-			DelCharTweaker.guiName = guiName;
+			this.guiName = guiName;
 		}
 
 		ClassNode sourceNode = source.getClass(name);
