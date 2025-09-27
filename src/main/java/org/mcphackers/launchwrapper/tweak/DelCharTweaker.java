@@ -35,25 +35,22 @@ import org.objectweb.asm.tree.MethodNode;
  * visible character in text fields.
  *
  * Normally, AWT handles platform-specific key mappings, but with AWT removed no
- * such handling exists. DEL insertion occurs specifically from Minecraft
- * version 1.1 through 1.2.3 because character validation logic was changed in
- * 1.1 in order to support 56 languages with extended ASCII characters. The
- * validation logic accepts a character if it's either in an allowed list or has
- * an ASCII value greater than 32. Because DEL is greater than 32, it's
- * considered a valid input and rendered as a replacement for the previous
- * character.
+ * such handling exists. DEL insertion occurs when using deAWT with versions
+ * 1.1 through 1.2.3 because character validation logic was changed in 1.1 to
+ * support 56 languages with extended ASCII characters. The validation accepts a
+ * character if it's either in an allowed list or has an ASCII value greater
+ * than 32. Because DEL (127) is greater than 32, it's considered valid input
+ * and rendered as a replacement character.
  *
- * In Minecraft version 1.1, the validation logic appears in both GuiTextField
- * and GuiChat. In versions 1.2.0 through 1.2.3, the logic was moved to
- * ChatAllowedCharacters. In version 1.2.4, GuiTextField and GuiChat were
- * rewritten, fixing the bug.
+ * In version 1.1, the validation logic appears in both GuiTextField and
+ * GuiChat. In versions 1.2.0-1.2.3, it was moved to ChatAllowedCharacters.
+ * In version 1.2.4, GuiTextField and GuiChat were rewritten, fixing the bug.
  *
- * This tweaker targets Minecraft version 1.1 specifically. It modifies the
- * bytecode to reject ASCII values less than or equal to 127 instead of 32. This
- * excludes DEL while preserving intended support for extended ASCII (128-255).
- * Regular ASCII characters (Space, letters, numbers, etc.) remain unaffected as
- * they're included in the game's allowed list and thus pass the first part of
- * the validation condition.
+ * This tweaker targets Minecraft 1.1 specifically. It modifies the bytecode to
+ * reject ASCII values less than or equal to 127 instead of 32, excluding DEL
+ * while preserving support for extended ASCII (128-255). Regular ASCII
+ * characters (space, letters, numbers) remain unaffected as they're included
+ * in the allowed list and pass the first validation condition.
  *
  * Additional links:
  *
@@ -70,12 +67,39 @@ public class DelCharTweaker implements Tweaker {
 	private String guiScreenName;
 
 	public DelCharTweaker(LaunchConfig config, LegacyTweakContext context) {
+		if (config == null || context == null) {
+			throw new IllegalArgumentException(
+					"Launch config and legacy tweak context must be non-null to construct DelCharTweaker.");
+		}
+
 		this.config = config;
 		this.context = context;
 	}
 
+	/*
+	 * Identifies the GuiScreen class name starting from the known Minecraft class.
+	 *
+	 * public void displayGuiScreen(GuiScreen screen) {
+	 * // ...
+	 * screen.setWorldAndResolution(this, int, int);
+	 * // ...
+	 * }
+	 *
+	 * First, finds methods matching the displayGuiScreen signature:
+	 * public void (Object)
+	 *
+	 * Then examines each candidate for this bytecode sequence representing an
+	 * invocation on the method parameter:
+	 * ALOAD 1, ALOAD 0, ILOAD, ILOAD, INVOKEVIRTUAL
+	 *
+	 * Finally, verifies the invocation's owner type matches the method
+	 * parameter and its signature matches setWorldAndResolution:
+	 * public void (Minecraft, int, int)
+	 *
+	 * When all constraints are satisfied, the method parameter type is
+	 * confirmed as GuiScreen and its name is returned.
+	 */
 	private String getGuiScreenName(ClassNode node) {
-		// public void displayGuiScreen(GuiScreen)
 		for (MethodNode method : node.methods) {
 			if ((method.access & ACC_PUBLIC) == 0) {
 				continue;
@@ -91,8 +115,6 @@ public class DelCharTweaker implements Tweaker {
 				continue;
 			}
 
-			// ((GuiScreen) _).setWorldAndResolution(Minecraft, int, int)
-			// ALOAD 1, ALOAD 0, ILOAD, ILOAD, INVOKEVIRTUAL
 			for (int index = 0; index <= method.instructions.size() - 5; index++) {
 				AbstractInsnNode[] insns = fill(method.instructions.get(index), 5);
 
@@ -128,6 +150,17 @@ public class DelCharTweaker implements Tweaker {
 		return null;
 	}
 
+	/*
+	 * Identifies GuiChat by its structure and inheritance.
+	 *
+	 * GuiChat extends GuiScreen and contains exactly three fields:
+	 * - protected String message
+	 * - private int updateCounter
+	 * - private static final String allowedCharacters
+	 *
+	 * Further validated by checking for the keyTyped method:
+	 * protected void keyTyped(char, int)
+	 */
 	private boolean isGuiChat(ClassNode node) {
 		if (!node.superName.equals(guiScreenName)) {
 			return false;
@@ -144,21 +177,16 @@ public class DelCharTweaker implements Tweaker {
 		for (FieldNode field : node.fields) {
 			Type fieldType = Type.getType(field.desc);
 
-			// protected String message
 			if ((field.access & ACC_PROTECTED) != 0 &&
 					(field.access & ACC_STATIC) == 0 &&
 					fieldType.getSort() == Type.OBJECT &&
 					fieldType.getClassName().equals("java.lang.String")) {
 				hasProtectedString = true;
-			}
-			// private int updateCounter
-			else if ((field.access & ACC_PRIVATE) != 0 &&
+			} else if ((field.access & ACC_PRIVATE) != 0 &&
 					(field.access & ACC_STATIC) == 0 &&
 					fieldType.equals(Type.INT_TYPE)) {
 				hasPrivateInt = true;
-			}
-			// private static final String allowedCharacters
-			else if ((field.access & ACC_PRIVATE) != 0 &&
+			} else if ((field.access & ACC_PRIVATE) != 0 &&
 					(field.access & ACC_STATIC) != 0 &&
 					(field.access & ACC_FINAL) != 0 &&
 					fieldType.getSort() == Type.OBJECT &&
@@ -171,7 +199,6 @@ public class DelCharTweaker implements Tweaker {
 			return false;
 		}
 
-		// protected keyTyped (char, int) -> void
 		for (MethodNode method : node.methods) {
 			if ((method.access & ACC_PROTECTED) == 0) {
 				continue;
@@ -192,12 +219,17 @@ public class DelCharTweaker implements Tweaker {
 		return false;
 	}
 
+	/*
+	 * Identifies GuiTextField by its constructor signature and inheritance.
+	 *
+	 * GuiTextField extends Gui and has a specific seven-parameter constructor:
+	 * public GuiTextField(GuiScreen, FontRenderer, int, int, int, int, String)
+	 */
 	private boolean isGuiTextField(ClassNode node) {
 		if (!node.superName.equals(guiName)) {
 			return false;
 		}
 
-		// public GuiTextField(GuiScreen, FontRenderer, int, int, int, int, String)
 		for (MethodNode method : node.methods) {
 			if (!method.name.equals("<init>") || (method.access & ACC_PUBLIC) == 0) {
 				continue;
@@ -223,25 +255,20 @@ public class DelCharTweaker implements Tweaker {
 	}
 
 	/*
-	 * Identifies the bytecode pattern and returns the BIPUSH instruction
-	 * that needs to be modified when the pattern matches.
+	 * Identifies and returns the BIPUSH instruction to modify.
 	 *
 	 * The validation logic in decompiled form:
 	 * if (ChatAllowedCharacters.allowedCharacters.indexOf(var1) >= 0 || var1 > 32)
 	 *
-	 * The bytecode uses IF_ICMPLE (if less than or equal) with inverted
-	 * logic. It jumps to reject the character if it's <= 32, allowing
-	 * it through if > 32. By changing the constant from 32 to 127,
-	 * characters <= 127 are rejected, which excludes DEL.
+	 * The bytecode uses IF_ICMPLE with inverted logic, jumping to reject
+	 * characters <= 32 and allowing those > 32. Changing the constant from 32
+	 * to 127 rejects characters <= 127, excluding DEL.
 	 *
-	 * The bytecode pattern:
-	 * IFGE [2 offset bytes], ILOAD_1, BIPUSH 32, IF_ICMPLE [2 offset bytes]
-	 *
-	 * Pattern sequence:
-	 * - IFGE: Checks if the indexOf result is >= 0 (character is in allowed list)
-	 * - ILOAD_1: Loads the character parameter onto the stack
-	 * - BIPUSH 32: Pushes the ASCII value for Space onto the stack
-	 * - IF_ICMPLE: Compares and jumps if the character is <= 32
+	 * Bytecode pattern:
+	 * - IFGE: Checks if indexOf result >= 0 (character in allowed list)
+	 * - ILOAD_1: Loads the character parameter
+	 * - BIPUSH 32: Pushes 32 (Space)
+	 * - IF_ICMPLE: Compares and jumps if character <= 32
 	 */
 	private IntInsnNode getTargetInsn(AbstractInsnNode insn) {
 		AbstractInsnNode[] insns = fill(insn, 4);
