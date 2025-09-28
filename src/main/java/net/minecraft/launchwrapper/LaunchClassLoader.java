@@ -2,6 +2,7 @@ package net.minecraft.launchwrapper;
 
 import java.io.IOException;
 import java.net.URL;
+import java.security.ProtectionDomain;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -90,6 +91,14 @@ public class LaunchClassLoader extends org.mcphackers.launchwrapper.loader.Launc
 			return renameTransformer.remapClassName(name);
 		}
 		return name;
+	}
+
+	@Override
+	protected ProtectionDomain getProtectionDomain(String name) {
+		if (name.startsWith("net.minecraft.")) {
+			return null;
+		}
+		return super.getProtectionDomain(untransformName(name));
 	}
 
 	@Override

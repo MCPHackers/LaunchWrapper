@@ -402,8 +402,8 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 		return defineClass(name, classData, 0, classData.length, protectionDomain);
 	}
 
-	private ProtectionDomain getProtectionDomain(String name) {
-		final URL resource = getResource(classResourceName(name));
+	protected ProtectionDomain getProtectionDomain(String name) {
+		URL resource = getOriginalURL(classResourceName(name));
 		if (resource == null) {
 			return null;
 		}
@@ -411,33 +411,31 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 		CodeSigner[] signers = null;
 		int i = name.lastIndexOf('.');
 
-		// TODO avoid explicit net.minecraft comparison. Removing this condition breaks forge atm.
-		if (i != -1 && !name.startsWith("net.minecraft.")) {
-			try {
-				URLConnection urlConnection = resource.openConnection();
-				if (urlConnection instanceof JarURLConnection) {
-					final JarURLConnection jarURLConnection = (JarURLConnection)urlConnection;
-					JarFile jarFile;
-					jarFile = jarURLConnection.getJarFile();
+		try {
+			URLConnection urlConnection = resource.openConnection();
+			if (urlConnection instanceof JarURLConnection) {
+				final JarURLConnection jarURLConnection = (JarURLConnection)urlConnection;
+				JarFile jarFile;
+				jarFile = jarURLConnection.getJarFile();
 
-					if (jarFile != null && jarFile.getManifest() != null) {
-						final Manifest manifest = jarFile.getManifest();
-						final JarEntry entry = jarFile.getJarEntry(classResourceName(name));
+				if (jarFile != null && jarFile.getManifest() != null) {
+					final Manifest manifest = jarFile.getManifest();
+					final JarEntry entry = jarFile.getJarEntry(classResourceName(name));
+					if (entry != null) {
+						signers = entry.getCodeSigners();
+					}
+					if (i != -1) {
 						String pkgName = name.substring(0, i);
 
 						Package pkg = getPackage(pkgName);
-						// getClassBytes(name);
-						if (entry != null) {
-							signers = entry.getCodeSigners();
-						}
 						if (pkg == null) {
 							pkg = definePackage(pkgName, manifest, jarURLConnection.getJarFileURL());
 						}
 					}
 				}
-			} catch (IOException e) {
-				e.printStackTrace();
 			}
+		} catch (IOException e) {
+			e.printStackTrace();
 		}
 		URL newResource = resource;
 
