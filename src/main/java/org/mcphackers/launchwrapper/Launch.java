@@ -69,6 +69,7 @@ public class Launch {
 	protected LaunchClassLoader getLoader() {
 		if (CLASS_LOADER == null) {
 			CLASS_LOADER = LaunchClassLoader.instantiate();
+			CLASS_LOADER.setDebugOutput(config.debugClassDump.get());
 		}
 		return CLASS_LOADER;
 	}

@@ -33,6 +33,7 @@ import org.mcphackers.launchwrapper.util.ResourceSource;
 import org.mcphackers.launchwrapper.util.Util;
 import org.mcphackers.launchwrapper.util.asm.NodeHelper;
 import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.tree.ClassNode;
 
@@ -260,19 +261,23 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 		classNodeCache.put(node.name, node);
 	}
 
-	// public void saveDebugDump(ClassNode node) {
-	// if(debugOutput == null) {
-	// return;
-	// }
-	// try {
-	// File cls = new File(debugOutput, node.name + ".dump");
-	// cls.getParentFile().mkdirs();
-	// org.objectweb.asm.util.TraceClassVisitor trace = new org.objectweb.asm.util.TraceClassVisitor(new java.io.PrintWriter(new File(debugOutput, node.name + ".dump")));
-	// node.accept(trace);
-	// } catch (IOException e) {
-	// e.printStackTrace();
-	// }
-	// }
+	public void saveDebugDump(ClassNode node) {
+		if (debugOutput == null) {
+			return;
+		}
+		try {
+			File cls = new File(debugOutput, node.name + ".dump");
+			Class<?> traceVisitorClass = Class.forName("org.objectweb.asm.util.TraceClassVisitor");
+			ClassVisitor trace = traceVisitorClass.asSubclass(ClassVisitor.class)
+									 .getConstructor(java.io.PrintWriter.class)
+									 .newInstance(new java.io.PrintWriter(cls));
+			cls.getParentFile().mkdirs();
+			node.accept(trace);
+		} catch (ClassNotFoundException e) {
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
 
 	public void saveDebugClass(ClassNode node) {
 		if (debugOutput == null) {
@@ -360,6 +365,7 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 		if (node == null) {
 			return null;
 		}
+		saveDebugDump(node);
 		saveDebugClass(node);
 		ClassWriter writer = new SafeClassWriter(this, COMPUTE_MAXS | COMPUTE_FRAMES);
 		node.accept(writer);

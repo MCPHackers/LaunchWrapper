@@ -28,54 +28,55 @@ public class LaunchConfig {
 	// clang-format off
 
 	// Minecraft options
-	public final LaunchParameterSwitch demo 				= new LaunchParameterSwitch("demo");
+	public final LaunchParameterSwitch demo					= new LaunchParameterSwitch("demo");
 	public final LaunchParameterSwitch fullscreen			= new LaunchParameterSwitch("fullscreen");
-	public final LaunchParameterString server 				= new LaunchParameterString("server");
-	public final LaunchParameterNumber port 				= new LaunchParameterNumber("port", 25565);
-	public final LaunchParameterFile gameDir 				= new LaunchParameterFile("gameDir", DEFAULT_GAME_DIR).altName("workDir");
-	public final LaunchParameterFile assetsDir 				= new LaunchParameterFile("assetsDir");
-	public final LaunchParameterFile resourcePackDir 		= new LaunchParameterFile("resourcePackDir");
-	public final LaunchParameterString username 			= new LaunchParameterString("username", "Player");
-	public final LaunchParameterString session 				= new LaunchParameterString("session", "-").altName("sessionid");
-	public final LaunchParameterString password 			= new LaunchParameterString("password");
-	public final LaunchParameterString uuid 				= new LaunchParameterString("uuid");
-	public final LaunchParameterString accessToken 			= new LaunchParameterString("accessToken");
-	public final LaunchParameterString version 				= new LaunchParameterString("version");
-	public final LaunchParameterNumber width 				= new LaunchParameterNumber("width", 854);
-	public final LaunchParameterNumber height 				= new LaunchParameterNumber("height", 480);
-	public final LaunchParameterString userProperties 		= new LaunchParameterString("userProperties");
-	public final LaunchParameterString profileProperties 	= new LaunchParameterString("profileProperties");
-	public final LaunchParameterString assetIndex 			= new LaunchParameterString("assetIndex");
-	public final LaunchParameterString userType 			= new LaunchParameterString("userType");
-	public final LaunchParameterString versionType 			= new LaunchParameterString("versionType");
+	public final LaunchParameterString server				= new LaunchParameterString("server");
+	public final LaunchParameterNumber port					= new LaunchParameterNumber("port", 25565);
+	public final LaunchParameterFile gameDir				= new LaunchParameterFile("gameDir", DEFAULT_GAME_DIR).altName("workDir");
+	public final LaunchParameterFile assetsDir				= new LaunchParameterFile("assetsDir");
+	public final LaunchParameterFile resourcePackDir		= new LaunchParameterFile("resourcePackDir");
+	public final LaunchParameterString username				= new LaunchParameterString("username", "Player");
+	public final LaunchParameterString session				= new LaunchParameterString("session", "-").altName("sessionid");
+	public final LaunchParameterString password				= new LaunchParameterString("password");
+	public final LaunchParameterString uuid					= new LaunchParameterString("uuid");
+	public final LaunchParameterString accessToken			= new LaunchParameterString("accessToken");
+	public final LaunchParameterString version				= new LaunchParameterString("version");
+	public final LaunchParameterNumber width				= new LaunchParameterNumber("width", 854);
+	public final LaunchParameterNumber height				= new LaunchParameterNumber("height", 480);
+	public final LaunchParameterString userProperties		= new LaunchParameterString("userProperties");
+	public final LaunchParameterString profileProperties	= new LaunchParameterString("profileProperties");
+	public final LaunchParameterString assetIndex			= new LaunchParameterString("assetIndex");
+	public final LaunchParameterString userType				= new LaunchParameterString("userType");
+	public final LaunchParameterString versionType			= new LaunchParameterString("versionType");
 	// Applet arguments
 	private final LaunchParameterSwitch haspaid				= new LaunchParameterSwitch("haspaid", true);
-	public final LaunchParameterString loadmapUser	 		= new LaunchParameterString("loadmap_user");
-	public final LaunchParameterNumber loadmapId 			= new LaunchParameterNumber("loadmap_id");
-	public final LaunchParameterString mppass 				= new LaunchParameterString("mppass", "");
+	public final LaunchParameterString loadmapUser			= new LaunchParameterString("loadmap_user");
+	public final LaunchParameterNumber loadmapId			= new LaunchParameterNumber("loadmap_id");
+	public final LaunchParameterString mppass				= new LaunchParameterString("mppass", "");
 	// Built-in wrapper options
-	public final LaunchParameterString tweakClass 			= new LaunchParameterString("tweakClass", null, true);
+	public final LaunchParameterFile debugClassDump			= new LaunchParameterFile("debugClassDump", null, true);
+	public final LaunchParameterString tweakClass			= new LaunchParameterString("tweakClass", null, true);
 	public final LaunchParameterString brand				= new LaunchParameterString("brand", "launchwrapper", true);
-	public final LaunchParameterString realmsServer	 		= new LaunchParameterString("realmsServer", null, true);
-	public final LaunchParameterNumber realmsPort	 		= new LaunchParameterNumber("realmsPort", 80, true);
-	public final LaunchParameterSwitch lwjglFrame	 		= new LaunchParameterSwitch("lwjglFrame", true, true);
-	private final LaunchParameterSwitch awtFrame 			= new LaunchParameterSwitchReverse("awtFrame", lwjglFrame);
-	public final LaunchParameterSwitch modernSkinProxy 		= new LaunchParameterSwitch("useSkinProxy", false, true);
-	public final LaunchParameterEnum<SkinType> skinProxy 	= new LaunchParameterEnum<SkinType>("skinProxy", SkinType.DEFAULT, true);
+	public final LaunchParameterString realmsServer			= new LaunchParameterString("realmsServer", null, true);
+	public final LaunchParameterNumber realmsPort			= new LaunchParameterNumber("realmsPort", 80, true);
+	public final LaunchParameterSwitch lwjglFrame			= new LaunchParameterSwitch("lwjglFrame", true, true);
+	private final LaunchParameterSwitch awtFrame			= new LaunchParameterSwitchReverse("awtFrame", lwjglFrame);
+	public final LaunchParameterSwitch modernSkinProxy		= new LaunchParameterSwitch("useSkinProxy", false, true);
+	public final LaunchParameterEnum<SkinType> skinProxy	= new LaunchParameterEnum<SkinType>("skinProxy", SkinType.DEFAULT, true);
 	public final LaunchParameterSkinOptions skinOptions		= new LaunchParameterSkinOptions("skinOptions");
 	public final LaunchParameterFile levelsDir				= new LaunchParameterFile("levelsDir", null, true);
-	public final LaunchParameterSwitch isom 				= new LaunchParameterSwitch("isom", false, true);
-	public final LaunchParameterFileList icon 				= new LaunchParameterFileList("icon", null, true);
-	public final LaunchParameterString title 				= new LaunchParameterString("title", null, true);
-	public final LaunchParameterSwitch vsync 				= new LaunchParameterSwitch("vsync", false, true);
-	public final LaunchParameterSwitch resizable 			= new LaunchParameterSwitch("resizable", false, true);
+	public final LaunchParameterSwitch isom					= new LaunchParameterSwitch("isom", false, true);
+	public final LaunchParameterFileList icon				= new LaunchParameterFileList("icon", null, true);
+	public final LaunchParameterString title				= new LaunchParameterString("title", null, true);
+	public final LaunchParameterSwitch vsync				= new LaunchParameterSwitch("vsync", false, true);
+	public final LaunchParameterSwitch resizable			= new LaunchParameterSwitch("resizable", false, true);
 	public final LaunchParameterSwitch applet 				= new LaunchParameterSwitch("applet", false);
-	public final LaunchParameterSwitch oneSixFlag 			= new LaunchParameterSwitch("oneSixFlag", false, true);
+	public final LaunchParameterSwitch oneSixFlag			= new LaunchParameterSwitch("oneSixFlag", false, true);
 	public final LaunchParameterSwitch unlicensedCopy		= new LaunchParameterSwitchReverse("unlicensedCopy", haspaid);
-	public final LaunchParameterSwitch creative	 			= new LaunchParameterSwitch("creative", false, true);
-	public final LaunchParameterSwitch survival	 			= new LaunchParameterSwitch("survival", false, true);
-	public final LaunchParameterString serverURL 			= new LaunchParameterString("serverURL", null, true);
-	public final LaunchParameterString serverSHA1 			= new LaunchParameterString("serverSHA1", null, true);
+	public final LaunchParameterSwitch creative				= new LaunchParameterSwitch("creative", false, true);
+	public final LaunchParameterSwitch survival				= new LaunchParameterSwitch("survival", false, true);
+	public final LaunchParameterString serverURL			= new LaunchParameterString("serverURL", null, true);
+	public final LaunchParameterString serverSHA1			= new LaunchParameterString("serverSHA1", null, true);
 	// clang-format on
 
 	private static File getDefaultGameDir() {
