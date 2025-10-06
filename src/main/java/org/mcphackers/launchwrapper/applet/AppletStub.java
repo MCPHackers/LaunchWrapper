@@ -3,7 +3,7 @@ package org.mcphackers.launchwrapper.applet;
 import java.net.URL;
 
 public interface AppletStub {
-    boolean isActive();
+	boolean isActive();
 
 	URL getDocumentBase();
 

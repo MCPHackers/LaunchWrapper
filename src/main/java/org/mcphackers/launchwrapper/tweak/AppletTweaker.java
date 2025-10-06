@@ -38,13 +38,13 @@ public class AppletTweaker implements Tweaker {
 		}
 		boolean changed = false;
 		// Decrease class version
-		if(renames.get(node.superName) != null) {
+		if (renames.get(node.superName) != null) {
 			node.superName = renames.get(node.superName);
 			changed = true;
 		}
 		List<String> newInterfaces = new ArrayList<String>();
-		for(String itf : node.interfaces) {
-			if(renames.get(itf) != null) {
+		for (String itf : node.interfaces) {
+			if (renames.get(itf) != null) {
 				newInterfaces.add(renames.get(itf));
 				changed = true;
 			} else {
@@ -55,19 +55,18 @@ public class AppletTweaker implements Tweaker {
 
 		for (MethodNode m : node.methods) {
 			for (AbstractInsnNode insn : iterator(m.instructions)) {
-				if(insn.getType() == METHOD_INSN) {
+				if (insn.getType() == METHOD_INSN) {
 					MethodInsnNode mInsn = (MethodInsnNode)insn;
-					if(renames.get(mInsn.owner) != null) {
+					if (renames.get(mInsn.owner) != null) {
 						mInsn.owner = renames.get(mInsn.owner);
 						changed = true;
 					}
 					String desc = remapper.mapMethodDesc(mInsn.desc);
 					mInsn.desc = desc;
 					changed |= !desc.equals(mInsn.desc);
-				}
-				else if(insn.getType() == FIELD_INSN) {
+				} else if (insn.getType() == FIELD_INSN) {
 					FieldInsnNode fInsn = (FieldInsnNode)insn;
-					if(renames.get(fInsn.owner) != null) {
+					if (renames.get(fInsn.owner) != null) {
 						fInsn.owner = renames.get(fInsn.owner);
 						changed = true;
 					}
