@@ -1,7 +1,5 @@
 package org.mcphackers.launchwrapper.tweak;
 
-import java.applet.Applet;
-import java.applet.AppletStub;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
@@ -13,6 +11,9 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Collections;
 import java.util.Map;
+
+import org.mcphackers.launchwrapper.applet.Applet;
+import org.mcphackers.launchwrapper.applet.AppletStub;
 
 public class AppletWrapper extends Applet implements AppletStub {
 	private static final long serialVersionUID = 1L;

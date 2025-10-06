@@ -88,7 +88,7 @@ public class LegacyTweak extends Tweak {
 
 	@Override
 	public List<Tweaker> getTweakers() {
-		return Arrays.<Tweaker>asList(new Java5Tweaker(), new DelCharTweaker(config, context));
+		return Arrays.<Tweaker>asList(new Java5Tweaker(), new AppletTweaker(), new DelCharTweaker(config, context));
 	}
 
 	@Override

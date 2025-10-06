@@ -69,7 +69,7 @@ public class DelCharTweaker implements Tweaker {
 	public DelCharTweaker(LaunchConfig config, LegacyTweakContext context) {
 		if (config == null || context == null) {
 			throw new IllegalArgumentException(
-					"Launch config and legacy tweak context must be non-null to construct DelCharTweaker.");
+				"Launch config and legacy tweak context must be non-null to construct DelCharTweaker.");
 		}
 
 		this.config = config;
@@ -119,22 +119,22 @@ public class DelCharTweaker implements Tweaker {
 				AbstractInsnNode[] insns = fill(method.instructions.get(index), 5);
 
 				if (!compareInsn(insns[0], ALOAD, 1) || !compareInsn(insns[1], ALOAD, 0) ||
-						!compareInsn(insns[2], ILOAD) || !compareInsn(insns[3], ILOAD) ||
-						!compareInsn(insns[4], INVOKEVIRTUAL)) {
+					!compareInsn(insns[2], ILOAD) || !compareInsn(insns[3], ILOAD) ||
+					!compareInsn(insns[4], INVOKEVIRTUAL)) {
 					continue;
 				}
 
-				MethodInsnNode invokeInsn = (MethodInsnNode) insns[4];
+				MethodInsnNode invokeInsn = (MethodInsnNode)insns[4];
 				if (!invokeInsn.owner.equals(argTypes[0].getInternalName())) {
 					continue;
 				}
 
 				Type[] invokeArgTypes = Type.getArgumentTypes(invokeInsn.desc);
 				if (invokeArgTypes.length != 3 ||
-						invokeArgTypes[0].getSort() != Type.OBJECT ||
-						!invokeArgTypes[0].getInternalName().equals(node.name) ||
-						!invokeArgTypes[1].equals(Type.INT_TYPE) ||
-						!invokeArgTypes[2].equals(Type.INT_TYPE)) {
+					invokeArgTypes[0].getSort() != Type.OBJECT ||
+					!invokeArgTypes[0].getInternalName().equals(node.name) ||
+					!invokeArgTypes[1].equals(Type.INT_TYPE) ||
+					!invokeArgTypes[2].equals(Type.INT_TYPE)) {
 					continue;
 				}
 
@@ -178,19 +178,19 @@ public class DelCharTweaker implements Tweaker {
 			Type fieldType = Type.getType(field.desc);
 
 			if ((field.access & ACC_PROTECTED) != 0 &&
-					(field.access & ACC_STATIC) == 0 &&
-					fieldType.getSort() == Type.OBJECT &&
-					fieldType.getClassName().equals("java.lang.String")) {
+				(field.access & ACC_STATIC) == 0 &&
+				fieldType.getSort() == Type.OBJECT &&
+				fieldType.getClassName().equals("java.lang.String")) {
 				hasProtectedString = true;
 			} else if ((field.access & ACC_PRIVATE) != 0 &&
-					(field.access & ACC_STATIC) == 0 &&
-					fieldType.equals(Type.INT_TYPE)) {
+					   (field.access & ACC_STATIC) == 0 &&
+					   fieldType.equals(Type.INT_TYPE)) {
 				hasPrivateInt = true;
 			} else if ((field.access & ACC_PRIVATE) != 0 &&
-					(field.access & ACC_STATIC) != 0 &&
-					(field.access & ACC_FINAL) != 0 &&
-					fieldType.getSort() == Type.OBJECT &&
-					fieldType.getClassName().equals("java.lang.String")) {
+					   (field.access & ACC_STATIC) != 0 &&
+					   (field.access & ACC_FINAL) != 0 &&
+					   fieldType.getSort() == Type.OBJECT &&
+					   fieldType.getClassName().equals("java.lang.String")) {
 				hasPrivateStaticFinalString = true;
 			}
 		}
@@ -206,7 +206,7 @@ public class DelCharTweaker implements Tweaker {
 
 			Type[] argTypes = Type.getArgumentTypes(method.desc);
 			if (argTypes.length != 2 || !argTypes[0].equals(Type.CHAR_TYPE) ||
-					!argTypes[1].equals(Type.INT_TYPE)) {
+				!argTypes[1].equals(Type.INT_TYPE)) {
 				continue;
 			}
 
@@ -238,15 +238,14 @@ public class DelCharTweaker implements Tweaker {
 			Type[] argTypes = Type.getArgumentTypes(method.desc);
 
 			if (argTypes.length == 7 &&
-					argTypes[0].getSort() == Type.OBJECT &&
-					argTypes[0].getInternalName().equals(guiScreenName) &&
-					argTypes[1].getSort() == Type.OBJECT && // FontRenderer
-					argTypes[2].equals(Type.INT_TYPE) &&
-					argTypes[3].equals(Type.INT_TYPE) &&
-					argTypes[4].equals(Type.INT_TYPE) &&
-					argTypes[5].equals(Type.INT_TYPE) &&
-					argTypes[6].getSort() == Type.OBJECT
-					&& argTypes[6].getClassName().equals("java.lang.String")) {
+				argTypes[0].getSort() == Type.OBJECT &&
+				argTypes[0].getInternalName().equals(guiScreenName) &&
+				argTypes[1].getSort() == Type.OBJECT && // FontRenderer
+				argTypes[2].equals(Type.INT_TYPE) &&
+				argTypes[3].equals(Type.INT_TYPE) &&
+				argTypes[4].equals(Type.INT_TYPE) &&
+				argTypes[5].equals(Type.INT_TYPE) &&
+				argTypes[6].getSort() == Type.OBJECT && argTypes[6].getClassName().equals("java.lang.String")) {
 				return true;
 			}
 		}
@@ -274,13 +273,13 @@ public class DelCharTweaker implements Tweaker {
 		AbstractInsnNode[] insns = fill(insn, 4);
 
 		if (!compareInsn(insns[0], IFGE) ||
-				!compareInsn(insns[1], ILOAD, 1) ||
-				!compareInsn(insns[2], BIPUSH, 32) ||
-				!compareInsn(insns[3], IF_ICMPLE)) {
+			!compareInsn(insns[1], ILOAD, 1) ||
+			!compareInsn(insns[2], BIPUSH, 32) ||
+			!compareInsn(insns[3], IF_ICMPLE)) {
 			return null;
 		}
 
-		return (IntInsnNode) insns[2];
+		return (IntInsnNode)insns[2];
 	}
 
 	public boolean tweakClass(ClassNodeSource source, String name) {
@@ -327,7 +326,9 @@ public class DelCharTweaker implements Tweaker {
 
 		for (MethodNode method : sourceNode.methods) {
 			for (AbstractInsnNode currentInsn = getFirst(
-					method.instructions); currentInsn != null; currentInsn = nextInsn(currentInsn)) {
+					 method.instructions);
+				 currentInsn != null;
+				 currentInsn = nextInsn(currentInsn)) {
 				IntInsnNode targetInsn = getTargetInsn(currentInsn);
 				if (targetInsn == null) {
 					continue;
