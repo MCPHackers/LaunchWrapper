@@ -42,7 +42,7 @@ public class ClassLoaderURLHandler extends URLStreamHandler {
 				InputStream is = classLoader.getOriginalURL(path).openStream();
 				return is;
 			}
-			ClassWriter writer = new SafeClassWriter(classLoader, COMPUTE_MAXS | COMPUTE_FRAMES);
+			ClassWriter writer = new SafeClassWriter(classLoader, COMPUTE_MAXS);
 			node.accept(writer);
 			data = writer.toByteArray();
 			return new ByteArrayInputStream(data);
