@@ -2,10 +2,10 @@
     "formatVersion": 1,
     "name": "LaunchWrapper Micromixin",
     "uid": "org.mcphackers.launchwrapper.micromixin",
-    "version": "1.1.2",
+    "version": "1.2.2",
     "libraries": [
         {
-            "name": "org.mcphackers:launchwrapper-micromixin:1.1.2",
+            "name": "org.mcphackers:launchwrapper-micromixin:1.2.2",
             "url": "https://maven.glass-launcher.net/releases/"
         },
         {
@@ -29,7 +29,7 @@
             "url": "https://stianloader.org/maven/"
         },
         {
-            "name": "net.fabricmc:mapping-io:0.3.0",
+            "name": "net.fabricmc:mapping-io:0.7.1",
             "url": "https://maven.fabricmc.net/"
         },
         {
@@ -37,19 +37,19 @@
             "url": "https://maven.fabricmc.net/"
         },
         {
-            "name": "org.json:json:20230311",
+            "name": "org.json:json:20250517",
             "url": "https://repo1.maven.org/maven2/"
         },
         {
-            "name": "org.ow2.asm:asm:9.7.1",
+            "name": "org.ow2.asm:asm:9.9",
             "url": "https://maven.fabricmc.net/"
         },
         {
-            "name": "org.ow2.asm:asm-tree:9.7.1",
+            "name": "org.ow2.asm:asm-tree:9.9",
             "url": "https://maven.fabricmc.net/"
         },
         {
-            "name": "org.ow2.asm:asm-util:9.7.1",
+            "name": "org.ow2.asm:asm-util:9.9",
             "url": "https://maven.fabricmc.net/"
         }
     ],

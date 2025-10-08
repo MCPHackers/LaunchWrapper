@@ -33,19 +33,19 @@ Edit "LaunchWrapper" component and modify `libraries` array:
 ```diff
      "libraries": [
          {
-             "name": "org.mcphackers:launchwrapper:1.1.3",
+             "name": "org.mcphackers:launchwrapper:1.2.2",
              "url": "https://maven.glass-launcher.net/releases/"
          },
 -        {
--            "name": "org.ow2.asm:asm:9.7.1",
+-            "name": "org.ow2.asm:asm:9.9",
 -            "url": "https://maven.fabricmc.net/"
 -        },
 -        {
--            "name": "org.ow2.asm:asm-tree:9.7.1",
+-            "name": "org.ow2.asm:asm-tree:9.9",
 -            "url": "https://maven.fabricmc.net/"
 -        },
          {
-             "name": "org.json:json:20240303",
+             "name": "org.json:json:20250517",
              "url": "https://repo1.maven.org/maven2/"
          }
      ],

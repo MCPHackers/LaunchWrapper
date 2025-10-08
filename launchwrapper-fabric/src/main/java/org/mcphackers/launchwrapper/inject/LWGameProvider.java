@@ -7,13 +7,7 @@ import java.lang.invoke.MethodType;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.CodeSource;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
+import java.util.*;
 
 import net.fabricmc.api.EnvType;
 import net.fabricmc.loader.api.ObjectShare;
@@ -29,6 +23,7 @@ import net.fabricmc.loader.impl.game.minecraft.McVersion;
 import net.fabricmc.loader.impl.game.minecraft.McVersionLookup;
 import net.fabricmc.loader.impl.game.patch.GameTransformer;
 import net.fabricmc.loader.impl.launch.FabricLauncher;
+import net.fabricmc.loader.impl.launch.MappingConfiguration;
 import net.fabricmc.loader.impl.metadata.BuiltinModMetadata;
 import net.fabricmc.loader.impl.metadata.ContactInformationImpl;
 import net.fabricmc.loader.impl.metadata.ModDependencyImpl;
@@ -45,6 +40,9 @@ import org.mcphackers.launchwrapper.tweak.Tweak;
 import org.mcphackers.launchwrapper.util.ClassNodeSource;
 
 public class LWGameProvider implements GameProvider {
+	private static final Set<BuiltinTransform> TRANSFORM_WIDENALL_STRIPENV_CLASSTWEAKS = EnumSet.of(BuiltinTransform.WIDEN_ALL_PACKAGE_ACCESS, BuiltinTransform.STRIP_ENVIRONMENT, BuiltinTransform.CLASS_TWEAKS);
+	private static final Set<BuiltinTransform> TRANSFORM_WIDENALL_CLASSTWEAKS = EnumSet.of(BuiltinTransform.WIDEN_ALL_PACKAGE_ACCESS, BuiltinTransform.CLASS_TWEAKS);
+	private static final Set<BuiltinTransform> TRANSFORM_STRIPENV = EnumSet.of(BuiltinTransform.STRIP_ENVIRONMENT);
 
 	public LaunchConfig config = FabricBridge.getInstance().config;
 	public MainLaunchTarget target = null;
@@ -83,6 +81,11 @@ public class LWGameProvider implements GameProvider {
 		} catch (Throwable t) {
 			throw FormattedException.ofLocalized("exception.minecraft.generic", t);
 		}
+	}
+
+	@Override
+	public boolean displayCrash(Throwable exception, String context) {
+		return GameProvider.super.displayCrash(exception, context);
 	}
 
 	private Path getLaunchwrapperSource() {
@@ -209,6 +212,7 @@ public class LWGameProvider implements GameProvider {
 													.setEnvironment(ModEnvironment.CLIENT)
 													.setDescription("Launch wrapper for legacy Minecraft")
 													.addAuthor("lassebq", Collections.emptyMap())
+													.addContributor("Zero_DSRS_VX", Collections.emptyMap())
 													.addIcon(16, "icon_16x16.png")
 													.addIcon(32, "icon_32x32.png")
 													.addIcon(48, "icon_48x48.png")
@@ -244,13 +248,27 @@ public class LWGameProvider implements GameProvider {
 	}
 
 	@Override
-	public boolean isObfuscated() {
-		return true;
+	public boolean requiresUrlClassLoader() {
+		return hasModLoader;
 	}
 
 	@Override
-	public boolean requiresUrlClassLoader() {
-		return hasModLoader;
+	public Set<BuiltinTransform> getBuiltinTransforms(String className) {
+		boolean isMinecraftClass = className.startsWith("net.minecraft.") // unobf classes in indev and later
+			|| className.startsWith("com.mojang.minecraft.") // unobf classes in classic
+			|| className.startsWith("com.mojang.rubydung.") // unobf classes in pre-classic
+			|| className.startsWith("com.mojang.blaze3d.") // unobf blaze3d classes
+			|| className.indexOf('.') < 0; // obf classes
+
+		if (isMinecraftClass) {
+			if (FabricLoaderImpl.INSTANCE.isDevelopmentEnvironment()) { // combined client+server jar, strip back down to production equivalent
+				return TRANSFORM_WIDENALL_STRIPENV_CLASSTWEAKS;
+			} else { // environment specific jar, inherently env stripped
+				return TRANSFORM_WIDENALL_CLASSTWEAKS;
+			}
+		} else { // mod class TODO: exclude game libs
+			return TRANSFORM_STRIPENV;
+		}
 	}
 
 	@Override
@@ -267,12 +285,28 @@ public class LWGameProvider implements GameProvider {
 	public void initialize(FabricLauncher launcher) {
 		launcher.setValidParentClassPath(validParentClassPath);
 
-		if (isObfuscated()) {
+
+		String gameNs = System.getProperty(SystemProperties.GAME_MAPPING_NAMESPACE);
+
+		if (gameNs == null) {
+			List<String> mappingNamespaces;
+
+			if (launcher.isDevelopment()) {
+				gameNs = MappingConfiguration.NAMED_NAMESPACE;
+			} else if ((mappingNamespaces = launcher.getMappingConfiguration().getNamespaces()) == null
+				|| mappingNamespaces.contains(MappingConfiguration.OFFICIAL_NAMESPACE)) {
+				gameNs = MappingConfiguration.OFFICIAL_NAMESPACE;
+			} else {
+				gameNs = envType == EnvType.CLIENT ? MappingConfiguration.CLIENT_OFFICIAL_NAMESPACE : MappingConfiguration.SERVER_OFFICIAL_NAMESPACE;
+			}
+		}
+
+		if (!gameNs.equals(launcher.getMappingConfiguration().getRuntimeNamespace())) { // game is obfuscated / in another namespace -> remap
 			Map<String, Path> obfJars = new HashMap<>(1);
 			String clientSide = envType.name().toLowerCase(Locale.ENGLISH);
 			obfJars.put(clientSide, gameJar);
 
-			obfJars = GameProviderHelper.deobfuscate(obfJars,
+			obfJars = GameProviderHelper.deobfuscate(obfJars, gameNs,
 													 getGameId(), getNormalizedGameVersion(),
 													 getLaunchDirectory(),
 													 launcher);
@@ -300,6 +334,11 @@ public class LWGameProvider implements GameProvider {
 	@Override
 	public String[] getLaunchArguments(boolean sanitize) {
 		return config.getArgs();
+	}
+
+	@Override
+	public String getRuntimeNamespace(String defaultNs) {
+		return GameProvider.super.getRuntimeNamespace(defaultNs);
 	}
 
 	@Override

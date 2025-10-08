@@ -7,18 +7,18 @@ plugins {
 def ENV = System.getenv()
 
 group = 'org.mcphackers'
-version = '1.2.1'
+version = '1.2.2'
 if(!ENV.RELEASE.equals('1')) {
 	project.version += '-SNAPSHOT'
 }
 
-def asm_version = '9.7.1'
+def asm_version = '9.9'
 def depends = [
 	"org.ow2.asm:asm:${asm_version}",
 	// "org.ow2.asm:asm-util:${asm_version}",
 	"org.ow2.asm:asm-tree:${asm_version}",
 	"org.ow2.asm:asm-commons:${asm_version}",
-	"org.json:json:20240303",
+	"org.json:json:20250517",
 ]
 
 dependencies {

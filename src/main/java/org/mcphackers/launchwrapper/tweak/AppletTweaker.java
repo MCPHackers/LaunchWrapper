@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.mcphackers.launchwrapper.util.ClassNodeSource;
+import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.commons.Remapper;
 import org.objectweb.asm.commons.SimpleRemapper;
 import org.objectweb.asm.tree.AbstractInsnNode;
@@ -22,7 +23,7 @@ import org.objectweb.asm.tree.MethodNode;
 public class AppletTweaker implements Tweaker {
 
 	Map<String, String> renames = getRenames();
-	Remapper remapper = new SimpleRemapper(renames);
+	Remapper remapper = new SimpleRemapper(Opcodes.ASM9, renames);
 
 	private static Map<String, String> getRenames() {
 		Map<String, String> renames = new HashMap<String, String>();

@@ -32,3 +32,5 @@ out
 # generated
 repo/
 bin/
+
+run/
