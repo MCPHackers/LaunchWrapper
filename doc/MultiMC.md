@@ -7,7 +7,7 @@ This allows changing the Minecraft version in the instance without re-editing th
 ## Instructions for Vanilla
 - Create a new MultiMC instance.
 - Click "Edit Instance".
-- Click "Add Empty". Enter "LaunchWrapper" for the name, and "org.mcphackers.launchwrapper" for the UUID.
+- Click "Add Empty". Enter "LaunchWrapper" for the name, and "org.mcphackers.launchwrapper" for the UID.
 - Select the new component labeled "LaunchWrapper", and click "Edit".
 - Replace the contents of the file with contents of [org.mcphackers.launchwrapper.json](org.mcphackers.launchwrapper.json)
 - Save and close the document.
@@ -21,7 +21,7 @@ This allows changing the Minecraft version in the instance without re-editing th
 To install LaunchWrapper with Fabric, first you need to acquire a regular Fabric instance.
 For this instance, perform the following steps:
 
-- Repeat all the instructions for vanilla
+- Repeat all the instructions for vanilla (but use another name and UID for the component when adding empty)
 - Perform the same steps but instead of `org.mcphackers.launchwrapper.json` use the contents of [org.mcphackers.launchwrapper.fabric.json](org.mcphackers.launchwrapper.fabric.json)
 - Make sure it's the bottom-most component and is below the regular "LaunchWrapper" component
 
