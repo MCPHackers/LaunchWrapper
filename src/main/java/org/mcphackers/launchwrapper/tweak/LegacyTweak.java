@@ -92,7 +92,8 @@ public class LegacyTweak extends Tweak {
 		List<Tweaker> tweakers = new ArrayList<Tweaker>();
 		tweakers.add(new Java5Tweaker());
 		tweakers.add(new DelCharTweaker(config, context));
-		if (config.useFakeApplet.get() || LaunchClassLoader.CLASS_VERSION >= 70 /* Java 26 */) {
+		if (config.useFakeApplet.get() || LaunchClassLoader.CLASS_VERSION >= 70 /* Java 26 */ ||
+			Boolean.getBoolean("java.awt.headless")) {
 			tweakers.add(new AppletTweaker());
 		}
 		return tweakers;

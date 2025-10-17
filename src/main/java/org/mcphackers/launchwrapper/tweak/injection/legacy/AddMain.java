@@ -145,7 +145,7 @@ public class AddMain extends InjectionWithContext<LegacyTweakContext> {
 			insns.add(new MethodInsnNode(INVOKESPECIAL, minecraftApplet.name, "<init>", "()V"));
 			insns.add(new VarInsnNode(ASTORE, appletIndex));
 			insns.add(new VarInsnNode(ALOAD, appletIndex));
-			if (config.useFakeApplet.get() || LaunchClassLoader.CLASS_VERSION >= 70) {
+			if (config.useFakeApplet.get() || LaunchClassLoader.CLASS_VERSION >= 70 || Boolean.getBoolean("java.awt.headless")) {
 				insns.add(new MethodInsnNode(INVOKESTATIC, "org/mcphackers/launchwrapper/tweak/injection/legacy/AddMain", "getFakeApplet", "()Lorg/mcphackers/launchwrapper/tweak/FakeAppletWrapper;"));
 			} else {
 				insns.add(new MethodInsnNode(INVOKESTATIC, "org/mcphackers/launchwrapper/tweak/injection/legacy/AddMain", "getApplet", "()Lorg/mcphackers/launchwrapper/tweak/AppletWrapper;"));
