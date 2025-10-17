@@ -9,5 +9,6 @@
             "url": "https://maven.glass-launcher.net/releases/"
         }
     ],
-    "mainClass": "org.mcphackers.launchwrapper.fabric.FabricBridge"
+    "mainClass": "org.mcphackers.launchwrapper.Launch",
+    "minecraftArguments": "--username ${auth_player_name} --session ${auth_session} --version ${version_name} --gameDir ${game_directory} --assetsDir ${assets_root} --assetIndex ${assets_index_name} --accessToken ${auth_access_token} --userType ${user_type} --versionType ${version_type} --tweakClass org.mcphackers.launchwrapper.tweak.FabricLoaderTweak"
 }

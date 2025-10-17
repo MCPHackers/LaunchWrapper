@@ -218,9 +218,6 @@ public class LegacyTweakContext implements Injection, MinecraftGetter {
 				}
 			}
 		}
-		if (config.resizable.get()) {
-			supportsResizing = true;
-		}
 		source.overrideClass(minecraft);
 		return true;
 	}

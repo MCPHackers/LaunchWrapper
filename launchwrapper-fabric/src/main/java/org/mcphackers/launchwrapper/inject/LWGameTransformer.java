@@ -11,6 +11,16 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.zip.ZipError;
 
+import org.mcphackers.launchwrapper.loader.SafeClassWriter;
+import org.mcphackers.launchwrapper.target.MainLaunchTarget;
+import org.mcphackers.launchwrapper.tweak.FabricLoaderTweak;
+import org.mcphackers.launchwrapper.tweak.Tweak;
+import org.mcphackers.launchwrapper.tweak.Tweaker;
+import org.mcphackers.launchwrapper.util.ClassNodeSource;
+import org.mcphackers.launchwrapper.util.asm.NodeHelper;
+import org.objectweb.asm.ClassWriter;
+import org.objectweb.asm.tree.ClassNode;
+
 import net.fabricmc.loader.impl.game.patch.GameTransformer;
 import net.fabricmc.loader.impl.launch.FabricLauncher;
 import net.fabricmc.loader.impl.util.ExceptionUtil;
@@ -20,20 +30,14 @@ import net.fabricmc.loader.impl.util.SimpleClassPath.CpEntry;
 import net.fabricmc.loader.impl.util.log.Log;
 import net.fabricmc.loader.impl.util.log.LogCategory;
 
-import org.mcphackers.launchwrapper.loader.SafeClassWriter;
-import org.mcphackers.launchwrapper.target.MainLaunchTarget;
-import org.mcphackers.launchwrapper.tweak.Tweak;
-import org.mcphackers.launchwrapper.util.ClassNodeSource;
-import org.mcphackers.launchwrapper.util.asm.NodeHelper;
-import org.objectweb.asm.ClassWriter;
-import org.objectweb.asm.tree.ClassNode;
-
 public class LWGameTransformer extends GameTransformer implements ClassNodeSource {
 	private final LWGameProvider gameProvider;
 	private FabricLauncher launcher;
 	private Map<String, ClassNode> modified;
 	private Function<String, ClassNode> classSource;
 	private boolean entrypointsLocated = false;
+	private FabricLoaderTweak tweak;
+	private List<Tweaker> tweakers;
 
 	public LWGameTransformer(LWGameProvider gameProvider) {
 		this.gameProvider = gameProvider;
@@ -62,7 +66,8 @@ public class LWGameTransformer extends GameTransformer implements ClassNodeSourc
 					}
 
 					try (InputStream is = entry.getInputStream()) {
-						return NodeHelper.readClass(is, 0);
+						node = NodeHelper.readClass(is, 0);
+						return node;
 					} catch (IOException | ZipError e) {
 						throw new RuntimeException(String.format("error reading %s in %s: %s", name, LoaderUtil.normalizePath(entry.getOrigin()), e), e);
 					}
@@ -71,9 +76,10 @@ public class LWGameTransformer extends GameTransformer implements ClassNodeSourc
 				}
 			};
 
-			Tweak tweak = gameProvider.getTweak(this);
-			tweak.transform(this);
-			gameProvider.target = (MainLaunchTarget)tweak.getLaunchTarget();
+			this.tweak = new FabricLoaderTweak(Tweak.getDefault(this, gameProvider.config), gameProvider.config);
+			this.tweakers = this.tweak.getTweakers();
+			this.tweak.transform(this);
+			gameProvider.target = (MainLaunchTarget)tweak.getBaseTweak().getLaunchTarget();
 
 		} catch (IOException e) {
 			throw ExceptionUtil.wrap(e);
@@ -88,6 +94,7 @@ public class LWGameTransformer extends GameTransformer implements ClassNodeSourc
 		if (node == null) {
 			try {
 				node = NodeHelper.readClass(launcher.getResourceAsStream(LoaderUtil.getClassFileName(name)), 0);
+				return node;
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
@@ -95,12 +102,27 @@ public class LWGameTransformer extends GameTransformer implements ClassNodeSourc
 		return node;
 	}
 
+	private void runTransformers(ClassNode node) {
+		if(tweakers == null || node == null) {
+			return;
+		}
+		boolean modified = false;
+		for (Tweaker tweak : tweakers) {
+			modified |= tweak.tweakClass(this, node.name);
+		}
+		if (modified) {
+			overrideClass(node);
+		}
+	}
+
+	@Override
 	public void overrideClass(ClassNode node) {
 		modified.put(node.name.replace("/", "."), node);
 	}
 
 	public byte[] transform(String className) {
 		ClassNode node = modified.get(className);
+				runTransformers(node);
 		if (node == null) {
 			return null;
 		}

@@ -1,8 +1,8 @@
 package org.mcphackers.launchwrapper.target;
 
+import java.applet.Applet;
 import java.awt.Image;
 
-import org.mcphackers.launchwrapper.applet.Applet;
 import org.mcphackers.launchwrapper.loader.LaunchClassLoader;
 import org.mcphackers.launchwrapper.tweak.AppletWrapper;
 

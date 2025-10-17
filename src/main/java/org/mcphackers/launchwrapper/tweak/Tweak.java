@@ -55,7 +55,7 @@ public abstract class Tweak {
 			boolean applied = injection.apply(source, config);
 			if (applied) {
 				if (injection.name() != null) {
-					tweakInfo(injection.name()); // TODO extra info
+					tweakInfo(injection.name());
 				}
 			}
 			if (!applied && injection.required()) {
@@ -76,8 +76,8 @@ public abstract class Tweak {
 				Class<? extends Tweak> tweak = cls.asSubclass(Tweak.class);
 				try {
 					return tweak
-						.getConstructor(LaunchConfig.class, Tweak.class)
-						.newInstance(launch, getDefault(source, launch));
+						.getConstructor(Tweak.class, LaunchConfig.class)
+						.newInstance(getDefault(source, launch), launch);
 				} catch (NoSuchMethodException e) {
 					return tweak
 						.getConstructor(LaunchConfig.class)

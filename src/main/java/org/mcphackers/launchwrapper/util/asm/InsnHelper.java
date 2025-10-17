@@ -316,8 +316,10 @@ public final class InsnHelper {
 			case BIPUSH:
 			case SIPUSH:
 				return ((IntInsnNode)insn).operand;
-			default:
+			case LDC:
 				return (Integer)((LdcInsnNode)insn).cst;
+			default:
+				return 0;
 		}
 	}
 
@@ -327,8 +329,10 @@ public final class InsnHelper {
 				return 0L;
 			case LCONST_1:
 				return 1L;
-			default:
+			case LDC:
 				return (Long)((LdcInsnNode)insn).cst;
+			default:
+				return 0L;
 		}
 	}
 
@@ -344,19 +348,23 @@ public final class InsnHelper {
 				return 1F;
 			case FCONST_2:
 				return 2F;
-			default:
+			case LDC:
 				return (Float)((LdcInsnNode)insn).cst;
+			default:
+				return 0F;
 		}
 	}
 
 	public static double doubleValue(AbstractInsnNode insn) {
 		switch (insn.getOpcode()) {
 			case DCONST_0:
-				return 0F;
+				return 0D;
 			case DCONST_1:
-				return 1F;
-			default:
+				return 1D;
+			case LDC:
 				return (Double)((LdcInsnNode)insn).cst;
+			default:
+				return 0D;
 		}
 	}
 

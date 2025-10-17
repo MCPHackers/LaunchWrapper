@@ -6,7 +6,9 @@ import static org.objectweb.asm.Opcodes.*;
 
 import org.mcphackers.launchwrapper.Launch;
 import org.mcphackers.launchwrapper.LaunchConfig;
+import org.mcphackers.launchwrapper.loader.LaunchClassLoader;
 import org.mcphackers.launchwrapper.tweak.AppletWrapper;
+import org.mcphackers.launchwrapper.tweak.FakeAppletWrapper;
 import org.mcphackers.launchwrapper.tweak.injection.InjectionWithContext;
 import org.mcphackers.launchwrapper.util.ClassNodeSource;
 import org.mcphackers.launchwrapper.util.asm.IdentifyCall;
@@ -143,7 +145,11 @@ public class AddMain extends InjectionWithContext<LegacyTweakContext> {
 			insns.add(new MethodInsnNode(INVOKESPECIAL, minecraftApplet.name, "<init>", "()V"));
 			insns.add(new VarInsnNode(ASTORE, appletIndex));
 			insns.add(new VarInsnNode(ALOAD, appletIndex));
-			insns.add(new MethodInsnNode(INVOKESTATIC, "org/mcphackers/launchwrapper/tweak/injection/legacy/AddMain", "getApplet", "()Lorg/mcphackers/launchwrapper/tweak/AppletWrapper;"));
+			if (config.useFakeApplet.get() || LaunchClassLoader.CLASS_VERSION >= 70) {
+				insns.add(new MethodInsnNode(INVOKESTATIC, "org/mcphackers/launchwrapper/tweak/injection/legacy/AddMain", "getFakeApplet", "()Lorg/mcphackers/launchwrapper/tweak/FakeAppletWrapper;"));
+			} else {
+				insns.add(new MethodInsnNode(INVOKESTATIC, "org/mcphackers/launchwrapper/tweak/injection/legacy/AddMain", "getApplet", "()Lorg/mcphackers/launchwrapper/tweak/AppletWrapper;"));
+			}
 			insns.add(new MethodInsnNode(INVOKEVIRTUAL, "java/applet/Applet", "setStub", "(Ljava/applet/AppletStub;)V"));
 			insns.add(new VarInsnNode(ALOAD, appletIndex));
 			insns.add(new MethodInsnNode(INVOKEVIRTUAL, minecraftApplet.name, "init", "()V"));
@@ -232,6 +238,10 @@ public class AddMain extends InjectionWithContext<LegacyTweakContext> {
 
 	public static AppletWrapper getApplet() {
 		return new AppletWrapper(Launch.getInstance().config.getArgsAsMap());
+	}
+
+	public static FakeAppletWrapper getFakeApplet() {
+		return new FakeAppletWrapper(Launch.getInstance().config.getArgsAsMap());
 	}
 
 	protected int applyAccess(int access, int targetAccess) {

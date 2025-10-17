@@ -65,11 +65,11 @@ public class LaunchConfig {
 	public final LaunchParameterEnum<SkinType> skinProxy	= new LaunchParameterEnum<SkinType>("skinProxy", SkinType.DEFAULT, true);
 	public final LaunchParameterSkinOptions skinOptions		= new LaunchParameterSkinOptions("skinOptions");
 	public final LaunchParameterFile levelsDir				= new LaunchParameterFile("levelsDir", null, true);
+	public final LaunchParameterSwitch useFakeApplet		= new LaunchParameterSwitch("useFakeApplet", false, true);
 	public final LaunchParameterSwitch isom					= new LaunchParameterSwitch("isom", false, true);
 	public final LaunchParameterFileList icon				= new LaunchParameterFileList("icon", null, true);
 	public final LaunchParameterString title				= new LaunchParameterString("title", null, true);
 	public final LaunchParameterSwitch vsync				= new LaunchParameterSwitch("vsync", false, true);
-	public final LaunchParameterSwitch resizable			= new LaunchParameterSwitch("resizable", false, true);
 	public final LaunchParameterSwitch applet 				= new LaunchParameterSwitch("applet", false);
 	public final LaunchParameterSwitch oneSixFlag			= new LaunchParameterSwitch("oneSixFlag", false, true);
 	public final LaunchParameterSwitch unlicensedCopy		= new LaunchParameterSwitchReverse("unlicensedCopy", haspaid);

@@ -275,16 +275,87 @@ public class LWJGLPatch extends InjectionWithContext<LegacyTweakContext> {
 					}
 				}
 			}
+			if (compareInsn(insns[0], GETFIELD, minecraft.name, context.width.name, context.width.desc) &&
+				compareInsn(insns[2], GETFIELD, minecraft.name, context.height.name, context.height.desc) &&
+				compareInsn(insns[3], INVOKESPECIAL, null, "<init>", "(L" + minecraft.name + ";II)V")) {
+				MethodInsnNode invoke = (MethodInsnNode)insns[3];
+				ClassNode hud = source.getClass(invoke.owner);
+				MethodNode initHud = NodeHelper.getMethod(hud, invoke.name, invoke.desc);
+
+				FieldInsnNode putFieldWidth = null, putFieldHeight = null;
+				AbstractInsnNode insn2 = getFirst(initHud.instructions);
+				while (insn2 != null) {
+					AbstractInsnNode[] insns2 = fill(insn2, 6);
+
+					if (compareInsn(insns2[0], ILOAD) &&
+						intValue(insns2[1]) == 240 &&
+						compareInsn(insns2[2], IMUL) &&
+						compareInsn(insns2[3], ILOAD, 3) &&
+						compareInsn(insns2[4], IDIV) &&
+						compareInsn(insns2[5], PUTFIELD, hud.name)) {
+						VarInsnNode varLoad = (VarInsnNode)insns2[0];
+						if (varLoad.var == 2) {
+							putFieldWidth = (FieldInsnNode)insns2[5];
+						}
+						if (varLoad.var == 3) {
+							putFieldHeight = (FieldInsnNode)insns2[5];
+							break;
+						}
+					}
+					insn2 = nextInsn(insn2);
+				}
+				for (MethodNode m : hud.methods) {
+					if (putFieldWidth == null || putFieldHeight == null) {
+						break;
+					}
+					// render(FZII)V || render(FII)V
+					if (m.desc.equals("(FZII)V") || m.desc.equals("(ZII)V")) {
+						insn2 = getFirst(m.instructions);
+						while (insn2 != null) {
+							if (compareInsn(insn2, GETFIELD, hud.name, null, "L" + minecraft.name + ";")) {
+								InsnList insert = new InsnList();
+								insert.add(new InsnNode(DUP)); // MC, MC
+								insert.add(new FieldInsnNode(GETFIELD, minecraft.name, context.width.name, context.width.desc));
+								insert.add(intInsn(240));																		   // MC, INT, INT
+								insert.add(new InsnNode(IMUL));																	   // MC, INT
+								insert.add(new InsnNode(SWAP));																	   // INT, MC
+								insert.add(new InsnNode(DUP_X1));																   // MC, INT, MC
+								insert.add(new FieldInsnNode(GETFIELD, minecraft.name, context.height.name, context.height.desc)); // MC, INT (width * 240), INT (height)
+								insert.add(new InsnNode(IDIV));																	   // MC, INT
+								insert.add(new VarInsnNode(ALOAD, 0));
+								insert.add(new InsnNode(SWAP));
+								insert.add(new FieldInsnNode(PUTFIELD, hud.name, putFieldWidth.name, putFieldWidth.desc));
+
+								insert.add(new InsnNode(DUP));
+								insert.add(new FieldInsnNode(GETFIELD, minecraft.name, context.height.name, context.height.desc));
+								insert.add(intInsn(240));
+								insert.add(new InsnNode(IMUL));
+								insert.add(new InsnNode(SWAP));
+								insert.add(new InsnNode(DUP_X1));
+								insert.add(new FieldInsnNode(GETFIELD, minecraft.name, context.height.name, context.height.desc));
+								insert.add(new InsnNode(IDIV));
+								insert.add(new VarInsnNode(ALOAD, 0));
+								insert.add(new InsnNode(SWAP));
+								insert.add(new FieldInsnNode(PUTFIELD, hud.name, putFieldHeight.name, putFieldHeight.desc));
+
+								m.instructions.insert(insn2, insert);
+								source.overrideClass(hud);
+								break;
+							}
+							insn2 = nextInsn(insn2);
+						}
+					}
+				}
+			}
+
 			insn = nextInsn(insn);
 		}
 
 		if (afterLabel != null && iLabel != null && oLabel != null && ifNoCanvas != null && ifFullscreen != null) {
 			insnList.insertBefore(afterLabel, aLabel);
 			InsnList insert = getIcon();
-			if (supportsResizing) {
-				insert.add(new InsnNode(ICONST_1));
-				insert.add(new MethodInsnNode(INVOKESTATIC, "org/lwjgl/opengl/Display", "setResizable", "(Z)V"));
-			}
+			insert.add(new InsnNode(ICONST_1));
+			insert.add(new MethodInsnNode(INVOKESTATIC, "org/lwjgl/opengl/Display", "setResizable", "(Z)V"));
 			insert.add(booleanInsn(config.vsync.get()));
 			insert.add(new MethodInsnNode(INVOKESTATIC, "org/lwjgl/opengl/Display", "setVSyncEnabled", "(Z)V"));
 			insert.add(new VarInsnNode(ALOAD, thisIndex));
@@ -393,9 +464,9 @@ public class LWJGLPatch extends InjectionWithContext<LegacyTweakContext> {
 					insn2 = nextInsn(insn2);
 				}
 			}
-			if (toggleFullscreen != null) {
-				for (AbstractInsnNode insn2 = getFirst(tick.instructions); insn2 != null; insn2 = nextInsn(insn2)) {
-					AbstractInsnNode[] insns2 = fill(insn2, 7);
+			for (AbstractInsnNode insn2 = getFirst(tick.instructions); insn2 != null; insn2 = nextInsn(insn2)) {
+				AbstractInsnNode[] insns2 = fill(insn2, 7);
+				if (toggleFullscreen != null) {
 					if (compareInsn(insns2[0], INVOKESTATIC, "org/lwjgl/opengl/Display", "isActive", "()Z") &&
 						compareInsn(insns2[1], IFNE) &&
 						compareInsn(insns2[2], ALOAD) &&
@@ -404,6 +475,20 @@ public class LWJGLPatch extends InjectionWithContext<LegacyTweakContext> {
 						compareInsn(insns2[5], ALOAD) &&
 						compareInsn(insns2[6], INVOKEVIRTUAL, minecraft.name, toggleFullscreen.name, toggleFullscreen.desc)) {
 						tick.instructions.set(insn2, new InsnNode(ICONST_1));
+					}
+				}
+				if (!supportsResizing) {
+					if (compareInsn(insns2[0], INVOKESTATIC, "org/lwjgl/opengl/Display", "isCloseRequested", "()Z") &&
+						compareInsn(insns2[1], IFEQ)) {
+						JumpInsnNode jmp = (JumpInsnNode)insns2[1];
+						InsnList insert = new InsnList();
+						insert.add(new VarInsnNode(ALOAD, 0));
+						insert.add(new MethodInsnNode(INVOKESTATIC, "org/lwjgl/opengl/Display", "getWidth", "()I"));
+						insert.add(new FieldInsnNode(PUTFIELD, minecraft.name, context.width.name, context.width.desc));
+						insert.add(new VarInsnNode(ALOAD, 0));
+						insert.add(new MethodInsnNode(INVOKESTATIC, "org/lwjgl/opengl/Display", "getHeight", "()I"));
+						insert.add(new FieldInsnNode(PUTFIELD, minecraft.name, context.height.name, context.height.desc));
+						tick.instructions.insert(jmp.label, insert);
 					}
 				}
 			}

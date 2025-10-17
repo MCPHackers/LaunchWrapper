@@ -25,8 +25,7 @@ For this instance, perform the following steps:
 - Perform the same steps but instead of `org.mcphackers.launchwrapper.json` use the contents of [org.mcphackers.launchwrapper.fabric.json](org.mcphackers.launchwrapper.fabric.json)
 - Make sure it's the bottom-most component and is below the regular "LaunchWrapper" component
 
-## Forge
-To install LaunchWrapper with Forge follow instructions for Vanilla, then move "LaunchWrapper" component above Forge.
+Recent versions of Fabric loader will refuse to launch the game if multiple instances of asm libraries are present. You need to remove them.
 
 Edit "LaunchWrapper" component and modify `libraries` array:
 
@@ -50,8 +49,13 @@ Edit "LaunchWrapper" component and modify `libraries` array:
          }
      ],
 ```
+## Forge
+To install LaunchWrapper with Forge follow instructions for Vanilla, then move "LaunchWrapper" component above Forge.
+
+Remove asm libraries from LaunchWrapper component (refer to Fabric instructions)
 
 This only applies to versions where Forge isn't considered a jarmod. For versions where Forge is a jarmod, use Vanilla instructions.
+<!-- TODO: Determine version range -->
 
 ## Micromixin
 Micromixin is a lightweight alternative mixin implementation which can be used with standalone LaunchWrapper. Currently the implementation is barebones so many mixin annotations aren't supported. However, if the mod uses exclusively the annotations from base Mixin (Not MixinExtras) there's a high chance it'll work when recompiled with

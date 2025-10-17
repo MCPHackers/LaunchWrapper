@@ -6,6 +6,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -88,7 +89,13 @@ public class LegacyTweak extends Tweak {
 
 	@Override
 	public List<Tweaker> getTweakers() {
-		return Arrays.<Tweaker>asList(new Java5Tweaker(), new AppletTweaker(), new DelCharTweaker(config, context));
+		List<Tweaker> tweakers = new ArrayList<Tweaker>();
+		tweakers.add(new Java5Tweaker());
+		tweakers.add(new DelCharTweaker(config, context));
+		if (config.useFakeApplet.get() || LaunchClassLoader.CLASS_VERSION >= 70 /* Java 26 */) {
+			tweakers.add(new AppletTweaker());
+		}
+		return tweakers;
 	}
 
 	@Override

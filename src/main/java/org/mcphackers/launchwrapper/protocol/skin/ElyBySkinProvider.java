@@ -29,7 +29,7 @@ public class ElyBySkinProvider implements SkinProvider {
 
 			URL texturesURL = new URL("http://skinsystem.ely.by/textures/" + name);
 			String response = new String(Util.readStream(openDirectConnection(texturesURL).getInputStream()), "UTF-8");
-			if (response.isEmpty()) {
+			if (response.length() == 0) {
 				return null;
 			}
 			JSONObject texturesJson = new JSONObject(response);

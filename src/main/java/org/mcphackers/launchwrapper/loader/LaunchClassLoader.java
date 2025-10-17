@@ -99,7 +99,7 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 			return (ClassLoader)ClassLoader.class.getMethod("getPlatformClassLoader").invoke(null); // Java 9+ only
 		} catch (NoSuchMethodException e) {
 			return null; // fall back to boot cl
-		} catch (ReflectiveOperationException e) {
+		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}
 	}

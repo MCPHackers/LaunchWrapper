@@ -119,7 +119,7 @@ public class MojangSkinProvider implements SkinProvider {
 				return null;
 			}
 			String response = new String(Util.readStream(connection.getInputStream()), "UTF-8");
-			if (response.isEmpty()) {
+			if (response.length() == 0) {
 				return null;
 			}
 			JSONObject profileJson = new JSONObject(response);

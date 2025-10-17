@@ -33,7 +33,6 @@ import net.fabricmc.loader.impl.util.SystemProperties;
 
 import org.mcphackers.launchwrapper.Launch;
 import org.mcphackers.launchwrapper.LaunchConfig;
-import org.mcphackers.launchwrapper.fabric.FabricBridge;
 import org.mcphackers.launchwrapper.target.MainLaunchTarget;
 import org.mcphackers.launchwrapper.tweak.FabricLoaderTweak;
 import org.mcphackers.launchwrapper.tweak.Tweak;
@@ -44,7 +43,8 @@ public class LWGameProvider implements GameProvider {
 	private static final Set<BuiltinTransform> TRANSFORM_WIDENALL_CLASSTWEAKS = EnumSet.of(BuiltinTransform.WIDEN_ALL_PACKAGE_ACCESS, BuiltinTransform.CLASS_TWEAKS);
 	private static final Set<BuiltinTransform> TRANSFORM_STRIPENV = EnumSet.of(BuiltinTransform.STRIP_ENVIRONMENT);
 
-	public LaunchConfig config = FabricBridge.getInstance().config;
+	public Launch launch = Launch.getInstance();
+	public LaunchConfig config = launch.config;
 	public MainLaunchTarget target = null;
 
 	private Arguments arguments;
@@ -57,10 +57,6 @@ public class LWGameProvider implements GameProvider {
 	private McVersion versionData;
 	private boolean hasModLoader;
 	private final GameTransformer transformer = new LWGameTransformer(this);
-
-	public Tweak getTweak(ClassNodeSource source) {
-		return new FabricLoaderTweak(Tweak.get(source, config), config);
-	}
 
 	@Override
 	public void launch(ClassLoader loader) {
@@ -169,7 +165,7 @@ public class LWGameProvider implements GameProvider {
 
 	@Override
 	public Path getLaunchDirectory() {
-		return FabricBridge.getInstance().config.gameDir.get().toPath();
+		return launch.config.gameDir.get().toPath();
 	}
 
 	@Override

@@ -1,7 +1,5 @@
 package org.mcphackers.launchwrapper.tweak;
 
-import java.applet.Applet;
-import java.applet.AppletStub;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
@@ -14,12 +12,15 @@ import java.net.URL;
 import java.util.Collections;
 import java.util.Map;
 
-public class AppletWrapper extends Applet implements AppletStub {
+import org.mcphackers.launchwrapper.applet.Applet;
+import org.mcphackers.launchwrapper.applet.AppletStub;
+
+public class FakeAppletWrapper extends Applet implements AppletStub {
 	private static final long serialVersionUID = 1L;
 
 	private final Map<String, String> args;
 
-	public AppletWrapper(Map<String, String> argsAsMap) {
+	public FakeAppletWrapper(Map<String, String> argsAsMap) {
 		args = argsAsMap;
 	}
 
@@ -63,7 +64,7 @@ public class AppletWrapper extends Applet implements AppletStub {
 	public static void startApplet(Class<? extends Applet> appletClass, int width, int height, String title, Image icon) {
 		try {
 			final Applet applet = appletClass.newInstance();
-			applet.setStub(new AppletWrapper(Collections.<String, String>emptyMap()));
+			applet.setStub(new FakeAppletWrapper(Collections.<String, String>emptyMap()));
 			final Frame frame = new Frame(title);
 			frame.setBackground(Color.BLACK);
 			frame.setIconImage(icon);
