@@ -7,7 +7,7 @@ plugins {
 def ENV = System.getenv()
 
 group = 'org.mcphackers'
-version = '1.2.2'
+version = '1.2.3'
 if(!ENV.RELEASE.equals('1')) {
 	project.version += '-SNAPSHOT'
 }
