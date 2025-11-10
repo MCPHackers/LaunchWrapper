@@ -68,7 +68,7 @@ public class MinecraftURLStreamHandler extends URLStreamHandlerProxy {
 				return new HeartbeatURLConnection(url);
 			if (host.equals("mcoapi.minecraft.net")) {
 				if (config.realmsServer.get() != null) {
-					return openDirectConnection(new URL("http", config.realmsServer.get(), config.realmsPort.get(), file));
+					return super.openConnection(new URL("http", config.realmsServer.get(), config.realmsPort.get(), file));
 				} else {
 					if (path.equals("/mco/available"))
 						return new BasicResponseURLConnection(url, "true");
@@ -84,6 +84,6 @@ public class MinecraftURLStreamHandler extends URLStreamHandlerProxy {
 		if (host.equals("skins.local"))
 			return new LocalSkinURLConnection(url);
 
-		return openDirectConnection(url);
+		return super.openConnection(url);
 	}
 }

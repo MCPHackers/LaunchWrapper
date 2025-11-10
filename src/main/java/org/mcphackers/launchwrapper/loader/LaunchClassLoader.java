@@ -24,7 +24,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
-import java.util.jar.Manifest;
 
 import org.mcphackers.launchwrapper.Launch;
 import org.mcphackers.launchwrapper.tweak.Tweaker;
@@ -415,29 +414,28 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 		}
 
 		CodeSigner[] signers = null;
-		int i = name.lastIndexOf('.');
 
 		try {
 			URLConnection urlConnection = resource.openConnection();
 			if (urlConnection instanceof JarURLConnection) {
 				final JarURLConnection jarURLConnection = (JarURLConnection)urlConnection;
-				JarFile jarFile;
-				jarFile = jarURLConnection.getJarFile();
+				// final Manifest manifest = jarURLConnection.getManifest(); // Slow as hell
+				final JarFile jarFile = jarURLConnection.getJarFile();
 
-				if (jarFile != null && jarFile.getManifest() != null) {
-					final Manifest manifest = jarFile.getManifest();
+				if (jarFile != null /* && manifest != null */) {
 					final JarEntry entry = jarFile.getJarEntry(classResourceName(name));
 					if (entry != null) {
 						signers = entry.getCodeSigners();
 					}
-					if (i != -1) {
-						String pkgName = name.substring(0, i);
+					// int i = name.lastIndexOf('.');
+					// if (i != -1) {
+					// 	String pkgName = name.substring(0, i);
 
-						Package pkg = getPackage(pkgName);
-						if (pkg == null) {
-							pkg = definePackage(pkgName, manifest, jarURLConnection.getJarFileURL());
-						}
-					}
+					// 	Package pkg = getPackage(pkgName);
+					// 	if (pkg == null) {
+					// 		pkg = definePackage(pkgName, manifest, resource);
+					// 	}
+					// }
 				}
 			}
 		} catch (IOException e) {

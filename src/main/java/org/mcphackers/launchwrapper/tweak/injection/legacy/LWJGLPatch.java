@@ -278,6 +278,7 @@ public class LWJGLPatch extends InjectionWithContext<LegacyTweakContext> {
 			if (compareInsn(insns[0], GETFIELD, minecraft.name, context.width.name, context.width.desc) &&
 				compareInsn(insns[2], GETFIELD, minecraft.name, context.height.name, context.height.desc) &&
 				compareInsn(insns[3], INVOKESPECIAL, null, "<init>", "(L" + minecraft.name + ";II)V")) {
+				// new Hud(Minecraft, width, height)
 				MethodInsnNode invoke = (MethodInsnNode)insns[3];
 				ClassNode hud = source.getClass(invoke.owner);
 				MethodNode initHud = NodeHelper.getMethod(hud, invoke.name, invoke.desc);
@@ -308,11 +309,12 @@ public class LWJGLPatch extends InjectionWithContext<LegacyTweakContext> {
 					if (putFieldWidth == null || putFieldHeight == null) {
 						break;
 					}
-					// render(FZII)V || render(FII)V
-					if (m.desc.equals("(FZII)V") || m.desc.equals("(ZII)V")) {
+					// render(FZII)V || render(FII)V || render()V
+					if (m.desc.equals("(FZII)V") || m.desc.equals("(ZII)V") || m.desc.equals("()V")) {
 						insn2 = getFirst(m.instructions);
 						while (insn2 != null) {
 							if (compareInsn(insn2, GETFIELD, hud.name, null, "L" + minecraft.name + ";")) {
+								// Update hud width/heigth values on resize in classic and indev
 								InsnList insert = new InsnList();
 								insert.add(new InsnNode(DUP)); // MC, MC
 								insert.add(new FieldInsnNode(GETFIELD, minecraft.name, context.width.name, context.width.desc));

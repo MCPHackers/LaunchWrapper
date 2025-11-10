@@ -7,7 +7,19 @@ import java.lang.invoke.MethodType;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.CodeSource;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+
+import org.mcphackers.launchwrapper.Launch;
+import org.mcphackers.launchwrapper.LaunchConfig;
+import org.mcphackers.launchwrapper.target.MainLaunchTarget;
 
 import net.fabricmc.api.EnvType;
 import net.fabricmc.loader.api.ObjectShare;
@@ -30,13 +42,6 @@ import net.fabricmc.loader.impl.metadata.ModDependencyImpl;
 import net.fabricmc.loader.impl.util.Arguments;
 import net.fabricmc.loader.impl.util.ExceptionUtil;
 import net.fabricmc.loader.impl.util.SystemProperties;
-
-import org.mcphackers.launchwrapper.Launch;
-import org.mcphackers.launchwrapper.LaunchConfig;
-import org.mcphackers.launchwrapper.target.MainLaunchTarget;
-import org.mcphackers.launchwrapper.tweak.FabricLoaderTweak;
-import org.mcphackers.launchwrapper.tweak.Tweak;
-import org.mcphackers.launchwrapper.util.ClassNodeSource;
 
 public class LWGameProvider implements GameProvider {
 	private static final Set<BuiltinTransform> TRANSFORM_WIDENALL_STRIPENV_CLASSTWEAKS = EnumSet.of(BuiltinTransform.WIDEN_ALL_PACKAGE_ACCESS, BuiltinTransform.STRIP_ENVIRONMENT, BuiltinTransform.CLASS_TWEAKS);

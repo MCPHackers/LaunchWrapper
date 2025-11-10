@@ -60,9 +60,8 @@ public class VanillaTweak extends Tweak {
 			// Fixed in 1.12.2??? Breaks in 1.14.4?? Works in 1.20 and above
 			System.setProperty("java.locale.providers", "SPI");
 		}
-		MinecraftURLStreamHandler handler = new MinecraftURLStreamHandler(config);
-		URLStreamHandlerProxy.setURLStreamHandler("http", handler);
-		URLStreamHandlerProxy.setURLStreamHandler("https", handler);
+		URLStreamHandlerProxy.setURLStreamHandler("http", new MinecraftURLStreamHandler(config));
+		URLStreamHandlerProxy.setURLStreamHandler("https", new MinecraftURLStreamHandler(config));
 		return new MainLaunchTarget(MAIN_CLASS, context.args);
 	}
 

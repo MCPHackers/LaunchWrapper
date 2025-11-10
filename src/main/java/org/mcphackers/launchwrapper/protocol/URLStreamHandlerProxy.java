@@ -17,7 +17,7 @@ public abstract class URLStreamHandlerProxy extends URLStreamHandler {
 	private static final Map<String, URLStreamHandler> DEFAULT_HANDLERS = new HashMap<String, URLStreamHandler>();
 	private static final Hashtable<String, URLStreamHandler> HANDLERS = getHandlers();
 
-	protected URLStreamHandler parent;
+	protected URLStreamHandlerProxy parent;
 
 	@Override
 	protected final URLConnection openConnection(URL url, Proxy p) throws IOException {
@@ -26,6 +26,9 @@ public abstract class URLStreamHandlerProxy extends URLStreamHandler {
 
 	@Override
 	protected URLConnection openConnection(URL url) throws IOException {
+		if (parent != null) {
+			return parent.openConnection(url);
+		}
 		return openDirectConnection(url);
 	}
 
@@ -36,7 +39,10 @@ public abstract class URLStreamHandlerProxy extends URLStreamHandler {
 	}
 
 	public static void setURLStreamHandler(String protocol, URLStreamHandlerProxy handler) {
-		handler.parent = getURLStreamHandler(protocol);
+		URLStreamHandler currentHandler = getURLStreamHandler(protocol);
+		if (currentHandler instanceof URLStreamHandlerProxy) {
+			handler.parent = (URLStreamHandlerProxy)currentHandler;
+		}
 		HANDLERS.put(protocol, handler);
 	}
 
