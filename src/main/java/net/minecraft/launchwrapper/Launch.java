@@ -86,6 +86,7 @@ public final class Launch extends org.mcphackers.launchwrapper.Launch {
 			}
 		}
 		mainTweak.transformResources(loader);
+		loader.setLoaderTweakers(mainTweak.getTweakers());
 		getLaunchTarget(mainTweak.getLaunchTarget()).launch(loader);
 	}
 
