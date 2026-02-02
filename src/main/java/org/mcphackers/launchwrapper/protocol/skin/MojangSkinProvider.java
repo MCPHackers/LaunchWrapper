@@ -155,8 +155,7 @@ public class MojangSkinProvider implements SkinProvider {
 						if (metadata != null && tex == SkinTexture.SKIN) {
 							slim = "slim".equals(metadata.optString("model"));
 						}
-						String skinURLstr = texJson.optString("url");
-						texMap.put(tex, skinURLstr.substring(skinURLstr.lastIndexOf('/') + 1));
+						texMap.put(tex, texJson.optString("url"));
 					}
 				}
 			}
@@ -199,7 +198,8 @@ public class MojangSkinProvider implements SkinProvider {
 		}
 
 		public String getSHA256() {
-			return profile.textures.get(type);
+			String skinURLstr = profile.textures.get(type);
+			return skinURLstr.substring(skinURLstr.lastIndexOf('/') + 1).replaceFirst("\\.png$", "");
 		}
 
 		public InputStream getData() throws IOException {
@@ -211,7 +211,7 @@ public class MojangSkinProvider implements SkinProvider {
 		}
 
 		public String getURL() {
-			return "http://textures.minecraft.net/texture/" + getSHA256();
+			return profile.textures.get(type);
 		}
 
 		public boolean isSlim() {
