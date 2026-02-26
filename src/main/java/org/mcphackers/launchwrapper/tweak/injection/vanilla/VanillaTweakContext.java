@@ -83,6 +83,13 @@ public class VanillaTweakContext implements Injection, MinecraftGetter {
 				minecraft = source.getClass(invoke.owner);
 				run = NodeHelper.getMethod(minecraft, invoke.name, invoke.desc);
 				break;
+			} else if (insn.getOpcode() == INVOKESTATIC) { /* 1.19.1-1.19.3 wraps real main inside of obfuscated main */
+				MethodInsnNode invoke = (MethodInsnNode)insn;
+				if (invoke.owner.equals(minecraftMain.name)) {
+					main = NodeHelper.getMethod(minecraftMain, invoke.name, invoke.desc);
+					insn = main.instructions.getLast();
+					continue;
+				}
 			}
 			insn = previousInsn(insn);
 		}
