@@ -28,7 +28,7 @@ public class MicroMixinTweak extends Tweak {
 	protected MicroMixinTweaker microMixinTweaker = new MicroMixinTweaker();
 	protected MicroMixinInjection microMixinInjection = new MicroMixinInjection(mods, microMixinTweaker);
 
-	public MicroMixinTweak(LaunchConfig launch, Tweak tweak) {
+	public MicroMixinTweak(Tweak tweak, LaunchConfig launch) {
 		super(launch);
 		if (tweak == null) {
 			throw new NullPointerException("tweak mustn't be null");
