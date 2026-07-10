@@ -64,7 +64,7 @@ public class ElyBySkinProvider implements SkinProvider {
 		}
 
 		public String getSHA256() {
-			return url.substring(url.lastIndexOf('/') + 1);
+			return url.substring(url.lastIndexOf('/') + 1).replaceFirst("\\.png$", "");
 		}
 
 		public InputStream getData() throws IOException {
