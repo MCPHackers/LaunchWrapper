@@ -241,26 +241,6 @@ public class VanillaTweakContext implements Injection, MinecraftGetter {
 							source.overrideClass(minecraft);
 							return true;
 						}
-						// if (!compareInsn(insn5, INVOKESTATIC, "org/lwjgl/glfw/GLFW", "glfwDefaultWindowHints", "()V") &&
-						// 	!compareInsn(insn5, INVOKESTATIC, "org/lwjgl/glfw/GLFW", "glfwWindowHint", "(II)V")) {
-						// 	continue;
-						// }
-						// InsnList insert = new InsnList();
-						// if (LaunchConfig.WM_CLASS_NAME != null) {
-						// 	insert.add(intInsn(155649)); // GLFW_WAYLAND_APP_ID
-						// 	insert.add(new LdcInsnNode(LaunchConfig.WM_CLASS_NAME));
-						// 	insert.add(new MethodInsnNode(INVOKESTATIC, "org/lwjgl/glfw/GLFW", "glfwWindowHintString", "(ILjava/lang/CharSequence;)V"));
-						// 	insert.add(intInsn(147457)); // GLFW_X11_CLASS_NAME
-						// 	insert.add(new LdcInsnNode(LaunchConfig.WM_CLASS_NAME));
-						// 	insert.add(new MethodInsnNode(INVOKESTATIC, "org/lwjgl/glfw/GLFW", "glfwWindowHintString", "(ILjava/lang/CharSequence;)V"));
-						// 	insert.add(intInsn(147458)); // GLFW_X11_INSTANCE_NAME
-						// 	insert.add(new LdcInsnNode(LaunchConfig.WM_CLASS_NAME));
-						// 	insert.add(new MethodInsnNode(INVOKESTATIC, "org/lwjgl/glfw/GLFW", "glfwWindowHintString", "(ILjava/lang/CharSequence;)V"));
-						// }
-						// m2.instructions.insert(insn5, insert);
-						// source.overrideClass(window);
-						// source.overrideClass(minecraft);
-						// return true;
 					}
 				}
 			}
