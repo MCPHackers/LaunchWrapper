@@ -2,9 +2,11 @@ package org.mcphackers.launchwrapper.tweak.injection.vanilla;
 
 import static org.mcphackers.launchwrapper.util.asm.InsnHelper.*;
 import static org.objectweb.asm.Opcodes.*;
+import static org.objectweb.asm.tree.AbstractInsnNode.*;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -21,9 +23,12 @@ import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldInsnNode;
 import org.objectweb.asm.tree.FieldNode;
+import org.objectweb.asm.tree.InsnList;
+import org.objectweb.asm.tree.InsnNode;
 import org.objectweb.asm.tree.LdcInsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
+import org.objectweb.asm.tree.VarInsnNode;
 
 public class VanillaTweakContext implements Injection, MinecraftGetter {
 	public ClassNode minecraft;
@@ -78,9 +83,15 @@ public class VanillaTweakContext implements Injection, MinecraftGetter {
 		AbstractInsnNode insn = main.instructions.getLast();
 		while (insn != null) {
 			// Last call inside of main is minecraft.run();
+			// This isn't the case since 1.15
 			if (insn.getOpcode() == INVOKEVIRTUAL) {
 				MethodInsnNode invoke = (MethodInsnNode)insn;
+				if (invoke.owner.startsWith("java/")) {
+					insn = previousInsn(insn);
+					continue;
+				}
 				minecraft = source.getClass(invoke.owner);
+				// rn this isn't storing run method in 1.15+ but it's fine for our use case
 				run = NodeHelper.getMethod(minecraft, invoke.name, invoke.desc);
 				break;
 			} else if (insn.getOpcode() == INVOKESTATIC) { /* 1.19.1-1.19.3 wraps real main inside of obfuscated main */
@@ -93,19 +104,21 @@ public class VanillaTweakContext implements Injection, MinecraftGetter {
 			}
 			insn = previousInsn(insn);
 		}
-		if (run == null) {
+		if (minecraft == null) {
 			return false;
 		}
-		insn = getFirst(run.instructions);
-		while (insn != null) {
-			if (insn.getOpcode() == Opcodes.PUTFIELD) {
-				FieldInsnNode putField = (FieldInsnNode)insn;
-				if ("Z".equals(putField.desc)) {
-					running = NodeHelper.getField(minecraft, putField.name, putField.desc);
+		if (run != null) {
+			insn = getFirst(run.instructions);
+			while (insn != null) {
+				if (insn.getOpcode() == Opcodes.PUTFIELD) {
+					FieldInsnNode putField = (FieldInsnNode)insn;
+					if ("Z".equals(putField.desc)) {
+						running = NodeHelper.getField(minecraft, putField.name, putField.desc);
+					}
+					break;
 				}
-				break;
+				insn = nextInsn(insn);
 			}
-			insn = nextInsn(insn);
 		}
 		for (AbstractInsnNode insn2 = getFirst(main.instructions); insn2 != null; insn2 = nextInsn(insn2)) {
 			if (compareInsn(insn2, INVOKEVIRTUAL, "joptsimple/OptionParser", "accepts", "(Ljava/lang/String;)Ljoptsimple/OptionSpecBuilder;")) {
@@ -136,6 +149,7 @@ public class VanillaTweakContext implements Injection, MinecraftGetter {
 		args = newArgs.toArray(arr);
 
 		MethodNode init = getInit(run);
+		// LWJGL 2
 		boolean fixedTitle = replaceTitle(init, config);
 		boolean fixedIcon = replaceIcon(init, config);
 		for (MethodNode m : minecraft.methods) {
@@ -143,6 +157,112 @@ public class VanillaTweakContext implements Injection, MinecraftGetter {
 			fixedIcon = fixedIcon || replaceIcon(m, config);
 			if (fixedTitle && fixedIcon) {
 				break;
+			}
+		}
+		// LWJGL 3
+		MethodNode createTitle = null;
+		for (MethodNode m : minecraft.methods) {
+			AbstractInsnNode firstInsn = getFirst(m.instructions);
+			AbstractInsnNode[] insns = fill(firstInsn, 3);
+			if (compareInsn(insns[0], NEW, "java/lang/StringBuilder") &&
+				compareInsn(insns[1], DUP) &&
+				compareInsn(insns[2], LDC, "Minecraft")) {
+				InsnList insert = new InsnList();
+				if (config.title.get() != null) {
+					insert.add(new LdcInsnNode(config.title.get()));
+					insert.add(new InsnNode(ARETURN));
+				}
+				m.instructions.insertBefore(firstInsn, insert);
+				createTitle = m;
+			}
+		}
+		List<MethodNode> titleLookup = new ArrayList<MethodNode>();
+		titleLookup.add(init);
+		titleLookup.addAll(NodeHelper.getConstructors(minecraft));
+		for (MethodNode m : titleLookup) {
+			AbstractInsnNode insn2 = getFirst(m.instructions);
+			for (; insn2 != null; insn2 = nextInsn(insn2)) {
+				AbstractInsnNode insn3 = insn2;
+				if (createTitle == null) {
+					if (compareInsn(insn2, LDC, "Minecraft ")) {
+						for (; insn2 != null; insn2 = nextInsn(insn2)) {
+							if (compareInsn(insn2, INVOKEVIRTUAL, "java/lang/StringBuilder", "toString", "()Ljava/lang/String;")) {
+								break;
+							}
+						}
+						if (config.title.get() != null) {
+							InsnList insert = new InsnList();
+							insert.add(new InsnNode(POP));
+							AbstractInsnNode ldcInsn = new LdcInsnNode(config.title.get());
+							insert.add(ldcInsn);
+							m.instructions.insert(insn2, insert);
+							insn3 = ldcInsn;
+						}
+					}
+				} else if (!compareMethodToInvoke(minecraft, createTitle, insn2)) {
+					continue;
+				}
+				ClassNode window = null;
+				FieldInsnNode putField2 = null;
+				for (; insn3 != null; insn3 = nextInsn(insn3)) {
+					if (compareInsn(insn3, PUTFIELD)) {
+						FieldInsnNode putField = (FieldInsnNode)insn3;
+						if (!putField.desc.startsWith("L") || !putField.desc.endsWith(";")) {
+							continue;
+						}
+						putField2 = putField;
+						break;
+					} else if (compareInsn(insn3, ASTORE)) {
+						VarInsnNode aStore = (VarInsnNode)insn3;
+						AbstractInsnNode insn4 = insn3;
+						for (; insn4 != null; insn4 = nextInsn(insn4)) {
+							if (compareInsn(insn4, ALOAD, aStore.var) &&
+								compareInsn(nextInsn(insn4), PUTFIELD)) {
+								FieldInsnNode putField = (FieldInsnNode)nextInsn(insn4);
+								if (!putField.desc.startsWith("L") || !putField.desc.endsWith(";")) {
+									continue;
+								}
+								putField2 = putField;
+								break;
+							}
+						}
+					}
+				}
+				if (putField2 == null) {
+					break;
+				}
+				window = source.getClass(putField2.desc.substring(1, putField2.desc.length() - 1));
+				for (MethodNode m2 : window != null ? window.methods : Collections.<MethodNode>emptyList()) {
+					AbstractInsnNode insn5 = getFirst(m2.instructions);
+					for (; insn5 != null; insn5 = nextInsn(insn5)) {
+						if (config.title.get() != null && insn5.getType() == LDC_INSN && ((LdcInsnNode)insn5).cst.toString().startsWith("Minecraft")) {
+							m2.instructions.set(insn5, new LdcInsnNode(config.title.get()));
+							source.overrideClass(window);
+							source.overrideClass(minecraft);
+							return true;
+						}
+						// if (!compareInsn(insn5, INVOKESTATIC, "org/lwjgl/glfw/GLFW", "glfwDefaultWindowHints", "()V") &&
+						// 	!compareInsn(insn5, INVOKESTATIC, "org/lwjgl/glfw/GLFW", "glfwWindowHint", "(II)V")) {
+						// 	continue;
+						// }
+						// InsnList insert = new InsnList();
+						// if (LaunchConfig.WM_CLASS_NAME != null) {
+						// 	insert.add(intInsn(155649)); // GLFW_WAYLAND_APP_ID
+						// 	insert.add(new LdcInsnNode(LaunchConfig.WM_CLASS_NAME));
+						// 	insert.add(new MethodInsnNode(INVOKESTATIC, "org/lwjgl/glfw/GLFW", "glfwWindowHintString", "(ILjava/lang/CharSequence;)V"));
+						// 	insert.add(intInsn(147457)); // GLFW_X11_CLASS_NAME
+						// 	insert.add(new LdcInsnNode(LaunchConfig.WM_CLASS_NAME));
+						// 	insert.add(new MethodInsnNode(INVOKESTATIC, "org/lwjgl/glfw/GLFW", "glfwWindowHintString", "(ILjava/lang/CharSequence;)V"));
+						// 	insert.add(intInsn(147458)); // GLFW_X11_INSTANCE_NAME
+						// 	insert.add(new LdcInsnNode(LaunchConfig.WM_CLASS_NAME));
+						// 	insert.add(new MethodInsnNode(INVOKESTATIC, "org/lwjgl/glfw/GLFW", "glfwWindowHintString", "(ILjava/lang/CharSequence;)V"));
+						// }
+						// m2.instructions.insert(insn5, insert);
+						// source.overrideClass(window);
+						// source.overrideClass(minecraft);
+						// return true;
+					}
+				}
 			}
 		}
 		source.overrideClass(minecraft);

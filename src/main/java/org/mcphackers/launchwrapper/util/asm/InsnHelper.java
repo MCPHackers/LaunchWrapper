@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.objectweb.asm.tree.AbstractInsnNode;
+import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldInsnNode;
 import org.objectweb.asm.tree.IincInsnNode;
 import org.objectweb.asm.tree.InsnList;
@@ -389,6 +390,14 @@ public final class InsnHelper {
 			insn = insn.getPrevious();
 		}
 		return insn;
+	}
+
+	public static boolean compareMethodToInvoke(ClassNode owner, MethodNode methodNode, AbstractInsnNode invoke) {
+		if (invoke.getType() != METHOD_INSN) {
+			return false;
+		}
+		MethodInsnNode mInvoke = (MethodInsnNode)invoke;
+		return owner.name.equals(mInvoke.owner) && methodNode.name.equals(mInvoke.name) && methodNode.desc.equals(mInvoke.desc);
 	}
 
 	@SuppressWarnings("unused")

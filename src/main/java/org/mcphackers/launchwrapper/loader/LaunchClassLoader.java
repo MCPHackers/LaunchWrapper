@@ -156,31 +156,41 @@ public class LaunchClassLoader extends URLClassLoader implements ClassNodeSource
 	private URL getOverridenResourceURL(String resource) {
 		try {
 			if (overridenResources.get(resource) != null || overridenClasses.get(classNameFromResource(resource)) != null) {
-				URL originalUrl = getOriginalURL(resource);
-				if (originalUrl == null) {
-					return new URL("file", "", -1, resource, new ClassLoaderURLHandler(this));
+				URL url = getOriginalURL(resource);
+				if (url == null) {
+					return new URL("file", "", -1, resource, new ClassLoaderURLHandler(this, resource));
 				}
-				return new URL(
-					originalUrl.getProtocol(),
-					originalUrl.getHost(),
-					originalUrl.getPort(),
-					resource,
-					new ClassLoaderURLHandler(this));
+				url = new URL(
+					url.getProtocol(),
+					url.getHost(),
+					url.getPort(),
+					url.getFile(),
+					new ClassLoaderURLHandler(this, resource));
+				return url;
 			}
 		} catch (MalformedURLException ignored) {
 		}
 		return null;
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
 	public Enumeration<URL> findResources(String name) throws IOException {
-		final Enumeration<URL> resources = urlClassLoader.getResources(name);
+		if (!name.startsWith("META-INF/")) {
+			final Enumeration<URL> resources = urlClassLoader.getResources(name);
 
-		if (!resources.hasMoreElements()) {
-			return parent.getResources(name);
+			if (!resources.hasMoreElements()) {
+				return parent.getResources(name);
+			}
+
+			return resources;
 		}
-
-		return resources;
+		Enumeration<URL>[] enums = (Enumeration<URL>[]) new Enumeration[] {
+			urlClassLoader.getResources(name),
+			parent.getResources(name)
+		};
+		CompoundEnumeration<URL> compoundEnumeration = new CompoundEnumeration<URL>(enums);
+		return compoundEnumeration;
 	}
 
 	public void addExclusion(String prefix) {

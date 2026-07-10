@@ -98,6 +98,12 @@ public abstract class Tweak {
 		if (launch.tweakClass.get() != null) {
 			return forClass(classLoader, launch, launch.tweakClass.get());
 		}
+		if (System.getProperty("FabricMcEmu") != null) {
+			Tweak tweak = forClass(classLoader, launch, "org.mcphackers.launchwrapper.tweak.FabricLoaderTweak");
+			if (tweak != null) {
+				return tweak;
+			}
+		}
 		return getDefault(classLoader, launch);
 	}
 

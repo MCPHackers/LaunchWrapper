@@ -45,6 +45,7 @@ public final class Launch extends org.mcphackers.launchwrapper.Launch {
 	public LaunchClassLoader getLoader() {
 		if (classLoader == null) {
 			classLoader = LaunchClassLoader.instantiate();
+			classLoader.setDebugOutput(config.debugClassDump.get());
 		}
 		return classLoader;
 	}

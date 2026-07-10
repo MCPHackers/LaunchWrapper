@@ -20,6 +20,16 @@ import org.mcphackers.launchwrapper.util.OS;
 @SuppressWarnings("unused")
 public class LaunchConfig {
 	private static final File DEFAULT_GAME_DIR = getDefaultGameDir();
+	private static final String WINDOW_TITLE = System.getProperty("launchwrapper.windowTitle", null);
+	public static final String WM_CLASS_NAME = System.getProperty("launchwrapper.wmClass", null);
+
+	static {
+		if (WM_CLASS_NAME != null) {
+			System.setProperty("legacylwjgl3.wmClass", WM_CLASS_NAME);
+			System.setProperty("LWJGL_WM_CLASS", WM_CLASS_NAME);
+		}
+	}
+
 	// Store all arguments into this list, in order of whatever has been passed by a launcher or the user
 	// NOTE: this is supposed to hold String and LaunchParameter objects primarily
 	private final List<Object> arguments = new ArrayList<Object>();
@@ -68,7 +78,7 @@ public class LaunchConfig {
 	public final LaunchParameterSwitch useFakeApplet		= new LaunchParameterSwitch("useFakeApplet", false, true);
 	public final LaunchParameterSwitch isom					= new LaunchParameterSwitch("isom", false, true);
 	public final LaunchParameterFileList icon				= new LaunchParameterFileList("icon", null, true);
-	public final LaunchParameterString title				= new LaunchParameterString("title", null, true);
+	public final LaunchParameterString title				= new LaunchParameterString("title", WINDOW_TITLE, true);
 	public final LaunchParameterSwitch vsync				= new LaunchParameterSwitch("vsync", false, true);
 	public final LaunchParameterSwitch applet 				= new LaunchParameterSwitch("applet", false);
 	public final LaunchParameterSwitch oneSixFlag			= new LaunchParameterSwitch("oneSixFlag", false, true);
@@ -168,7 +178,9 @@ public class LaunchConfig {
 				} catch (IllegalArgumentException ignored) {
 				}
 			}
-			arguments.add(param);
+			if (!arguments.contains(param)) {
+				arguments.add(param);
+			}
 		}
 		for (LaunchParameter<?> param : parameters.values()) {
 			if (!arguments.contains(param)) {

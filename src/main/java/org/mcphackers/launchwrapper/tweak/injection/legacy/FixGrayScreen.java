@@ -37,23 +37,23 @@ public class FixGrayScreen extends InjectionWithContext<MinecraftGetter> {
 		}
 	next:
 		for (MethodNode m : minecraft.methods) {
-			if (m.desc.equals("()V")) {
-				AbstractInsnNode insn = getFirst(m.instructions);
-				while (insn != null) {
-					if (compareInsn(insn, INVOKESTATIC, "org/lwjgl/opengl/Display", "setDisplayConfiguration", "(FFF)V")) {
-						AbstractInsnNode[] insns = fillBackwards(insn, 4);
-						if (compareInsn(insns[0], FCONST_1) &&
-							compareInsn(insns[1], FCONST_0) &&
-							compareInsn(insns[2], FCONST_0)) {
-							m.instructions.insertBefore(insns[0], new InsnNode(NOP));
-							removeRange(m.instructions, insns[0], insn);
-							return true;
-						}
+			if (!m.desc.equals("()V")) {
+				continue;
+			}
+			AbstractInsnNode insn = getFirst(m.instructions);
+			for (; insn != null; insn = nextInsn(insn)) {
+				if (compareInsn(insn, INVOKESTATIC, "org/lwjgl/opengl/Display", "setDisplayConfiguration", "(FFF)V")) {
+					AbstractInsnNode[] insns = fillBackwards(insn, 4);
+					if (compareInsn(insns[0], FCONST_1) &&
+						compareInsn(insns[1], FCONST_0) &&
+						compareInsn(insns[2], FCONST_0)) {
+						m.instructions.insertBefore(insns[0], new InsnNode(NOP));
+						removeRange(m.instructions, insns[0], insn);
+						return true;
 					}
-					if (insn.getOpcode() == INVOKESTATIC) {
-						continue next;
-					}
-					insn = nextInsn(insn);
+				}
+				if (insn.getOpcode() == INVOKESTATIC) {
+					continue next;
 				}
 			}
 		}

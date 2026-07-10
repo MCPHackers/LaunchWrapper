@@ -14,6 +14,7 @@ import org.mcphackers.launchwrapper.target.MainLaunchTarget;
 import org.mcphackers.launchwrapper.tweak.injection.Injection;
 import org.mcphackers.launchwrapper.tweak.injection.legacy.ClassicCrashScreen;
 import org.mcphackers.launchwrapper.tweak.injection.vanilla.ChangeBrand;
+import org.mcphackers.launchwrapper.tweak.injection.vanilla.GLFWWaylandUpgrade;
 import org.mcphackers.launchwrapper.tweak.injection.vanilla.OfflineSkins;
 import org.mcphackers.launchwrapper.tweak.injection.vanilla.OneSixAssetsFix;
 import org.mcphackers.launchwrapper.tweak.injection.vanilla.OutOfFocusFullscreen;
@@ -35,6 +36,7 @@ public class VanillaTweak extends Tweak {
 			context,
 			crashPatch,
 			new OutOfFocusFullscreen(context),
+			new GLFWWaylandUpgrade(),
 			new OneSixAssetsFix(context),
 			new OfflineSkins(context),
 			new ChangeBrand());

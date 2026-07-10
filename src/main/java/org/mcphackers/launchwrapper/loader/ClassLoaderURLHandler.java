@@ -5,9 +5,12 @@ import static org.objectweb.asm.ClassWriter.*;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.JarURLConnection;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLStreamHandler;
+import java.util.jar.JarFile;
 
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.tree.ClassNode;
@@ -15,14 +18,15 @@ import org.objectweb.asm.tree.ClassNode;
 public class ClassLoaderURLHandler extends URLStreamHandler {
 
 	private final LaunchClassLoader classLoader;
+	private final String resourcePath;
 
-	public ClassLoaderURLHandler(LaunchClassLoader classLoader) {
+	public ClassLoaderURLHandler(LaunchClassLoader classLoader, String resourcePath) {
 		this.classLoader = classLoader;
+		this.resourcePath = resourcePath;
 	}
 
-	class ClassLoaderURLConnection extends URLConnection {
-
-		protected ClassLoaderURLConnection(URL url) {
+	class ClassLoaderURLConnection extends JarURLConnection {
+		protected ClassLoaderURLConnection(URL url) throws MalformedURLException {
 			super(url);
 		}
 
@@ -32,20 +36,24 @@ public class ClassLoaderURLHandler extends URLStreamHandler {
 
 		@Override
 		public InputStream getInputStream() throws IOException {
-			String path = url.getPath();
-			byte[] data = classLoader.overridenResources.get(path);
+			byte[] data = classLoader.overridenResources.get(resourcePath);
 			if (data != null) {
 				return new ByteArrayInputStream(data);
 			}
-			ClassNode node = classLoader.overridenClasses.get(LaunchClassLoader.classNameFromResource(path));
+			ClassNode node = classLoader.overridenClasses.get(LaunchClassLoader.classNameFromResource(resourcePath));
 			if (node == null) {
-				InputStream is = classLoader.getOriginalURL(path).openStream();
+				InputStream is = classLoader.getOriginalURL(resourcePath).openStream();
 				return is;
 			}
 			ClassWriter writer = new SafeClassWriter(classLoader, COMPUTE_MAXS);
 			node.accept(writer);
 			data = writer.toByteArray();
 			return new ByteArrayInputStream(data);
+		}
+
+		@Override
+		public JarFile getJarFile() throws IOException {
+			return null;
 		}
 	}
 

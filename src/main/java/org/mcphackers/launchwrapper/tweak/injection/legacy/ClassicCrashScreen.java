@@ -66,7 +66,7 @@ public class ClassicCrashScreen extends InjectionWithContext<MinecraftGetter> {
 				continue;
 			}
 			AbstractInsnNode insn2 = insn;
-			while (insn2 != null) {
+			for (; insn2 != null; insn2 = nextInsn(insn2)) {
 				AbstractInsnNode[] insns2 = fill(insn2, 4);
 				if (compareInsn(insns2[0], ALOAD, 0) &&
 					compareInsn(insns2[1], ACONST_NULL) &&
@@ -74,7 +74,6 @@ public class ClassicCrashScreen extends InjectionWithContext<MinecraftGetter> {
 					MethodInsnNode invoke = (MethodInsnNode)insns2[2];
 					return NodeHelper.getMethod(minecraft, invoke.name, invoke.desc);
 				}
-				insn2 = nextInsn(insn2);
 			}
 		}
 		return null;
@@ -206,11 +205,10 @@ public class ClassicCrashScreen extends InjectionWithContext<MinecraftGetter> {
 			insn1 = nextInsn(insn1);
 		}
 		insn1 = getFirst(run.instructions);
-		while (insn1 != null) {
+		for (; insn1 != null; insn1 = nextInsn(insn1)) {
 			if (insn1.getType() == AbstractInsnNode.JUMP_INSN && ((JumpInsnNode)insn1).label == start) {
 				end = insn1;
 			}
-			insn1 = nextInsn(insn1);
 		}
 		if (start == null || end == null) {
 			return false;
@@ -224,7 +222,8 @@ public class ClassicCrashScreen extends InjectionWithContext<MinecraftGetter> {
 		}
 		AbstractInsnNode instanceOf = null;
 
-		for (AbstractInsnNode insn = getFirst(openScreen.instructions); insn != null; insn = nextInsn(insn)) {
+		AbstractInsnNode insn = getFirst(openScreen.instructions);
+		for (; insn != null; insn = nextInsn(insn)) {
 			AbstractInsnNode[] insns2 = fill(insn, 8);
 			if (compareInsn(insns2[0], ALOAD, 1) &&
 				compareInsn(insns2[1], IFNONNULL) &&
@@ -253,7 +252,7 @@ public class ClassicCrashScreen extends InjectionWithContext<MinecraftGetter> {
 					continue;
 				}
 				int var = -1;
-				for (AbstractInsnNode insn = tryCatch.handler; insn != null; insn = nextInsn(insn)) {
+				for (insn = tryCatch.handler; insn != null; insn = nextInsn(insn)) {
 					AbstractInsnNode[] insns = fill(insn, 5);
 					if (compareInsn(insns[0], ASTORE) // exception
 						&&
@@ -290,7 +289,7 @@ public class ClassicCrashScreen extends InjectionWithContext<MinecraftGetter> {
 			if (!m.desc.equals("()V")) {
 				continue;
 			}
-			AbstractInsnNode insn = getFirst(m.instructions);
+			insn = getFirst(m.instructions);
 			while (insn != null) {
 				if (compareInsn(insn, LDC, "Manually triggered debug crash")) {
 					FieldInsnNode crashTimer = null;
@@ -334,7 +333,8 @@ public class ClassicCrashScreen extends InjectionWithContext<MinecraftGetter> {
 					continue;
 				}
 
-				for (AbstractInsnNode insn = getFirst(m.instructions); insn != null; insn = nextInsn(insn)) {
+				insn = getFirst(m.instructions);
+				for (; insn != null; insn = nextInsn(insn)) {
 					AbstractInsnNode[] insns2 = fill(insn, 10);
 
 					if (compareInsn(insns2[0], ALOAD, 1) &&
@@ -364,7 +364,8 @@ public class ClassicCrashScreen extends InjectionWithContext<MinecraftGetter> {
 						continue;
 					}
 					// new ErrorScreen("Unable to load words" ....
-					for (AbstractInsnNode insn = getFirst(m.instructions); insn != null; insn = nextInsn(insn)) {
+					insn = getFirst(m.instructions);
+					for (; insn != null; insn = nextInsn(insn)) {
 						if (compareInsn(insn, LDC, "Unable to load words") // Yes, words. Mojang made a typo
 							|| compareInsn(insn, LDC, "Unable to load worlds")) {
 							AbstractInsnNode[] insns = fillBackwards(insn, 3);
