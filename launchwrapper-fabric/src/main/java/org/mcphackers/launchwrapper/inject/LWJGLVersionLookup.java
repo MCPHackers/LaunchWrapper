@@ -89,11 +89,10 @@ public final class LWJGLVersionLookup {
 				continue;
 			}
 			AbstractInsnNode insn = getFirst(m.instructions);
-			while (insn != null) {
+			for (; insn != null; insn = nextInsn(insn)) {
 				if (compareInsn(insn, PUTSTATIC, null, LWJGL3_VER_FIELDS[i])) {
 					version[i] = getInsnValue(insn.getPrevious());
 				}
-				insn = nextInsn(insn);
 			}
 		}
 		return version[0] + "." + version[1] + "." + version[2];
@@ -113,12 +112,11 @@ public final class LWJGLVersionLookup {
 			return (String)f.value;
 		}
 		AbstractInsnNode insn = getFirst(m.instructions);
-		while (insn != null) {
+		for (; insn != null; insn = nextInsn(insn)) {
 			if (compareInsn(insn, PUTSTATIC, null, LWJGL2_VER_FIELD) &&
 				compareInsn(previousInsn(insn), LDC)) {
 				return (String)((LdcInsnNode)previousInsn(insn)).cst;
 			}
-			insn = nextInsn(insn);
 		}
 		return null;
 	}

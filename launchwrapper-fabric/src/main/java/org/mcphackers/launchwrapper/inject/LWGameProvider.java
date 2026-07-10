@@ -12,6 +12,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -42,11 +43,15 @@ import net.fabricmc.loader.impl.metadata.ModDependencyImpl;
 import net.fabricmc.loader.impl.util.Arguments;
 import net.fabricmc.loader.impl.util.ExceptionUtil;
 import net.fabricmc.loader.impl.util.SystemProperties;
+import net.fabricmc.loader.impl.util.log.Log;
+import net.fabricmc.loader.impl.util.log.LogHandler;
 
 public class LWGameProvider implements GameProvider {
 	private static final Set<BuiltinTransform> TRANSFORM_WIDENALL_STRIPENV_CLASSTWEAKS = EnumSet.of(BuiltinTransform.WIDEN_ALL_PACKAGE_ACCESS, BuiltinTransform.STRIP_ENVIRONMENT, BuiltinTransform.CLASS_TWEAKS);
 	private static final Set<BuiltinTransform> TRANSFORM_WIDENALL_CLASSTWEAKS = EnumSet.of(BuiltinTransform.WIDEN_ALL_PACKAGE_ACCESS, BuiltinTransform.CLASS_TWEAKS);
 	private static final Set<BuiltinTransform> TRANSFORM_STRIPENV = EnumSet.of(BuiltinTransform.STRIP_ENVIRONMENT);
+
+	private static final String[] ALLOWED_EARLY_CLASS_PREFIXES = { "org.apache.logging.log4j.", "com.mojang.util." };
 
 	public Launch launch = Launch.getInstance();
 	public LaunchConfig config = launch.config;
@@ -59,6 +64,9 @@ public class LWGameProvider implements GameProvider {
 	private EnvType envType;
 	private final List<Path> miscGameLibraries = new ArrayList<>();
 	private final List<Path> validParentClassPath = new ArrayList<>();
+	private final Set<Path> logJars = new HashSet<>();
+	private boolean log4jAvailable;
+	private boolean slf4jAvailable;
 	private McVersion versionData;
 	private boolean hasModLoader;
 	private final GameTransformer transformer = new LWGameTransformer(this);
@@ -105,6 +113,7 @@ public class LWGameProvider implements GameProvider {
 		return null;
 	}
 
+	@SuppressWarnings({ "rawtypes", "unchecked" })
 	@Override
 	public boolean locateGame(FabricLauncher launcher, String[] args) {
 		this.envType = launcher.getEnvironmentType();
@@ -115,8 +124,17 @@ public class LWGameProvider implements GameProvider {
 		try {
 			LibClassifier<LWLib> classifier = new LibClassifier<>(LWLib.class, envType, this);
 			LWLib envGameLib = envType == EnvType.CLIENT ? LWLib.MC_CLIENT : LWLib.MC_SERVER;
+			Path commonGameJar = GameProviderHelper.getCommonGameJar();
 			Path envGameJar = GameProviderHelper.getEnvGameJar(envType);
-			if (envGameJar != null) {
+			boolean commonGameJarDeclared = commonGameJar != null;
+
+			if (commonGameJarDeclared) {
+				if (envGameJar != null) {
+					classifier.process(envGameJar, LWLib.MC_COMMON);
+				}
+
+				classifier.process(commonGameJar);
+			} else if (envGameJar != null) {
 				classifier.process(envGameJar);
 			}
 
@@ -142,12 +160,37 @@ public class LWGameProvider implements GameProvider {
 				lwjglJars.add(classifier.getOrigin(LWLib.LWJGL3));
 			}
 			hasModLoader = classifier.has(LWLib.MODLOADER);
+			log4jAvailable = classifier.has(LWLib.LOG4J_API) && classifier.has(LWLib.LOG4J_CORE);
+			slf4jAvailable = classifier.has(LWLib.SLF4J_API) && classifier.has(LWLib.SLF4J_CORE);
+			boolean hasLogLib = log4jAvailable || slf4jAvailable;
+
+			Log.configureBuiltin(hasLogLib, !hasLogLib);
+
+
+			for (LWLib lib : LWLib.LOGGING) {
+				Path path = classifier.getOrigin(lib);
+
+				if (path != null) {
+					if (hasLogLib) {
+						logJars.add(path);
+					} else if (!gameJar.equals(path)) {
+						miscGameLibraries.add(path);
+					}
+				}
+			}
+
 			miscGameLibraries.addAll(lwjglJars);
 			miscGameLibraries.addAll(classifier.getUnmatchedOrigins());
 			if (launchwrapperJar != null) {
 				validParentClassPath.add(launchwrapperJar);
 			}
 			validParentClassPath.addAll(classifier.getSystemLibraries());
+			if (classifier.has(LWLib.LOG4J_CORE)) {
+				validParentClassPath.add(classifier.getOrigin(LWLib.LOG4J_CORE));
+			}
+			if (classifier.has(LWLib.SLF4J_CORE)) {
+				validParentClassPath.add(classifier.getOrigin(LWLib.SLF4J_CORE));
+			}
 		} catch (IOException e) {
 			throw ExceptionUtil.wrap(e);
 		}
@@ -313,8 +356,51 @@ public class LWGameProvider implements GameProvider {
 													 launcher);
 			gameJar = obfJars.get(clientSide);
 		}
+		// Load the logger libraries on the platform CL when in a unit test
+		if (!logJars.isEmpty() && !Boolean.getBoolean(SystemProperties.UNIT_TEST)) {
+			for (Path jar : logJars) {
+				if (gameJar.equals(jar)) {
+					launcher.addToClassPath(jar, ALLOWED_EARLY_CLASS_PREFIXES);
+				} else {
+					launcher.addToClassPath(jar);
+				}
+			}
+		}
+
+		setupLogHandler(launcher, true);
 
 		transformer.locateEntrypoints(launcher, Collections.singletonList(gameJar));
+	}
+
+	private void setupLogHandler(FabricLauncher launcher, boolean useTargetCl) {
+		System.setProperty("log4j2.formatMsgNoLookups", "true"); // lookups are not used by mc and cause issues with older log4j2 versions
+
+		try {
+			final String logHandlerClsName;
+
+			if (log4jAvailable) {
+				logHandlerClsName = "net.fabricmc.loader.impl.game.minecraft.Log4jLogHandler";
+			} else if (slf4jAvailable) {
+				logHandlerClsName = "net.fabricmc.loader.impl.game.minecraft.Slf4jLogHandler";
+			} else {
+				return;
+			}
+
+			ClassLoader prevCl = Thread.currentThread().getContextClassLoader();
+			Class<?> logHandlerCls;
+
+			if (useTargetCl) {
+				Thread.currentThread().setContextClassLoader(launcher.getTargetClassLoader());
+				logHandlerCls = launcher.loadIntoTarget(logHandlerClsName);
+			} else {
+				logHandlerCls = Class.forName(logHandlerClsName);
+			}
+
+			Log.init((LogHandler) logHandlerCls.getConstructor().newInstance());
+			Thread.currentThread().setContextClassLoader(prevCl);
+		} catch (ReflectiveOperationException e) {
+			throw new RuntimeException(e);
+		}
 	}
 
 	@Override

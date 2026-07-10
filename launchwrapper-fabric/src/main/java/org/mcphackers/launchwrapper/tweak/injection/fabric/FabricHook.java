@@ -49,8 +49,8 @@ public class FabricHook implements Injection {
 		for (MethodNode m : minecraft.methods) {
 			if (m.name.equals("<init>")) {
 				AbstractInsnNode injectPoint = getLastReturn(getLast(m.instructions));
-				for(AbstractInsnNode insn = getFirst(m.instructions); insn != null; insn = nextInsn(insn)) {
-					if(compareInsn(insn, INVOKESTATIC, "java/lang/Thread", "currentThread", "()Ljava/lang/Thread;")) {
+				for (AbstractInsnNode insn = getFirst(m.instructions); insn != null; insn = nextInsn(insn)) {
+					if (compareInsn(insn, INVOKESTATIC, "java/lang/Thread", "currentThread", "()Ljava/lang/Thread;")) {
 						injectPoint = insn;
 					}
 				}
