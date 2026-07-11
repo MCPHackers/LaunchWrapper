@@ -1,6 +1,6 @@
 package org.mcphackers.launchwrapper.protocol.skin;
 
-public enum SkinType {
+public enum SkinFormat {
 	// clang-format off
 	PRE_19A("pre-c0.0.19a"),     // Entire model is mirrored
 	CLASSIC("classic"),          // Before c0.24_ST. Lack of head layer
@@ -13,12 +13,12 @@ public enum SkinType {
 
 	public final String name;
 
-	private SkinType(String name) {
+	private SkinFormat(String name) {
 		this.name = name;
 	}
 
-	public static SkinType getEnum(String name) {
-		for (SkinType skinType : values()) {
+	public static SkinFormat getEnum(String name) {
+		for (SkinFormat skinType : values()) {
 			if (skinType.name.equals(name)) {
 				return skinType;
 			}

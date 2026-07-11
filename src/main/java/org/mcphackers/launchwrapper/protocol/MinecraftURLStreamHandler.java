@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.net.URLConnection;
+import java.util.Arrays;
 
 import org.mcphackers.launchwrapper.LaunchConfig;
 import org.mcphackers.launchwrapper.protocol.skin.SkinRequests;
@@ -18,7 +19,7 @@ public class MinecraftURLStreamHandler extends URLStreamHandlerProxy {
 	public MinecraftURLStreamHandler(LaunchConfig config) {
 		this.config = config;
 		this.assets = new AssetRequests(config.assetsDir.get(), config.assetIndex.get());
-		this.skins = new SkinRequests(config.gameDir.get(), config.assetsDir.get(), config.skinOptions.get(), config.skinProxy.get());
+		this.skins = new SkinRequests(config.gameDir.get(), config.assetsDir.get(), config.skinOptions.get(), config.skinProxy.get(), Arrays.asList(config.skinProviders.get()));
 		this.levelSaveDir = config.levelsDir.get();
 	}
 

@@ -13,8 +13,8 @@ import java.util.UUID;
 import java.util.regex.Pattern;
 
 import org.mcphackers.launchwrapper.protocol.skin.MojangSkinProvider;
+import org.mcphackers.launchwrapper.protocol.skin.SkinFormat;
 import org.mcphackers.launchwrapper.protocol.skin.SkinOption;
-import org.mcphackers.launchwrapper.protocol.skin.SkinType;
 import org.mcphackers.launchwrapper.util.OS;
 
 @SuppressWarnings("unused")
@@ -72,8 +72,9 @@ public class LaunchConfig {
 	public final LaunchParameterSwitch lwjglFrame			= new LaunchParameterSwitch("lwjglFrame", true, true);
 	private final LaunchParameterSwitch awtFrame			= new LaunchParameterSwitchReverse("awtFrame", lwjglFrame);
 	public final LaunchParameterSwitch modernSkinProxy		= new LaunchParameterSwitch("useSkinProxy", false, true);
-	public final LaunchParameterEnum<SkinType> skinProxy	= new LaunchParameterEnum<SkinType>("skinProxy", SkinType.DEFAULT, true);
+	public final LaunchParameterEnum<SkinFormat> skinProxy	= new LaunchParameterEnum<SkinFormat>("skinProxy", SkinFormat.DEFAULT, true);
 	public final LaunchParameterSkinOptions skinOptions		= new LaunchParameterSkinOptions("skinOptions");
+	public final LaunchParameterStringList skinProviders	= new LaunchParameterStringList("skinProviders", new String[]{"mojang"}, true);
 	public final LaunchParameterFile levelsDir				= new LaunchParameterFile("levelsDir", null, true);
 	public final LaunchParameterSwitch useFakeApplet		= new LaunchParameterSwitch("useFakeApplet", false, true);
 	public final LaunchParameterSwitch isom					= new LaunchParameterSwitch("isom", false, true);
@@ -358,6 +359,41 @@ public class LaunchConfig {
 		@Override
 		public void setString(String argument) {
 			this.value = new File(argument);
+		}
+	}
+
+	public class LaunchParameterStringList extends LaunchParameter<String[]> {
+		public LaunchParameterStringList(String name) {
+			super(name);
+		}
+
+		public LaunchParameterStringList(String name, String[] defaultValue) {
+			super(name, defaultValue);
+		}
+
+		public LaunchParameterStringList(String name, String[] defaultValue, boolean wrapper) {
+			super(name, defaultValue, wrapper);
+		}
+
+		@Override
+		public String getString() {
+			if (value == null) {
+				return null;
+			}
+			StringBuilder s = new StringBuilder();
+			for (int i = 0; i < value.length; i++) {
+				if (i != 0) {
+					s.append(',');
+				}
+				s.append(value[i]);
+			}
+			return s.toString();
+		}
+
+		@Override
+		public void setString(String argument) {
+			String[] strings = argument.split(Pattern.quote(","));
+			this.value = strings;
 		}
 	}
 

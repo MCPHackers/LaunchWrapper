@@ -5,6 +5,7 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -14,7 +15,7 @@ import org.mcphackers.launchwrapper.util.Util;
 public class SkinRequests {
 
 	private static SkinRequests INSTANCE;
-	private SkinType skinType;
+	private SkinFormat skinFormat;
 	private List<SkinOption> skinOptions;
 	private File assetsDir;
 	private List<SkinProvider> providers = new ArrayList<SkinProvider>();
@@ -23,20 +24,47 @@ public class SkinRequests {
 		return INSTANCE;
 	}
 
-	public SkinRequests(File gameDir, File assetsDir, List<SkinOption> options, SkinType type) {
+	public SkinRequests(File gameDir, File assetsDir, List<SkinOption> options, SkinFormat format, List<String> skinProviders) {
 		this.assetsDir = assetsDir;
 		this.skinOptions = options;
-		this.skinType = type;
-		// TODO make this list configurable
-		providers.add(new LocalSkinProvider(new File(gameDir, "skins")));
-		providers.add(new MinecraftCapesProvider());
-		providers.add(new SkinMCCapeProvider());
-		// providers.add(new OptifineCapeProvider()); // Optifine serves HD capes which are not compatible with all versions.
-		// providers.add(new CloaksPlusCapeProvider()); // Same as Optifine
-		providers.add(new MojangSkinProvider());
-		providers.add(new ElyBySkinProvider());
-		// providers.add(new CraftarSkinProvider()); // https://github.com/crafatar/crafatar/issues/326
+		this.skinFormat = format;
+		for (String provider : skinProviders) {
+			SkinProvider skinProvider = getSkinProvider(provider, gameDir);
+			if (skinProvider != null) {
+				providers.add(skinProvider);
+			}
+		}
+		if (providers.isEmpty()) {
+			providers.add(new MojangSkinProvider());
+		}
 		INSTANCE = this;
+	}
+
+	private static SkinProvider getSkinProvider(String name, File gameDir) {
+		if (name == null) {
+			return null;
+		}
+		name = name.toLowerCase();
+		if (name.equals("mojang")) {
+			return new MojangSkinProvider();
+		} else if (name.equals("elyby")) {
+			return new ElyBySkinProvider();
+		} else if (name.equals("craftar")) {
+			return new CraftarSkinProvider();
+		} else if (name.equals("minecraftcapes")) {
+			return new MinecraftCapesProvider();
+		} else if (name.equals("cloaksplus")) {
+			return new CloaksPlusCapeProvider();
+		} else if (name.equals("skinmc")) {
+			return new SkinMCCapeProvider();
+		} else if (name.equals("optifine")) {
+			return new OptifineCapeProvider();
+		} else if (name.equals("betacraft")) {
+			return new BetacraftSkinProvider();
+		} else if (name.equals("local")) {
+			return new LocalSkinProvider(new File(gameDir, "skins"));
+		}
+		return null;
 	}
 
 	public Skin downloadSkin(String id, String username, SkinTexture type) {
@@ -48,11 +76,14 @@ public class SkinRequests {
 		byte[] skinData = null;
 		try {
 			// Default (modern) skins should not be modified unless the remove hat option is specified
-			if (type != SkinTexture.ELYTRA && (skinType != SkinType.DEFAULT || skinOptions.contains(SkinOption.REMOVE_HAT))) {
+			if (type != SkinTexture.ELYTRA && (skinFormat != SkinFormat.DEFAULT || skinOptions.contains(SkinOption.REMOVE_HAT))) {
 				skinData = (type == SkinTexture.SKIN ? convertSkin(skin) : convertCape(skin));
 			}
 			if (skinData == null) {
-				skinData = Util.readStream(skin.getData());
+				InputStream skinStream = skin.getData();
+				if (skinStream != null) {
+					skinData = Util.readStream(skinStream);
+				}
 			}
 			String newHash = Util.getSHA256(new ByteArrayInputStream(skinData));
 			if (newHash != null) {
@@ -131,7 +162,7 @@ public class SkinRequests {
 		}
 		ByteArrayInputStream bis = new ByteArrayInputStream(data);
 		ImageUtils imgu = new ImageUtils(bis);
-		switch (skinType) {
+		switch (skinFormat) {
 			case PRE_19A:
 			case CLASSIC:
 			case PRE_B1_9:
@@ -148,7 +179,7 @@ public class SkinRequests {
 				break;
 		}
 
-		switch (skinType) {
+		switch (skinFormat) {
 			case PRE_19A:
 			case CLASSIC:
 				if (!skinOptions.contains(SkinOption.IGNORE_LAYERS))
@@ -163,9 +194,9 @@ public class SkinRequests {
 					overlayBodyLayers(imgu);
 				if (skin.isSlim() && !skinOptions.contains(SkinOption.IGNORE_ALEX))
 					alexToSteve(imgu);
-				if (skinType == SkinType.PRE_B1_9 || skinType == SkinType.CLASSIC || skinType == SkinType.PRE_19A)
+				if (skinFormat == SkinFormat.PRE_B1_9 || skinFormat == SkinFormat.CLASSIC || skinFormat == SkinFormat.PRE_19A)
 					rotateBottomTX(imgu);
-				if (skinType == SkinType.PRE_19A)
+				if (skinFormat == SkinFormat.PRE_19A)
 					flipSkin(imgu);
 				imgu = imgu.crop(0, 0, 64, 32);
 			case PRE_1_9:
